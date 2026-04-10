@@ -30,7 +30,7 @@
       'visual-river.html':'River View','data-tools.html':'Data Tools',
       'admin.html':'Admin','member.html':'Member',
       'ai-portal.html':'AI Portal','eco_academic_review.html':'Academic Review',
-      'map-pins.html':'Map Pins','photos.html':'Photos',
+      'map-pins.html':'Map Pins','network-map.html':'Network Map','photos.html':'Photos',
     };
     if (INNER[path])
       return [{label:INNER[path],href:path,active:true}];
