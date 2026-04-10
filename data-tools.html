@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECO — Data Tools</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var(--color-text);min-height:100vh;}
+.nav{height:52px;background:#0D1820;border-bottom:1px solid rgba(0,170,255,.10);display:flex;align-items:center;padding:0 20px;gap:10px;position:sticky;top:0;z-index:100;}
+.nav-wordmark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1rem;letter-spacing:.06em;text-decoration:none;}
+.nav-e{color:#00AAFF;}.nav-c{color:#00CC44;}.nav-o{color:#FFF;}
+.nav-sep{width:1px;height:20px;background:rgba(0,170,255,.10);margin:0 6px;}
+.nav-link{font-size:12px;color:#3A5A54;text-decoration:none;padding:4px 8px;border-radius:6px;}
+.nav-link:hover{color:#00AAFF;}
+.page{max-width:1000px;margin:0 auto;padding:32px 20px 80px;}
+.section{background:#0D1820;border:1px solid rgba(0,170,255,.10);border-radius:14px;padding:24px;margin-bottom:24px;}
+.sec-label{font-size: 12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3A5A54;margin-bottom:8px;}
+.sec-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.1rem;color:#E8F4F0;margin-bottom:8px;}
+.sec-sub{font-size:12px;color:#5A8A80;line-height:1.7;margin-bottom:20px;}
+
+.btn{height:38px;padding:0 20px;border-radius:8px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;letter-spacing:.05em;cursor:pointer;border:none;transition:filter .13s;white-space:nowrap;}
+.btn-blue{background:#00AAFF;color:#080D14;}
+.btn-green{background:#00CC44;color:#080D14;}
+.btn-ghost{background:transparent;border:1px solid rgba(0,170,255,.20);color:#7AADA0;}
+.btn:hover{filter:brightness(1.1);}
+.btn:disabled{opacity:.35;cursor:not-allowed;filter:none;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+/* Status / log */
+.log{background:var(--color-bg);border:1px solid rgba(0,170,255,.08);border-radius:8px;padding:14px;font-size: 12px;color:#5A8A80;line-height:1.8;min-height:60px;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto;}
+.log .ok{color:#00CC44;}.log .err{color:#FF5555;}.log .info{color:#00AAFF;}
+
+/* Preview table */
+.tbl-wrap{overflow-x:auto;margin-top:16px;border-radius:8px;border:1px solid rgba(0,170,255,.10);}
+table{width:100%;border-collapse:collapse;font-size: 12px;}
+th{background:#0A1520;color:#3A5A54;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(0,170,255,.10);white-space:nowrap;}
+td{padding:7px 12px;border-bottom:1px solid rgba(0,170,255,.05);color:#C8D4D0;vertical-align:middle;}
+tr:hover td{background:rgba(0,170,255,.03);}
+.badge{display:inline-block;font-size: 12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;}
+.b-ok{background:rgba(0,204,68,.10);color:#00CC44;border:1px solid rgba(0,204,68,.20);}
+.b-missing{background:rgba(255,80,80,.10);color:#FF6666;border:1px solid rgba(255,80,80,.20);}
+.b-warn{background:rgba(224,144,64,.10);color:#E09040;border:1px solid rgba(224,144,64,.20);}
+
+/* Upload zone */
+.upload-zone{border:2px dashed rgba(0,170,255,.20);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;margin-top:16px;}
+.upload-zone:hover{border-color:rgba(0,170,255,.45);background:rgba(0,170,255,.03);}
+.upload-zone input{display:none;}
+.upload-zone .uz-icon{font-size:2rem;margin-bottom:8px;}
+.upload-zone .uz-text{font-size:13px;color:#5A8A80;}
+
+/* SQL block */
+.sql-block{background:var(--color-bg);border:1px solid rgba(0,204,68,.12);border-radius:8px;padding:16px;font-size: 12px;color:#7AADA0;font-family:monospace;white-space:pre;overflow-x:auto;line-height:1.7;margin-top:12px;}
+
+/* Stats row */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.stat{background:var(--color-bg);border:1px solid rgba(0,170,255,.10);border-radius:8px;padding:10px 14px;}
+.stat-n{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.3rem;color:#00AAFF;}
+.stat-l{font-size: 12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;margin-top:2px;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+
+
+<div class="page">
+
+  <div style="margin-bottom:28px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3A5A54;margin-bottom:8px;">Admin · Data Tools</div>
+    <div style="font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.6rem;color:#E8F4F0;margin-bottom:6px;">Family Structure Tools</div>
+    <div style="font-size:13px;color:#5A8A80;line-height:1.7;">Fix parent/partner connections. Relationship titles (cousin, niece, sibling, etc.) are auto-derived from structure — not manually entered.</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n" id="s-total">–</div><div class="stat-l">Members</div></div>
+    <div class="stat"><div class="stat-n" id="s-has-parent">–</div><div class="stat-l">Has parent_1</div></div>
+    <div class="stat"><div class="stat-n" id="s-no-parent">–</div><div class="stat-l">Missing parent</div></div>
+    <div class="stat"><div class="stat-n" id="s-has-partner">–</div><div class="stat-l">Has partner</div></div>
+    <div class="stat"><div class="stat-n" id="s-rels">–</div><div class="stat-l">Relationships</div></div>
+  </div>
+
+  <!-- STEP 1: EXPORT -->
+  <div class="section">
+    <div class="sec-label">Step 1</div>
+    <div class="sec-title">Export family structure</div>
+    <div class="sec-sub">Downloads an Excel file with two sheets:<br>
+      <strong style="color:#C8D4D0;">Sheet 1 — Edit this:</strong> all 104 members, their current parent_1, parent_2, and partner assignments (shown as names). Correct any errors.<br>
+      <strong style="color:#C8D4D0;">Sheet 2 — Reference:</strong> full member directory with user_ids for lookup.</div>
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="exportExcel()" id="btn-export">Export to Excel</button>
+      <span id="export-status" style="font-size:11px;color:#3A5A54;"></span>
+    </div>
+    <div class="log" id="export-log">Ready. Click Export to generate the file.</div>
+  </div>
+
+  <!-- STEP 2: IMPORT -->
+  <div class="section">
+    <div class="sec-label">Step 2</div>
+    <div class="sec-title">Import corrected file</div>
+    <div class="sec-sub">Upload the corrected Excel file. Only columns <strong style="color:#C8D4D0;">parent_1_name</strong>, <strong style="color:#C8D4D0;">parent_2_name</strong>, and <strong style="color:#C8D4D0;">partner_name</strong> are applied. The user_id column is used to match rows — do not edit it.</div>
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleImport(event)">
+      <div class="uz-icon">📂</div>
+      <div class="uz-text">Click to select corrected Excel file</div>
+    </div>
+    <div id="preview-wrap" style="display:none;">
+      <div class="log" id="import-log" style="margin-top:12px;"></div>
+      <div class="tbl-wrap" id="preview-tbl"></div>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn btn-green" onclick="applyImport()" id="btn-apply" disabled>Apply changes to Supabase</button>
+        <button class="btn btn-ghost" onclick="cancelImport()">Cancel</button>
+        <span id="apply-status" style="font-size:11px;color:#3A5A54;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: AUTO-DERIVE -->
+  <div class="section">
+    <div class="sec-label">Step 3</div>
+    <div class="sec-title">Auto-derive relationships from structure</div>
+    <div class="sec-sub">Once parent/partner data is correct, run this SQL in Supabase SQL Editor. It clears all existing relationship entries for lightning-001 and regenerates them from the structural fields (parent_id, co_parent_id, partner_id). Relationship titles will be accurate automatically.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="copySql()">Copy SQL</button>
+      <span id="copy-status" style="font-size:11px;color:#3A5A54;"></span>
+    </div>
+    <div class="sql-block" id="sql-block">-- Step 3: Auto-derive relationships for lightning-001
+-- Run in Supabase SQL Editor after correcting parent/partner data
+-- SAFE: only clears source='derived' rows. Manual corrections are NEVER touched.
+
+-- 1. Clear only derived relationships (manual entries are preserved)
+DELETE FROM relationships WHERE network_id = 'lightning-001' AND source = 'derived';
+
+-- 2. Parent → Child  
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, parent_id, user_id, 'parent', 'derived'
+FROM users WHERE parent_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 3. Child → Parent
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, user_id, parent_id, 'child', 'derived'
+FROM users WHERE parent_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 4. Co-parent → Child
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, co_parent_id, user_id, 'parent', 'derived'
+FROM users WHERE co_parent_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 5. Child → Co-parent
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, user_id, co_parent_id, 'child', 'derived'
+FROM users WHERE co_parent_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 6. Partner (bidirectional)
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, user_id, partner_id, 'spouse', 'derived'
+FROM users WHERE partner_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT network_id, partner_id, user_id, 'spouse', 'derived'
+FROM users WHERE partner_id IS NOT NULL AND network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 7. Siblings (share same parent_id)
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT a.network_id, a.user_id, b.user_id, 'sibling', 'derived'
+FROM users a JOIN users b 
+  ON a.parent_id = b.parent_id 
+  AND a.user_id != b.user_id 
+  AND a.parent_id IS NOT NULL
+  AND a.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 8. Grandparent → Grandchild
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT p.network_id, p.parent_id, c.user_id, 'grandparent', 'derived'
+FROM users c JOIN users p ON c.parent_id = p.user_id
+WHERE p.parent_id IS NOT NULL AND c.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT p.network_id, c.user_id, p.parent_id, 'grandchild', 'derived'
+FROM users c JOIN users p ON c.parent_id = p.user_id
+WHERE p.parent_id IS NOT NULL AND c.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 9. Aunt/Uncle ↔ Niece/Nephew (parent's sibling)
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT child.network_id, sibling.user_id, child.user_id, 'aunt_uncle', 'derived'
+FROM users child
+JOIN users parent ON child.parent_id = parent.user_id
+JOIN users sibling ON sibling.parent_id = parent.parent_id AND sibling.user_id != parent.user_id
+WHERE child.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT child.network_id, child.user_id, sibling.user_id, 'niece_nephew', 'derived'
+FROM users child
+JOIN users parent ON child.parent_id = parent.user_id
+JOIN users sibling ON sibling.parent_id = parent.parent_id AND sibling.user_id != parent.user_id
+WHERE child.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+-- 10. Cousins (share grandparent)
+INSERT INTO relationships (network_id, subject_id, target_id, relation_type, source)
+SELECT a.network_id, a.user_id, b.user_id, 'cousin', 'derived'
+FROM users a
+JOIN users pa ON a.parent_id = pa.user_id
+JOIN users pb ON pb.parent_id = pa.parent_id AND pb.user_id != pa.user_id
+JOIN users b  ON b.parent_id = pb.user_id AND b.user_id != a.user_id
+WHERE a.network_id = 'lightning-001'
+ON CONFLICT DO NOTHING;
+
+SELECT 'Done. Relationships regenerated from structure.' as result;</div>
+  </div>
+
+  <!-- STEP 4: VERIFY -->
+  <div class="section">
+    <div class="sec-label">Step 4 · Optional</div>
+    <div class="sec-title">Preview current structure</div>
+    <div class="sec-sub">Review all members and their current structural assignments before or after making changes.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="loadPreview()" id="btn-preview">Load preview</button>
+    </div>
+    <div class="tbl-wrap" id="live-preview" style="display:none;margin-top:16px;"></div>
+  </div>
+
+</div>
+
+<script>
+const sb = window.ecoSB;  // shared client from eco-client.js
+
+let allMembers = [];
+let memberMap  = {};
+let pendingChanges = [];
+
+// ── LOAD STATS ────────────────────────────────────────────────
+async function loadStats() {
+  const [mRes, rRes] = await Promise.all([
+    sb.from('users').select('user_id,full_name,parent_id,co_parent_id,partner_id').limit(200),
+    sb.from('relationships').select('id', {count:'exact', head:true})
+  ]);
+  allMembers = mRes.data || [];
+  allMembers.forEach(m => memberMap[m.user_id] = m);
+
+  const hasParent  = allMembers.filter(m => m.parent_id).length;
+  const hasPartner = allMembers.filter(m => m.partner_id).length;
+
+  document.getElementById('s-total').textContent     = allMembers.length;
+  document.getElementById('s-has-parent').textContent = hasParent;
+  document.getElementById('s-no-parent').textContent  = allMembers.length - hasParent;
+  document.getElementById('s-has-partner').textContent= hasPartner;
+  document.getElementById('s-rels').textContent       = rRes.count || 0;
+}
+
+function name(id) {
+  if (!id) return '';
+  const m = memberMap[id];
+  return m ? (m.full_name || 'Unknown') : id;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+async function exportExcel() {
+  const btn = document.getElementById('btn-export');
+  const log = document.getElementById('export-log');
+  btn.disabled = true;
+  log.innerHTML = '<span class="info">Loading all members…</span>';
+
+  try {
+    const { data, error } = await sb.from('users')
+      .select('user_id,full_name,birth_mm_yyyy,gender,current_location,parent_id,co_parent_id,partner_id,bio_parent_id,platform_role,status')
+      .order('full_name').limit(200);
+
+    if (error) throw error;
+    allMembers = data || [];
+    allMembers.forEach(m => memberMap[m.user_id] = m);
+
+    log.innerHTML += '\n<span class="ok">✓ Loaded ' + allMembers.length + ' members</span>';
+
+    // Sheet 1 — Editable structure
+    const sheet1 = allMembers.map(m => ({
+      'user_id':           m.user_id,
+      'full_name':         m.full_name || '',
+      'birth_mm_yyyy':     m.birth_mm_yyyy || '',
+      'gender':            m.gender || '',
+      'current_location':  m.current_location || '',
+      'STATUS':            m.status || 'living',  // ← Edit: living / deceased / unknown
+      'NEEDS_CORRECTION':  '',                     // ← Mark YES if row has changes
+      'parent_1_name':     name(m.parent_id),      // ← Edit: type name from Directory sheet
+      'parent_2_name':     name(m.co_parent_id),   // ← Edit: type name from Directory sheet
+      'partner_name':      name(m.partner_id),     // ← Edit: type name from Directory sheet
+      'bio_parent_name':   name(m.bio_parent_id),  // ← Edit if different from parent_1
+      'NOTES':             '',                     // ← Any freeform notes
+    }));
+
+    // Sheet 2 — Directory (reference only)
+    const sheet2 = allMembers.map(m => ({
+      'user_id':   m.user_id,
+      'full_name': m.full_name || '',
+      'birth_mm_yyyy': m.birth_mm_yyyy || '',
+      'platform_role': m.platform_role || '',
+      'status':    m.status || '',
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(sheet1);
+    const ws2 = XLSX.utils.json_to_sheet(sheet2);
+
+    // Column widths
+    ws1['!cols'] = [
+      {wch:38},{wch:28},{wch:14},{wch:10},{wch:22},{wch:10},
+      {wch:28},{wch:38},{wch:28},{wch:38},{wch:28},{wch:38},{wch:28},{wch:38},{wch:30}
+    ];
+    ws2['!cols'] = [{wch:38},{wch:28},{wch:14},{wch:18},{wch:10}];
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Family Structure (EDIT)');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Member Directory (REF)');
+
+    // Sheet 3 — Other connections (friends, colleagues, etc.)
+    const existingRels = await sb.from('relationships')
+      .select('subject_id,target_id,relation_type')
+      .limit(1000);
+    const relRows = (existingRels.data||[]).map(r => ({
+      'person_name':       name(r.subject_id),
+      'connected_to_name': name(r.target_id),
+      'relation_type':     r.relation_type || '',
+      'NOTES':             '',
+    }));
+    // Add blank rows for new connections
+    for(let i=0;i<20;i++) relRows.push({'person_name':'','connected_to_name':'','relation_type':'','NOTES':''});
+    const ws3 = XLSX.utils.json_to_sheet(relRows);
+    ws3['!cols'] = [{wch:28},{wch:28},{wch:20},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Other Connections (EDIT)');
+
+    XLSX.writeFile(wb, 'ECO_FamilyStructure_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    log.innerHTML += '\n<span class="ok">✓ Excel downloaded — 3 sheets</span>';
+    log.innerHTML += '\n<span class="info">Sheet 1: family structure · Sheet 2: member directory · Sheet 3: all connections (friends, colleagues, etc.)</span>';
+    log.innerHTML += '\n<span class="info">In Sheet 3: add rows for friends with relation_type = friend, colleague, mentor, community, etc.</span>';
+
+  } catch(e) {
+    log.innerHTML += '\n<span class="err">✗ Error: ' + e.message + '</span>';
+  }
+  btn.disabled = false;
+}
+
+// ── IMPORT ────────────────────────────────────────────────────
+let importData = [];
+
+async function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const log = document.getElementById('import-log');
+  document.getElementById('preview-wrap').style.display = 'block';
+  log.innerHTML = '<span class="info">Reading file: ' + file.name + '…</span>';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      log.innerHTML += '\n<span class="ok">✓ Read ' + rows.length + ' rows from sheet: ' + wb.SheetNames[0] + '</span>';
+
+      // Check for Sheet 3 (other connections)
+      const sheet3Name = wb.SheetNames.find(n => n.includes('Other Connections'));
+      if (sheet3Name) {
+        const ws3 = wb.Sheets[sheet3Name];
+        const relRows = XLSX.utils.sheet_to_json(ws3);
+        const newRels = relRows.filter(r => r['person_name'] && r['connected_to_name'] && r['relation_type']);
+        if (newRels.length) {
+          log.innerHTML += '\n<span class="info">Sheet 3: found ' + newRels.length + ' connection rows to process</span>';
+          window._pendingRels = {rows: newRels, nameToId: {}};
+        }
+      }
+
+      // Load current members if not already loaded
+      if (!allMembers.length) {
+        const { data } = await sb.from('users').select('user_id,full_name,parent_id,co_parent_id,partner_id').limit(200);
+        allMembers = data || [];
+        allMembers.forEach(m => memberMap[m.user_id] = m);
+      }
+
+      // Build name→id lookup
+      const nameToId = {};
+      allMembers.forEach(m => {
+        if (m.full_name) nameToId[m.full_name.trim().toLowerCase()] = m.user_id;
+      });
+
+      // Process rows and find changes
+      pendingChanges = [];
+      const errors = [];
+
+      rows.forEach((row, i) => {
+        const uid = (row['user_id'] || '').trim();
+        if (!uid || !memberMap[uid]) {
+          errors.push(`Row ${i+2}: user_id not found — "${uid}"`);
+          return;
+        }
+        const current = memberMap[uid];
+        const updates = {};
+
+        // Resolve parent_1_name → user_id
+        const p1name = (row['parent_1_name'] || '').trim();
+        const p1id   = (row['parent_1_id']   || '').trim();
+        const resolvedP1 = p1id || (p1name ? nameToId[p1name.toLowerCase()] : null) || null;
+        if (resolvedP1 !== (current.parent_id || null)) updates.parent_id = resolvedP1 || null;
+
+        const p2name = (row['parent_2_name'] || '').trim();
+        const p2id   = (row['parent_2_id']   || '').trim();
+        const resolvedP2 = p2id || (p2name ? nameToId[p2name.toLowerCase()] : null) || null;
+        if (resolvedP2 !== (current.co_parent_id || null)) updates.co_parent_id = resolvedP2 || null;
+
+        const ptname = (row['partner_name'] || '').trim();
+        const ptid   = (row['partner_id']   || '').trim();
+        const resolvedPt = ptid || (ptname ? nameToId[ptname.toLowerCase()] : null) || null;
+        if (resolvedPt !== (current.partner_id || null)) updates.partner_id = resolvedPt || null;
+
+        if (Object.keys(updates).length > 0) {
+          pendingChanges.push({ user_id: uid, full_name: current.full_name, updates, row });
+        }
+      });
+
+      if (errors.length) {
+        log.innerHTML += '\n<span class="err">⚠ ' + errors.length + ' rows skipped (user_id not found)</span>';
+      }
+      log.innerHTML += '\n<span class="ok">✓ Found ' + pendingChanges.length + ' changes to apply</span>';
+
+      // Render preview table
+      renderChangePreview(pendingChanges);
+
+      document.getElementById('btn-apply').disabled = pendingChanges.length === 0;
+
+    } catch(err) {
+      log.innerHTML += '\n<span class="err">✗ Error reading file: ' + err.message + '</span>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderChangePreview(changes) {
+  const wrap = document.getElementById('preview-tbl');
+  if (!changes.length) {
+    wrap.innerHTML = '<div style="padding:16px;font-size:12px;color:#3A5A54;">No changes detected.</div>';
+    return;
+  }
+  const rows = changes.map(c => {
+    const fields = Object.entries(c.updates).map(([k,v]) => {
+      const oldVal = name(c.row[k.replace('_id','_name')] || '') || '(none)';
+      const newVal = name(v) || '(none)';
+      return `<span style="color:#E09040">${k}</span>: ${oldVal} → <span style="color:#00CC44">${newVal}</span>`;
+    }).join('<br>');
+    return `<tr><td>${c.full_name || c.user_id}</td><td>${fields}</td></tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table><thead><tr><th>Member</th><th>Changes</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function applyImport() {
+  const btn = document.getElementById('btn-apply');
+  const status = document.getElementById('apply-status');
+  btn.disabled = true;
+  status.textContent = 'Applying…';
+
+  let applied = 0, failed = 0;
+  for (const change of pendingChanges) {
+    const { error } = await sb.from('users').update(change.updates).eq('user_id', change.user_id);
+    if (error) { failed++; console.error(error); }
+    else applied++;
+  }
+
+  // Apply Sheet 3 — other connections
+  let relsApplied = 0;
+  if (window._pendingRels) {
+    const nameToId = {};
+    allMembers.forEach(m => { if(m.full_name) nameToId[m.full_name.trim().toLowerCase()] = m.user_id; });
+    for (const r of window._pendingRels.rows) {
+      const sId = nameToId[(r['person_name']||'').trim().toLowerCase()];
+      const tId = nameToId[(r['connected_to_name']||'').trim().toLowerCase()];
+      if (!sId || !tId) continue;
+      const { error } = await sb.from('relationships').upsert({
+        subject_id: sId, target_id: tId,
+        relation_type: r['relation_type'],
+        network_id: 'lightning-001',
+        source: 'manual'
+      }, {onConflict:'subject_id,target_id'});
+      if (!error) relsApplied++;
+    }
+    window._pendingRels = null;
+  }
+
+  status.textContent = `✓ ${applied} members updated${relsApplied > 0 ? ` · ${relsApplied} connections saved` : ''}${failed > 0 ? ` · ${failed} failed` : ''}`;
+  document.getElementById('import-log').innerHTML +=
+    `\n<span class="${failed>0?'err':'ok'}">Done: ${applied} applied, ${failed} failed.</span>`;
+  document.getElementById('import-log').innerHTML +=
+    '\n<span class="info">Now run the SQL in Step 3 to regenerate relationship titles.</span>';
+
+  // Reload stats
+  await loadStats();
+}
+
+function cancelImport() {
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  pendingChanges = [];
+}
+
+// ── LIVE PREVIEW ──────────────────────────────────────────────
+async function loadPreview() {
+  const wrap = document.getElementById('live-preview');
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="padding:12px;font-size:12px;color:#3A5A54;">Loading…</div>';
+
+  const { data } = await sb.from('users')
+    .select('user_id,full_name,birth_mm_yyyy,parent_id,co_parent_id,partner_id,status')
+    .order('full_name').limit(200);
+
+  if (!data) { wrap.innerHTML = '<div style="padding:12px;color:#FF6666;">Failed to load.</div>'; return; }
+  allMembers = data;
+  allMembers.forEach(m => memberMap[m.user_id] = m);
+
+  const rows = data.map(m => {
+    const p1badge = m.parent_id ? `<span class="badge b-ok">${name(m.parent_id)}</span>` : `<span class="badge b-missing">missing</span>`;
+    const p2badge = m.co_parent_id ? `<span class="badge b-ok">${name(m.co_parent_id)}</span>` : `<span class="badge b-warn">none</span>`;
+    const ptbadge = m.partner_id ? `<span class="badge b-ok">${name(m.partner_id)}</span>` : `<span class="badge b-warn">none</span>`;
+    return `<tr>
+      <td>${m.full_name||'?'}</td>
+      <td style="color:#5A8A80;font-size:10px;">${m.birth_mm_yyyy||''}</td>
+      <td>${p1badge}</td>
+      <td>${p2badge}</td>
+      <td>${ptbadge}</td>
+      <td><span class="badge ${m.status==='living'?'b-ok':'b-warn'}">${m.status||''}</span></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Born</th><th>Parent 1</th><th>Parent 2</th><th>Partner</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── SQL COPY ──────────────────────────────────────────────────
+function copySql() {
+  const sql = document.getElementById('sql-block').textContent;
+  navigator.clipboard.writeText(sql).then(() => {
+    document.getElementById('copy-status').textContent = '✓ Copied to clipboard';
+    setTimeout(() => document.getElementById('copy-status').textContent = '', 2000);
+  });
+}
+
+loadStats();
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

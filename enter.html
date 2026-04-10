@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EternalCurrent — Enter</title>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var(--color-text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+
+.eco-wordmark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:2.8rem;letter-spacing:.08em;line-height:1;margin-bottom:8px;text-align:center;}
+.eco-e{color:#00AAFF;}.eco-c{color:#00CC44;}.eco-o{color:#FFFFFF;}
+.tagline{font-size:13px;color:#5A8A80;letter-spacing:.06em;margin-bottom:36px;text-align:center;}
+
+.card{width:100%;max-width:420px;background:#0D1820;border:1px solid rgba(0,170,255,.12);border-radius:16px;padding:28px 24px;}
+
+.state{display:none;}
+.state.active{display:block;}
+
+.invite-banner{background:rgba(0,204,68,.07);border:1px solid rgba(0,204,68,.18);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#7AADA0;line-height:1.6;}
+.invite-banner strong{color:#00CC44;}
+
+.step-label{font-size: 12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3A5A54;margin-bottom:10px;}
+.question{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.1rem;color:#E8F4F0;margin-bottom:6px;line-height:1.3;}
+.sub-text{font-size:12px;color:#5A8A80;margin-bottom:20px;line-height:1.6;}
+
+.eco-input{width:100%;background:var(--color-bg);border:1px solid rgba(0,170,255,.18);border-radius:8px;padding:12px 14px;font-size:14px;font-family:Arial,Helvetica,sans-serif;color:var(--color-text);outline:none;margin-bottom:12px;transition:border-color .15s;}
+.eco-input:focus{border-color:rgba(0,170,255,.45);}
+.eco-input::placeholder{color:#3A5A54;}
+.pw-wrap{position:relative;margin-bottom:12px;}
+.pw-wrap .eco-input{margin-bottom:0;padding-right:44px;}
+.pw-eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;color:#3A5A54;font-size:16px;user-select:none;transition:color .15s;}
+.pw-eye:hover{color:#00AAFF;}
+
+.btn-primary{width:100%;background:#00AAFF;color:#080D14;border:none;border-radius:8px;padding:13px 20px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;letter-spacing:.05em;cursor:pointer;transition:filter .13s;margin-bottom:10px;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-primary.green{background:#00CC44;}
+
+.btn-secondary{width:100%;background:transparent;border:1px solid rgba(0,170,255,.18);color:#7AADA0;border-radius:8px;padding:11px 20px;font-family:Arial,Helvetica,sans-serif;font-size:13px;cursor:pointer;transition:all .13s;margin-bottom:8px;}
+.btn-secondary:hover{border-color:rgba(0,170,255,.4);color:#E8F4F0;}
+
+.btn-ghost{background:transparent;border:none;color:#3A5A54;font-size:12px;cursor:pointer;padding:6px 0;font-family:Arial,Helvetica,sans-serif;}
+.btn-ghost:hover{color:#7AADA0;}
+.wl-msg-eco{align-self:flex-start;background:#0D1820;border:1px solid rgba(0,170,255,.15);border-radius:10px 10px 10px 2px;padding:10px 14px;font-size:13px;color:#C8D4D0;line-height:1.6;max-width:90%;}
+.wl-msg-user{align-self:flex-end;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.2);border-radius:10px 10px 2px 10px;padding:10px 14px;font-size:13px;color:#E8F4F0;line-height:1.6;max-width:90%;}
+.wl-typing{align-self:flex-start;padding:6px 12px;color:#3A5A54;font-size:12px;font-style:italic;}
+
+.option-chips{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.chip{padding:11px 16px;border-radius:8px;border:1px solid rgba(0,170,255,.15);background:var(--color-bg);color:#7AADA0;font-size:13px;cursor:pointer;transition:all .13s;text-align:left;}
+.chip:hover,.chip.selected{border-color:rgba(0,170,255,.5);color:#E8F4F0;background:rgba(0,170,255,.07);}
+
+.progress-dots{display:flex;gap:6px;justify-content:center;margin-top:20px;}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(0,170,255,.18);transition:background .15s;}
+.dot.active{background:#00AAFF;}
+.dot.done{background:rgba(0,204,68,.5);}
+
+.success-icon{font-size:3rem;text-align:center;margin-bottom:16px;}
+.success-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.3rem;color:#E8F4F0;margin-bottom:8px;text-align:center;}
+.success-sub{font-size:13px;color:#5A8A80;text-align:center;line-height:1.7;}
+
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:#3A5A54;font-size: 12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.08);}
+
+.err{border-color:rgba(255,80,80,.5) !important;}
+
+.footer-note{margin-top:24px;font-size: 12px;color:#3A5A54;text-align:center;line-height:1.7;max-width:320px;}
+</style>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+</head>
+<body>
+<div id="eco-header"></div>
+<div style="font-family:'Arial Black','Arial',sans-serif;font-size:9px;font-weight:700;letter-spacing:.13em;line-height:1;text-align:center;white-space:nowrap;">
+        <span style="color:#00AAFF;">Eternal</span><span style="color:#00CC44;">Current</span><span style="color:#FFFFFF;">.Online</span>
+      </div>
+    </div>
+  </a>
+</div>
+<div style="height:64px;"></div>
+
+<div class="eco-wordmark"><span class="eco-e">E</span><span class="eco-c">C</span><span class="eco-o">O</span></div>
+<div class="tagline">Only Yours. Forever.</div>
+
+<div class="card">
+
+  <!-- brand / organic landing -->
+  <div class="state active" id="s-brand">
+    <div class="step-label">Welcome</div>
+    <div class="question">Your family's story lives here.</div>
+    <div class="sub-text">EternalCurrent maps the people, places, and moments that make you — across generations, borders, and time.</div>
+    <button class="btn-primary green" onclick="go('s-returning')">I already have an account</button>
+    <button class="btn-primary" onclick="go('s-wl-conv')">I'm new — start my story</button>
+  </div>
+
+  <!-- invite path -->
+  <div class="state" id="s-invite">
+    <div class="invite-banner"><strong id="inviter-name">Someone</strong> has invited you to join <strong id="network-name">their network</strong> on EternalCurrent.</div>
+    <div class="question">You're invited.</div>
+    <div class="sub-text">EternalCurrent maps multi-generational family connections — the people, places, and moments that make you.</div>
+    <button class="btn-primary green" onclick="acceptInvite()">Join the network</button>
+    <button class="btn-secondary" onclick="go('s-new-q1')">Explore ECO first</button>
+  </div>
+
+  <!-- returning user — magic link -->
+  <div class="state" id="s-returning">
+    <div class="step-label">Welcome back</div>
+    <div class="question">Sign in to ECO.</div>
+    <div class="sub-text">Enter your email to continue.</div>
+    <input class="eco-input" type="email" id="magic-email" placeholder="your@email.com" oninput="checkEmailInput()" />
+    <div id="s-returning-options" style="display:none;">
+      <div class="pw-wrap" style="margin-top:4px;"><input class="eco-input" type="password" id="pw-input" placeholder="Password (if you have one)"><span class="pw-eye" onclick="togglePw('pw-input',this)">👁</span></div>
+      <button class="btn-primary green" onclick="signInWithPassword()">Sign in with password</button>
+      <div style="text-align:center;margin:10px 0;font-size:12px;color:rgba(255,255,255,0.3);">— or —</div>
+      <button class="btn-primary" onclick="sendMagicLink()">Send magic link instead</button>
+    </div>
+    <div id="s-returning-next" style="display:none;">
+      <button class="btn-primary green" onclick="showSignInOptions()">Continue →</button>
+    </div>
+    <div id="pw-error" style="color:#ff5050;font-size:12px;margin-top:8px;display:none;"></div>
+    <button class="btn-ghost" onclick="go('s-brand')" style="margin-top:12px;">← Back</button>
+  </div>
+
+  <!-- magic link sent -->
+  <div class="state" id="s-magic-sent">
+    <div class="success-icon">📬</div>
+    <div class="success-title">Check your inbox.</div>
+    <div class="success-sub">We sent a sign-in link to <strong id="sent-to-email" style="color:#00AAFF;"></strong>.<br><br>Tap the link to enter ECO. Valid for 60 minutes.</div>
+    <div style="margin-top:20px;"><button class="btn-ghost" onclick="go('s-returning')" style="width:100%;text-align:center;">Resend or use a different email</button></div>
+  </div>
+
+  <!-- new Q1 — name -->
+  <!-- WAITLIST: AI conversational flow -->
+  <div class="state" id="s-wl-conv">
+    <div class="step-label">Tell us about your family</div>
+    <div id="wl-thread" style="min-height:80px;max-height:240px;overflow-y:auto;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;">
+      <div class="wl-msg-eco">Hi! I'm ECO. We'd love to learn a little about you and your family. What's your first name?</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input class="eco-input" id="wl-chat-input" placeholder="Type your answer…" style="flex:1;margin:0;"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();wlSend();}" />
+      <button class="btn-primary green" onclick="wlSend()" style="padding:11px 18px;white-space:nowrap;">→</button>
+    </div>
+    <button class="btn-ghost" onclick="go('s-brand')" style="margin-top:10px;width:100%;text-align:center;">← Back</button>
+  </div>
+
+  <div class="state" id="s-new-q1">
+    <div class="step-label">Step 1 of 5</div>
+    <div class="question">What's your name?</div>
+    <div class="sub-text">First name is enough to start.</div>
+    <input class="eco-input" type="text" id="wl-name" placeholder="Your first name" />
+    <button class="btn-primary" onclick="nextStep('s-new-q2', validateName)">Continue</button>
+    <button class="btn-ghost" onclick="go('s-brand')">← Back</button>
+    <div class="progress-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+
+  <!-- new Q2 — email -->
+  <div class="state" id="s-new-q2">
+    <div class="step-label">Step 2 of 5</div>
+    <div class="question">Your email?</div>
+    <div class="sub-text">You are not the product. You never will be. We use your email only to reach you.</div>
+    <input class="eco-input" type="email" id="wl-email" placeholder="your@email.com" />
+    <button class="btn-primary" onclick="nextStep('s-new-q3', validateEmail)">Continue</button>
+    <button class="btn-ghost" onclick="go('s-new-q1')">← Back</button>
+    <div class="progress-dots"><div class="dot done"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+
+  <!-- new Q3 — intent chips -->
+  <div class="state" id="s-new-q3">
+    <div class="step-label">Step 3 of 5</div>
+    <div class="question">What brings you here?</div>
+    <div class="sub-text">Tap one.</div>
+    <div class="option-chips">
+      <div class="chip" onclick="selectChip(this,'family')">🌳 Mapping my family network</div>
+      <div class="chip" onclick="selectChip(this,'culture')">🌐 Preserving cultural memory</div>
+      <div class="chip" onclick="selectChip(this,'both')">✦ Both — it's the same thing</div>
+      <div class="chip" onclick="selectChip(this,'curious')">👀 Curious — just exploring</div>
+    </div>
+    <button class="btn-primary" id="btn-q3" onclick="nextStep('s-new-q4', validateChip)" style="opacity:.4;pointer-events:none;">Continue</button>
+    <button class="btn-ghost" onclick="go('s-new-q2')">← Back</button>
+    <div class="progress-dots"><div class="dot done"></div><div class="dot done"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+
+  <!-- new Q4 — network name -->
+  <div class="state" id="s-new-q4">
+    <div class="step-label">Step 4 of 5</div>
+    <div class="question">What would you call your network?</div>
+    <div class="sub-text">A family name, a place, a word that holds you. You can change this anytime.</div>
+    <input class="eco-input" type="text" id="wl-network" placeholder="e.g. The Bakshis · London Branch" />
+    <button class="btn-primary" onclick="nextStep('s-new-q5', ()=>true)">Continue</button>
+    <button class="btn-ghost" onclick="go('s-new-q3')">← Back</button>
+    <div class="progress-dots"><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot active"></div><div class="dot"></div></div>
+  </div>
+
+  <!-- new Q5 — family note -->
+  <div class="state" id="s-new-q5">
+    <div class="step-label">Step 5 of 5</div>
+    <div class="question">One thing about your family you want to remember forever.</div>
+    <div class="sub-text">A name, a place, a habit, a word. Anything.</div>
+    <input class="eco-input" type="text" id="wl-note" placeholder="e.g. We always called it dadi's house" />
+    <button class="btn-primary green" onclick="submitWaitlist()">I'm in →</button>
+    <button class="btn-ghost" onclick="go('s-new-q4')">← Back</button>
+    <div class="progress-dots"><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot active"></div></div>
+  </div>
+
+  <!-- waitlist done -->
+  <div class="state" id="s-done">
+    <div class="success-icon">✦</div>
+    <div class="success-title" id="done-name">Thank you.</div>
+    <div class="success-sub">We have everything we need. You will hear from us soon.<br><br>Your story is already here.</div>
+  </div>
+
+  <!-- password reset -->
+  <div class="state" id="s-reset-pw">
+    <div class="success-icon">🔑</div>
+    <div class="success-title">Set a new password</div>
+    <div class="success-sub" style="margin-bottom:16px;">Enter a new password for your account.</div>
+    <div class="pw-wrap"><input class="eco-input" type="password" id="reset-pw-1" placeholder="New password (min 8 characters)"><span class="pw-eye" onclick="togglePw('reset-pw-1',this)">👁</span></div>
+    <div class="pw-wrap"><input class="eco-input" type="password" id="reset-pw-2" placeholder="Confirm new password"><span class="pw-eye" onclick="togglePw('reset-pw-2',this)">👁</span></div>
+    <div id="reset-pw-error" style="color:#FF6B6B;font-size:12px;margin-top:6px;display:none;"></div>
+    <button class="btn-primary green" onclick="submitNewPassword()" style="margin-top:12px;">Set Password →</button>
+  </div>
+
+  <!-- password reset success -->
+  <div class="state" id="s-reset-done">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Password updated.</div>
+    <div class="success-sub">You are signed in. Taking you to your network…</div>
+  </div>
+
+</div><!-- /card -->
+
+<div class="footer-note">Only energy — Compounding, Communicating, Conjoining.</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = window.ecoSB || null;  // Use shared client from eco-client.js
+
+const wl = {name:'',email:'',intent:'',network:'',note:''};
+
+function go(id){
+  document.querySelectorAll('.state').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── AI WAITLIST CONVERSATION ──────────────────────────
+const WL_SYSTEM = `You are ECO's welcome companion for EternalCurrent.Online — an invite-only family network platform.
+Your job: collect 5 pieces of info through warm, natural conversation to help connect them to their network. Ask one question at a time.
+Questions in order:
+1. First name
+2. Email address
+3. What brings them here (family mapping, cultural memory, both, or just curious)
+4. What they would call their network (a family name, place, or word)
+5. One thing about their family they want to remember forever
+
+After all 5 are collected, say exactly: "WAITLIST_COMPLETE" then on the next line output ONLY valid JSON:
+{"name":"...","email":"...","intent":"...","network":"...","note":"..."}
+
+Rules:
+- Warm, brief, no corporate language
+- If they give vague answers, accept them — do not push
+- Never mention that you are Claude or an AI assistant
+- Keep each response under 2 sentences
+- Do not number the questions out loud`;
+
+let wlHistory = [
+  { role:'assistant', content:"Hi! I'm ECO. We'd love to learn a little about you and your family. What's your first name?" }
+];
+
+function wlAppend(type, text) {
+  const thread = document.getElementById('wl-thread');
+  const div = document.createElement('div');
+  div.className = type === 'eco' ? 'wl-msg-eco' : type === 'user' ? 'wl-msg-user' : 'wl-typing';
+  div.textContent = text;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  return div;
+}
+
+async function wlSend() {
+  const input = document.getElementById('wl-chat-input');
+  const text = (input.value || '').trim();
+  if (!text) return;
+  input.value = '';
+  wlAppend('user', text);
+  wlHistory.push({ role:'user', content: text });
+
+  const typing = wlAppend('typing', 'ECO is listening…');
+
+  try {
+    const res = await fetch(CLAUDE_PROXY, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-haiku-4-5-20251001', max_tokens:300,
+        system: WL_SYSTEM,
+        messages: wlHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || '';
+    typing.remove();
+
+    if (reply.includes('WAITLIST_COMPLETE')) {
+      // Extract JSON
+      const jsonStart = reply.indexOf('{');
+      if (jsonStart !== -1) {
+        try {
+          const parsed = JSON.parse(reply.slice(jsonStart));
+          wl.name = parsed.name || '';
+          wl.email = parsed.email || '';
+          wl.intent = parsed.intent || '';
+          wl.network = parsed.network || '';
+          wl.note = parsed.note || '';
+          wlAppend('eco', "You're all set — welcome to the list. Submitting your spot now…");
+          wlHistory.push({ role:'assistant', content: "You're all set — welcome to the list." });
+          setTimeout(submitWaitlist, 1200);
+          return;
+        } catch(e) { /* fall through to show reply */ }
+      }
+    }
+
+    wlAppend('eco', reply);
+    wlHistory.push({ role:'assistant', content: reply });
+  } catch(e) {
+    typing.remove();
+    wlAppend('eco', "Something went wrong — let's try the step-by-step form instead.");
+    setTimeout(() => go('s-new-q1'), 1500);
+  }
+}
+(function(){
+  const p = new URLSearchParams(window.location.search);
+  const token=p.get('invite'), from=p.get('from'), net=p.get('network');
+  if(token){
+    document.getElementById('inviter-name').textContent = from || 'Someone';
+    document.getElementById('network-name').textContent = net  || 'their family network';
+    sessionStorage.setItem('inviteToken', token);
+    go('s-invite');
+  }
+})();
+
+// Password reset detection — Supabase sends #access_token=...&type=recovery
+(function(){
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    // Supabase JS will auto-exchange the token; wait briefly then show reset UI
+    go('s-reset-pw');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+})();
+
+async function submitNewPassword() {
+  const pw1 = document.getElementById('reset-pw-1').value;
+  const pw2 = document.getElementById('reset-pw-2').value;
+  const errEl = document.getElementById('reset-pw-error');
+  errEl.style.display = 'none';
+  if (pw1.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display='block'; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; errEl.style.display='block'; return; }
+  const btn = document.querySelector('#s-reset-pw .btn-primary');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  if (error) {
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+    btn.textContent = 'Set Password →'; btn.disabled = false;
+    return;
+  }
+  go('s-reset-done');
+  setTimeout(() => { window.location.href = 'user.html'; }, 2000);
+}
+
+// Validation
+function validateName() {
+  const ok = document.getElementById('wl-name').value.trim().length > 0;
+  if(!ok) flash('wl-name'); return ok;
+}
+function validateEmail() {
+  const v=document.getElementById('wl-email').value.trim();
+  const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  if(!ok) flash('wl-email'); return ok;
+}
+function validateChip() { return wl.intent !== ''; }
+
+function flash(id){
+  const el=document.getElementById(id);
+  el.classList.add('err');
+  setTimeout(()=>el.classList.remove('err'),1400);
+}
+
+function nextStep(target, validate){
+  if(!validate()) return;
+  const cur=document.querySelector('.state.active');
+  if(cur.id==='s-new-q1') wl.name    = document.getElementById('wl-name').value.trim();
+  if(cur.id==='s-new-q2') wl.email   = document.getElementById('wl-email').value.trim();
+  if(cur.id==='s-new-q4') wl.network = document.getElementById('wl-network').value.trim();
+  go(target);
+}
+
+function selectChip(el, val){
+  el.closest('.option-chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  wl.intent = val;
+  const btn=document.getElementById('btn-q3');
+  btn.style.opacity='1'; btn.style.pointerEvents='auto';
+}
+
+function checkEmailInput() {
+  const email = document.getElementById('magic-email').value.trim();
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  document.getElementById('s-returning-next').style.display = valid ? 'block' : 'none';
+  document.getElementById('s-returning-options').style.display = 'none';
+}
+
+function showSignInOptions() {
+  document.getElementById('s-returning-next').style.display = 'none';
+  document.getElementById('s-returning-options').style.display = 'block';
+  document.getElementById('pw-input').focus();
+}
+
+async function signInWithPassword() {
+  const email = document.getElementById('magic-email').value.trim();
+  const pw = document.getElementById('pw-input').value;
+  const errEl = document.getElementById('pw-error');
+  errEl.style.display = 'none';
+  if (!pw) { errEl.textContent = 'Enter your password.'; errEl.style.display='block'; return; }
+  if (!sb) return;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    if (error.message.includes('Invalid')) {
+      errEl.textContent = 'Wrong password. Try magic link or reset your password.';
+    } else if (error.message.includes('not confirmed') || error.message.includes('Email not confirmed')) {
+      errEl.textContent = 'Email not confirmed — use magic link to sign in first.';
+    } else {
+      errEl.textContent = error.message;
+    }
+    errEl.style.display = 'block';
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+    window.location.href = next ? next : 'user.html';
+  }
+}
+
+async function sendMagicLink(){
+  const email=document.getElementById('magic-email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    flash('magic-email'); return;
+  }
+  if(sb) await sb.auth.signInWithOtp({email, options:{emailRedirectTo:'https://eternalcurrent.online/'+(new URLSearchParams(window.location.search).get('next')||'user.html')}});
+  document.getElementById('sent-to-email').textContent = email;
+  go('s-magic-sent');
+}
+
+function acceptInvite(){
+  // Preserve token, route through magic link auth
+  go('s-returning');
+}
+
+async function submitWaitlist(){
+  wl.note = document.getElementById('wl-note').value.trim();
+  if(sb){
+    await sb.from('waitlist').insert([{
+      name:wl.name, email:wl.email, intent:wl.intent,
+      network_name:wl.network, family_note:wl.note,
+      created_at:new Date().toISOString()
+    }]);
+  }
+  document.getElementById('done-name').textContent = wl.name ? wl.name+', you\'re in.' : 'You\'re in.';
+  go('s-done');
+}
+
+function togglePw(id, eye) {
+  const input = document.getElementById(id);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  eye.textContent = show ? '🙈' : '👁';
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

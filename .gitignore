@@ -1,0 +1,5 @@
+Website-archive/
+*.docx
+*.sql
+*.txt
+node_modules/

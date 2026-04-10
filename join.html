@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Join the Network</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}
+.shell{width:100%;max-width:480px;}
+.eco-mark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.5rem;margin-bottom:32px;}
+.eco-mark span:nth-child(1){color:#00AAFF;}
+.eco-mark span:nth-child(2){color:#00CC44;}
+.eco-mark span:nth-child(3){color:#FFF;}
+
+/* INVITER CARD */
+.inviter-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:24px;display:flex;align-items:center;gap:14px;}
+.inv-av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:16px;flex-shrink:0;}
+.inv-name{font-size:15px;font-weight:700;color:var(--white);}
+.inv-sub{font-size:13px;color:var(--dim);margin-top:3px;line-height:1.5;}
+
+/* STEPS */
+.step{display:none;}
+.step.active{display:block;}
+.step-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.3rem;color:var(--white);margin-bottom:6px;}
+.step-sub{font-size:13px;color:var(--dim);line-height:1.65;margin-bottom:22px;}
+
+/* FIELDS */
+.field-label{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:6px;margin-top:14px;}
+.field-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:14px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;}
+.field-input:focus{border-color:rgba(0,170,255,.45);}
+
+/* SEARCH */
+.search-result{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.search-result:hover{border-color:var(--blue);}
+.sr-name{font-size:14px;font-weight:700;color:var(--white);}
+.sr-meta{font-size:12px;color:var(--dim);margin-top:3px;}
+
+/* AGE */
+.age-check{display:flex;align-items:center;gap:10px;margin:14px 0;cursor:pointer;}
+.age-check input{width:18px;height:18px;accent-color:var(--blue);}
+.age-check span{font-size:13px;color:var(--dim);}
+
+/* BUTTONS */
+.btn-primary{width:100%;background:var(--blue);color:var(--bg);border:none;border-radius:10px;padding:13px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;cursor:pointer;transition:filter .15s;margin-top:8px;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{width:100%;background:none;border:1px solid var(--border);color:var(--dim);border-radius:10px;padding:12px;font-size:13px;cursor:pointer;margin-top:10px;transition:all .15s;}
+.btn-ghost:hover{border-color:var(--white);color:var(--white);}
+.divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--dim);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.err{font-size:12px;color:#ff6b6b;margin-top:8px;min-height:16px;}
+.pw-wrap{position:relative;}
+.pw-wrap .field-input{padding-right:44px;}
+.pw-eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);font-size:16px;user-select:none;}
+.pw-eye:hover{color:var(--blue);}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="eco-mark"><span>E</span><span>C</span><span>O</span></div>
+  <div id="inviter-wrap"></div>
+
+  <!-- STEP 1: FIND OR CREATE -->
+  <div class="step active" id="step-1">
+    <div class="step-title">You've been invited.</div>
+    <div class="step-sub">Search to see if you're already in this network, or create a new profile to join.</div>
+
+    <div class="field-label">Search for yourself first</div>
+    <input class="field-input" id="join-search" placeholder="Your first or last name…" autocomplete="off" oninput="onJoinSearch(this.value)">
+    <div id="join-results" style="margin-top:8px;"></div>
+
+    <div class="divider">or create new</div>
+
+    <button class="btn-primary" onclick="goStep(2)">Create a new profile →</button>
+  </div>
+
+  <!-- STEP 2: REGISTER -->
+  <div class="step" id="step-2">
+    <div class="step-title">Create your profile</div>
+    <div class="step-sub">Enter your details to join the network.</div>
+
+    <div class="field-label">Your name</div>
+    <input class="field-input" id="j-name" placeholder="Your full name" autocomplete="name">
+
+    <div class="field-label">Email address</div>
+    <input class="field-input" id="j-email" type="email" placeholder="your@email.com" autocomplete="email" style="margin-top:0;">
+
+    <div class="field-label">Password</div>
+    <div class="pw-wrap">
+      <input class="field-input" id="j-password" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      <span class="pw-eye" onclick="togglePw('j-password',this)">👁</span>
+    </div>
+
+    <div id="j-rel-wrap" style="display:none;">
+      <div class="field-label">Your relationship to <span id="j-inviter-name">your contact</span></div>
+      <select class="field-input" id="j-rel">
+        <option value="Friend">Friend</option>
+        <option value="Cousin">Cousin</option>
+        <option value="Sibling">Sibling</option>
+        <option value="Spouse">Spouse</option>
+        <option value="Child">Child</option>
+        <option value="Parent">Parent</option>
+        <option value="NieceNephew">Niece/Nephew</option>
+        <option value="AuntUncle">Aunt/Uncle</option>
+        <option value="InLaw">In-Law</option>
+        <option value="Other">Other connection</option>
+      </select>
+    </div>
+
+    <label class="age-check">
+      <input type="checkbox" id="j-age">
+      <span>I confirm I am 18 years of age or older</span>
+    </label>
+    <div class="err" id="j-err"></div>
+    <button class="btn-primary" id="j-btn" onclick="registerGuest()">Join the network →</button>
+    <button class="btn-ghost" onclick="goStep(1)">← Go back</button>
+  </div>
+
+  <!-- STEP 3: SUCCESS -->
+  <div class="step" id="step-3">
+    <div style="text-align:center;padding:24px 0;">
+      <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+      <div class="step-title" style="text-align:center;">You're in.</div>
+      <div class="step-sub" style="text-align:center;margin-top:8px;">Your profile is live. Your network is waiting.</div>
+      <button class="btn-primary" onclick="window.location.href='user.html'" style="margin-top:24px;">Open my network →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function getSB(){ return window.ecoSB; }
+const params = new URLSearchParams(location.search);
+const REF_ID = params.get('ref');
+let _inviter = null;
+let _searchTimer = null;
+
+const AV_COLORS = ['#1A6B5A','#2D4A8A','#7A3B5E','#4A5A2A'];
+function av(s){ return AV_COLORS[(s||'').charCodeAt(0)%AV_COLORS.length]; }
+function ini(n){ return (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+// Load inviter info
+;(function waitReady(){
+  if(!window.ecoSB){ setTimeout(waitReady,80); return; }
+  // Check if already signed in
+  getSB().auth.getSession().then(({data:{session}})=>{
+    if(session){
+      // Already signed in — send to user.html
+      window.location.href='user.html'; return;
+    }
+  });
+  if(REF_ID){
+    getSB().from('users').select('user_id,full_name,current_location')
+      .eq('user_id',REF_ID).maybeSingle().then(({data:inv})=>{
+        if(!inv) return;
+        _inviter = inv;
+        document.getElementById('inviter-wrap').innerHTML = `
+          <div class="inviter-card">
+            <div class="inv-av" style="background:${av(inv.user_id)}">${ini(inv.full_name)}</div>
+            <div><div class="inv-name">${inv.full_name}</div>
+            <div class="inv-sub">has invited you to EternalCurrent.Online —<br>your family's story, in one place.</div></div>
+          </div>`;
+        document.getElementById('j-inviter-name').textContent = inv.full_name;
+        document.getElementById('j-rel-wrap').style.display='block';
+      });
+  }
+})();
+
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Search existing profiles
+function onJoinSearch(q){
+  clearTimeout(_searchTimer);
+  const el = document.getElementById('join-results');
+  if(q.trim().length<2){ el.innerHTML=''; return; }
+  _searchTimer = setTimeout(async()=>{
+    const {data:m1} = await getSB().from('users')
+      .select('user_id,full_name,birth_mm_yyyy,birth_location,auth_id')
+      .eq('network_id','lightning-001').is('auth_id',null)
+      .ilike('full_name',`%${q.trim()}%`).limit(5);
+    const {data:m2} = await getSB().from('users')
+      .select('user_id,full_name,birth_mm_yyyy,birth_location,auth_id')
+      .eq('network_id','lightning-001').is('auth_id',null)
+      .ilike('first_name',`%${q.trim()}%`).limit(5);
+    const seen=new Set();
+    const matches=[...(m1||[]),...(m2||[])].filter(m=>{
+      if(seen.has(m.user_id)) return false; seen.add(m.user_id); return true;
+    }).slice(0,5);
+    el.innerHTML = matches.length
+      ? matches.map(m=>`<div class="search-result" onclick="selectExistingProfile('${m.user_id}')">
+          <div class="sr-name">${m.full_name}</div>
+          <div class="sr-meta">${[m.birth_mm_yyyy,m.birth_location].filter(Boolean).join(' · ')||'Network member'}</div>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--dim);padding:8px 0;">No matches — create a new profile below.</div>';
+  },280);
+}
+
+function selectExistingProfile(userId){
+  // Pre-fill name in step 2, pass the user_id for claiming
+  window._claimUserId = userId;
+  window.location.href = `claim.html?prefill=${userId}${REF_ID?'&ref='+REF_ID:''}`;
+}
+
+async function registerGuest(){
+  const name     = document.getElementById('j-name').value.trim();
+  const email    = document.getElementById('j-email').value.trim();
+  const password = document.getElementById('j-password').value;
+  const ageOk    = document.getElementById('j-age').checked;
+  const rel      = document.getElementById('j-rel')?.value||null;
+  const err      = document.getElementById('j-err');
+  const btn      = document.getElementById('j-btn');
+
+  err.textContent='';
+  if(!name)             { err.textContent='Enter your name.'; return; }
+  if(!email)            { err.textContent='Enter your email.'; return; }
+  if(password.length<8) { err.textContent='Password must be at least 8 characters.'; return; }
+  if(!ageOk)            { err.textContent='Please confirm you are 18 or older.'; return; }
+
+  btn.disabled=true; btn.textContent='Creating profile…';
+
+  // 1. Create auth account
+  const {data:authData, error:authErr} = await getSB().auth.signUp({email, password});
+  if(authErr){ err.textContent=authErr.message; btn.disabled=false; btn.textContent='Join the network →'; return; }
+  const authId = authData.user?.id;
+
+  // 2. Create user profile
+  const userId = 'G-'+Date.now();
+  const nameParts = name.split(' ');
+  await getSB().from('users').insert({
+    user_id:userId, network_id:'lightning-001',
+    full_name:name,
+    first_name:nameParts[0],
+    last_name:nameParts.slice(1).join(' ')||null,
+    auth_id:authId, email,
+    platform_role:'Conductor', status:'Living',
+    tier:'Free_Forever', invite_status:'Accepted',
+    visible_to:'all'
+  });
+
+  // 3. Link to inviter
+  if(_inviter && rel){
+    const reverseRel = {Friend:'Friend',Cousin:'Cousin',Sibling:'Sibling',Spouse:'Spouse',
+      Child:'Parent',Parent:'Child',NieceNephew:'AuntUncle',AuntUncle:'NieceNephew',InLaw:'InLaw',Other:'Friend'};
+    await getSB().from('relationships').insert([
+      {subject_id:userId, target_id:_inviter.user_id, relation_type:rel, network_id:'lightning-001'},
+      {subject_id:_inviter.user_id, target_id:userId, relation_type:reverseRel[rel]||rel, network_id:'lightning-001'}
+    ]);
+    // Record invite as accepted
+    await getSB().from('network_invites').insert({
+      network_id:'lightning-001', invited_by:_inviter.user_id,
+      invitee_email:email, invitee_name:name,
+      relation_to_inviter:rel, status:'accepted', accepted_at:new Date().toISOString()
+    });
+  }
+
+  goStep(3);
+}
+
+function togglePw(id,eye){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  eye.textContent=show?'🙈':'👁';
+}
+</script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

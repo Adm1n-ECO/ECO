@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sahiba &amp; Xavier — April 25, 2026 · EternalCurrent.Online</title>
+  <meta name="description" content="A personal invitation from Vikas Mama. Your family story already has a home.">
+
+  <!-- ECO Core -->
+  <link rel="stylesheet" href="theme.css">
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="eco-client.js"></script>
+
+  <style>
+    /* ── Page shell ───────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+    }
+
+    /* ── Wedding page wrapper ─────────────────────── */
+    .wedding-page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+    }
+
+    /* ── Hero photo duo ───────────────────────────── */
+    .photo-duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-top: 24px;
+    }
+
+    .photo-duo img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ── Hero text ────────────────────────────────── */
+    .w-hero {
+      padding: var(--space-10) var(--space-6) var(--space-2);
+      text-align: center;
+    }
+
+    .w-names {
+      font-family: var(--font-display);
+      font-weight: var(--weight-heavy);
+      font-size: var(--text-4xl);
+      line-height: var(--leading-snug);
+      color: var(--color-text);
+    }
+
+    .w-amp {
+      color: var(--color-accent-c);
+      font-size: var(--text-3xl);
+      display: block;
+      padding: 4px 0;
+    }
+
+    .w-full-name {
+      font-size: var(--text-sm);
+      color: var(--color-text-dim);
+      letter-spacing: var(--tracking-wide);
+      margin: var(--space-2) 0 var(--space-4);
+      line-height: 2;
+    }
+
+    .w-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: rgba(0,170,255,0.08);
+      border: 0.5px solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+      padding: var(--space-2) var(--space-5);
+      font-size: 14px;
+      color: var(--color-accent-c);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      margin-bottom: var(--space-4);
+    }
+
+    .w-sub {
+      font-size: var(--text-base);
+      color: var(--color-text-mid);
+      line-height: 1.7;
+    }
+
+    /* ── Divider ──────────────────────────────────── */
+    .w-divider {
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-accent-c), var(--color-accent-g));
+      margin: var(--space-8) auto;
+    }
+
+    /* ── Venue card ───────────────────────────────── */
+    .w-venue {
+      margin: 0 var(--space-6);
+      background: var(--color-surface);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .w-venue-body {
+      padding: var(--space-4) var(--space-5);
+    }
+
+    .w-venue-name {
+      font-family: var(--font-display);
+      font-weight: var(--weight-heavy);
+      font-size: var(--text-lg);
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+
+    .w-venue-sub {
+      font-size: var(--text-sm);
+      color: var(--color-text-dim);
+      margin-bottom: var(--space-3);
+    }
+
+    .w-venue-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+
+    .w-venue-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0,204,68,0.10);
+      border: 0.5px solid rgba(0,204,68,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 9px;
+    }
+
+    .w-venue-text {
+      font-size: var(--text-sm);
+      color: var(--color-text-mid);
+    }
+
+    .w-map-link {
+      display: block;
+      margin-top: var(--space-3);
+      text-align: center;
+      background: rgba(0,204,68,0.06);
+      border: 0.5px solid rgba(0,204,68,0.2);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-sm);
+      color: var(--color-accent-g);
+      text-decoration: none;
+      font-weight: var(--weight-medium);
+      transition: background var(--transition-fast);
+    }
+
+    .w-map-link:hover {
+      background: rgba(0,204,68,0.12);
+    }
+
+    /* ── Promise box ──────────────────────────────── */
+    .w-promise {
+      margin: 0 var(--space-6);
+      background: rgba(0,170,255,0.04);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+    }
+
+    .w-promise p {
+      font-size: var(--text-lg);
+      line-height: 1.85;
+      color: var(--color-text-mid);
+    }
+
+    .w-promise strong {
+      color: var(--color-text);
+      font-weight: var(--weight-medium);
+    }
+
+    /* ── CTA section ──────────────────────────────── */
+    .w-cta-section {
+      padding: 0 var(--space-6);
+    }
+
+    .w-cta-label {
+      font-size: var(--text-sm);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-accent-c);
+      font-weight: var(--weight-medium);
+      margin-bottom: var(--space-4);
+      text-align: center;
+    }
+
+    .w-cta-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+    }
+
+    .w-cta-card {
+      background: var(--color-surface);
+      border: 0.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .w-cta-person {
+      font-size: var(--text-base);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+
+    .w-cta-hint {
+      font-size: var(--text-sm);
+      color: var(--color-text-dim);
+      margin-bottom: var(--space-4);
+      line-height: 1.5;
+    }
+
+    .w-btn {
+      display: block;
+      padding: var(--space-2) 0;
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      text-decoration: none;
+      text-align: center;
+      transition: opacity var(--transition-fast);
+      letter-spacing: 0.03em;
+    }
+
+    .w-btn:hover { opacity: 0.85; }
+
+    .w-btn-blue {
+      background: var(--color-accent-c);
+      color: var(--color-bg);
+    }
+
+    .w-btn-green {
+      background: var(--color-accent-g);
+      color: var(--color-bg);
+    }
+
+    /* ── Signature ────────────────────────────────── */
+    .w-signature {
+      text-align: center;
+      padding: var(--space-10) var(--space-6) 0;
+      font-size: var(--text-base);
+      color: var(--color-text-dim);
+      line-height: 2;
+    }
+
+    .w-signature strong {
+      color: var(--color-text-mid);
+      font-weight: var(--weight-medium);
+    }
+
+    .w-tagline {
+      text-align: center;
+      padding: var(--space-5) 0 0;
+      font-size: var(--text-sm);
+      letter-spacing: var(--tracking-wider);
+      color: var(--color-text-dim);
+      text-transform: uppercase;
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (min-width: 481px) {
+      .photo-duo img { height: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ECO Header -->
+  <div id="eco-header"></div>
+
+  <!-- Wedding Page -->
+  <main class="wedding-page">
+
+    <!-- Venue photos -->
+    <div class="photo-duo">
+      <img src="images/garre-vineyard.jpg" alt="Garré Vineyard rows, Livermore Valley" loading="lazy">
+      <img src="images/garre-bella-rosa.jpg" alt="Bella Rosa hall entrance at Garré" loading="lazy">
+    </div>
+
+    <!-- Hero -->
+    <div class="w-hero">
+      <div class="w-names">
+        Sahiba Jaan
+        <span class="w-amp">&amp;</span>
+        Xavier Giovanny
+      </div>
+      <div class="w-full-name">Sahiba Jaan Mohan · Xavier Giovanny Lovato</div>
+      <div class="w-date-badge">April 25, 2026</div>
+      <p class="w-sub">Two families becoming one.<br>Your story already has a home here.</p>
+    </div>
+
+    <div class="w-divider"></div>
+
+    <!-- Venue -->
+    <div class="w-venue">
+      <div class="w-venue-body">
+        <div class="w-venue-name">Garré Vineyard &amp; Winery</div>
+        <div class="w-venue-sub">Livermore Valley, California · ★ 4.4</div>
+        <div class="w-venue-row">
+          <div class="w-venue-icon">📍</div>
+          <span class="w-venue-text">7986 Tesla Rd, Livermore, CA 94550</span>
+        </div>
+        <div class="w-venue-row">
+          <div class="w-venue-icon">🗓</div>
+          <span class="w-venue-text">Friday, April 25, 2026</span>
+        </div>
+        <a class="w-map-link" href="https://maps.google.com/?q=Garre+Vineyard+Winery+Livermore+CA" target="_blank" rel="noopener">
+          Open in Maps →
+        </a>
+      </div>
+    </div>
+
+    <div class="w-divider"></div>
+
+    <!-- Promise -->
+    <div class="w-promise">
+      <p>After your wedding, your photos don't <strong>JUST</strong> belong on Instagram.<br><br>
+      They belong here — inside your family's living story. With the people who love you. Permanently. Privately. <strong>Only yours.</strong></p>
+    </div>
+
+    <div class="w-divider"></div>
+
+    <!-- CTAs -->
+    <div class="w-cta-section">
+      <div class="w-cta-label">Your profiles are waiting</div>
+      <div class="w-cta-pair">
+
+        <div class="w-cta-card">
+          <div class="w-cta-person">Sahiba Jaan</div>
+          <div class="w-cta-hint">Your family is already here</div>
+          <a class="w-btn w-btn-blue" href="claim.html?id=SBM-ATM">Claim my spot →</a>
+        </div>
+
+        <div class="w-cta-card">
+          <div class="w-cta-person">Xavier Giovanny</div>
+          <div class="w-cta-hint">Join your new family</div>
+          <a class="w-btn w-btn-green" href="claim.html?id=XVR-SBM">Claim my spot →</a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Signature -->
+    <div class="w-signature">
+      <strong>With love, Vikas Mama</strong><br>
+      and the whole family already here.
+    </div>
+
+    <div class="w-tagline">EternalCurrent.Online · Only Yours. Forever.</div>
+
+  </main>
+
+  <!-- ECO Header script -->
+  <script src="header.js"></script>
+
+  <!-- Theme selector -->
+  <script src="theme-selector.js"></script>
+
+</body>
+</html>

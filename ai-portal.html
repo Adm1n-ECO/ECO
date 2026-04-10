@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECO — AI Genealogist · EternalCurrent.Online</title>
+<link rel="stylesheet" href="css/theme.css">
+<script>
+(function(){
+  var k='eco_theme_v4',d='void',v=['parchment','grove','deep-sea','void'];
+  try{var s=localStorage.getItem(k);if(v.indexOf(s)>=0)d=s;}catch(e){}
+  document.documentElement.setAttribute('data-theme',d);
+})();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;margin:0;padding:0;}
+body{display:flex;flex-direction:column;min-height:100vh;
+  background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);}
+
+/* ── KEY GATE ── */
+.key-gate{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);
+  z-index:9999;display:flex;align-items:center;justify-content:center;padding:var(--space-6);
+  width:100vw;height:100vh;top:0;left:0;}
+.key-card{background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);padding:var(--space-8);max-width:500px;width:100%;}
+.key-card-icon{font-size:3rem;text-align:center;margin-bottom:var(--space-4);}
+.key-card h2{font-family:var(--font-display);font-size:var(--text-2xl);text-align:center;
+  margin-bottom:var(--space-2);}
+.key-card p{font-size:var(--text-sm);color:var(--color-text-dim);text-align:center;
+  margin-bottom:var(--space-6);line-height:var(--leading-normal);}
+.key-field{display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-3);}
+.key-lbl{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--tracking-wider);
+  text-transform:uppercase;color:var(--color-accent-c);}
+.key-input{width:100%;padding:var(--space-3) var(--space-4);background:var(--color-input-bg);
+  border:1px solid var(--color-input-bd);border-radius:var(--radius-sm);color:var(--color-text);
+  font-family:var(--font-mono);font-size:var(--text-sm);outline:none;
+  transition:border-color var(--transition-fast);}
+.key-input:focus{border-color:var(--color-accent-c);box-shadow:0 0 0 3px rgba(0,229,204,.15);}
+.key-hint{font-size:var(--text-xs);color:var(--color-text-hint);line-height:var(--leading-snug);}
+.key-hint a{color:var(--color-accent-c);}
+.key-btn{width:100%;padding:var(--space-4);background:var(--color-accent-c);color:var(--color-btn-fg);
+  border:none;border-radius:var(--radius-sm);font-size:var(--text-base);font-weight:var(--weight-bold);
+  cursor:pointer;transition:all var(--transition-fast);margin-top:var(--space-2);}
+.key-btn:hover{background:var(--color-accent-g);}
+.key-error{color:#FF6B6B;font-size:var(--text-xs);text-align:center;
+  display:none;margin-top:var(--space-2);}
+
+/* ── LAYOUT: nav + two-column (chat | tree) ── */
+.main-layout{flex:1;display:flex;overflow:hidden;}
+.chat-col{flex:1;display:flex;flex-direction:column;min-width:0;
+  max-width:720px;margin:0 auto;}
+.tree-col{width:300px;flex-shrink:0;border-left:1px solid var(--color-border);
+  overflow-y:auto;padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-4);}
+@media(max-width:900px){.tree-col{display:none;}}
+
+/* ── PROGRESS ── */
+.prog-wrap{padding:var(--space-3) var(--space-5);border-bottom:1px solid var(--color-border);}
+.prog-row{display:flex;justify-content:space-between;font-family:var(--font-mono);
+  font-size:var(--text-xs);color:var(--color-text-dim);letter-spacing:var(--tracking-wide);
+  text-transform:uppercase;margin-bottom:var(--space-2);}
+.prog-bar{height:3px;background:var(--color-border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--color-accent-c),var(--color-accent-g));
+  border-radius:2px;transition:width .6s cubic-bezier(.22,1,.36,1);}
+
+/* ── MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:var(--space-5) var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-5);}
+.messages::-webkit-scrollbar{width:4px;}
+.messages::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:2px;}
+
+/* ── BUBBLES ── */
+.msg{display:flex;gap:var(--space-3);align-items:flex-start;
+  animation:msgIn .35s cubic-bezier(.22,1,.36,1) both;}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.msg--ai{align-self:flex-start;max-width:90%;}
+.msg--user{align-self:flex-end;flex-direction:row-reverse;max-width:80%;}
+.msg--system{align-self:center;max-width:90%;}
+
+.av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:1rem;}
+.av--ai{background:linear-gradient(135deg,#00E5CC,#00E040);color:#070D14;font-weight:700;}
+.av--user{background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-dim);}
+
+.bub{padding:var(--space-4) var(--space-5);line-height:var(--leading-normal);font-size:var(--text-base);}
+.bub--ai{background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:18px 18px 18px 4px;}
+.bub--user{background:var(--color-accent-c);color:var(--color-btn-fg);
+  border-radius:18px 18px 4px 18px;font-weight:var(--weight-medium);}
+.bub--system{background:rgba(0,229,204,.06);border:1px solid rgba(0,229,204,.2);
+  border-radius:var(--radius-md);font-family:var(--font-mono);font-size:var(--text-xs);
+  color:var(--color-accent-c);letter-spacing:var(--tracking-wide);text-align:center;
+  padding:var(--space-2) var(--space-4);}
+
+/* ── TYPING ── */
+.dots{display:flex;gap:5px;padding:var(--space-2) 0;}
+.dots span{width:8px;height:8px;border-radius:50%;background:var(--color-accent-c);
+  opacity:.4;animation:bounce 1.2s ease-in-out infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,60%,100%{transform:none;opacity:.4;}30%{transform:translateY(-6px);opacity:1;}}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-3);}
+.chip{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);
+  border:1px solid var(--color-accent-c);color:var(--color-accent-c);
+  font-size:var(--text-sm);cursor:pointer;background:transparent;
+  transition:all var(--transition-fast);white-space:nowrap;}
+.chip:hover{background:var(--color-accent-c);color:var(--color-btn-fg);}
+.chip--name{border-color:rgba(0,229,204,.3);background:rgba(0,229,204,.06);
+  font-family:var(--font-mono);font-size:var(--text-xs);}
+
+/* ── TREE SIDEBAR ── */
+.tree-header{font-family:var(--font-mono);font-size:var(--text-xs);font-weight:var(--weight-bold);
+  letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-accent-c);
+  margin-bottom:var(--space-3);}
+.tree-empty{font-size:var(--text-xs);color:var(--color-text-hint);font-style:italic;
+  text-align:center;padding:var(--space-6) 0;}
+.tree-node{padding:var(--space-3) var(--space-4);background:var(--color-surface-2);
+  border:1px solid var(--color-border);border-radius:var(--radius-sm);
+  margin-bottom:var(--space-2);transition:border-color var(--transition-fast);}
+.tree-node:hover{border-color:var(--color-border-strong);}
+.tree-node--new{border-color:rgba(0,229,204,.4);background:rgba(0,229,204,.05);
+  animation:nodeAppear .4s ease both;}
+@keyframes nodeAppear{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:none;}}
+.tree-node-name{font-weight:var(--weight-semi);font-size:var(--text-sm);color:var(--color-text);}
+.tree-node-rel{font-size:var(--text-xs);color:var(--color-text-dim);margin-top:2px;}
+.tree-node-locs{font-size:var(--text-xs);color:var(--color-accent-c);margin-top:3px;
+  font-family:var(--font-mono);}
+.tree-node-branch{display:inline-block;font-family:var(--font-mono);font-size: 12px;
+  letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:var(--radius-full);
+  margin-top:3px;}
+.branch--maternal{background:rgba(160,80,224,.15);color:#A050E0;border:1px solid rgba(160,80,224,.25);}
+.branch--paternal{background:rgba(0,224,64,.1);color:var(--color-accent-g);
+  border:1px solid rgba(0,224,64,.2);}
+.branch--direct{background:rgba(0,229,204,.1);color:var(--color-accent-c);
+  border:1px solid rgba(0,229,204,.2);}
+
+/* ── SUMMARY ── */
+.summary-card{background:var(--color-surface-2);border:1px solid var(--color-border);
+  border-radius:var(--radius-md);overflow:hidden;margin-top:var(--space-3);}
+.summary-head{padding:var(--space-3) var(--space-5);background:rgba(0,229,204,.07);
+  border-bottom:1px solid var(--color-border);font-family:var(--font-mono);font-size:var(--text-xs);
+  letter-spacing:var(--tracking-wider);text-transform:uppercase;color:var(--color-accent-c);}
+.summary-person{padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-border);}
+.summary-person:last-of-type{border-bottom:none;}
+.s-name{font-weight:var(--weight-semi);font-size:var(--text-base);margin-bottom:var(--space-3);}
+.s-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-2);}
+.s-f{font-size:var(--text-sm);}
+.s-k{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--tracking-wide);
+  text-transform:uppercase;color:var(--color-text-dim);}
+.s-v{color:var(--color-text);margin-top:2px;}
+.summary-actions{display:flex;gap:var(--space-3);padding:var(--space-4) var(--space-5);flex-wrap:wrap;}
+
+/* ── BUTTONS ── */
+.btn-deploy{padding:var(--space-3) var(--space-6);background:var(--color-accent-c);
+  color:var(--color-btn-fg);border:none;border-radius:var(--radius-md);font-size:var(--text-sm);
+  font-weight:var(--weight-bold);cursor:pointer;font-family:var(--font-body);
+  letter-spacing:var(--tracking-wide);text-transform:uppercase;transition:all var(--transition-fast);}
+.btn-deploy:hover{background:var(--color-accent-g);transform:translateY(-1px);}
+.btn-deploy:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-secondary{padding:var(--space-3) var(--space-5);background:transparent;color:var(--color-text-dim);
+  border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:var(--text-sm);
+  cursor:pointer;transition:all var(--transition-fast);}
+.btn-secondary:hover{border-color:var(--color-border-strong);color:var(--color-text);}
+
+/* ── SUCCESS ── */
+.success{text-align:center;padding:var(--space-8);background:rgba(0,224,64,.07);
+  border:1px solid rgba(0,224,64,.2);border-radius:var(--radius-md);}
+.success-icon{font-size:3rem;margin-bottom:var(--space-4);}
+.success-title{font-family:var(--font-display);font-size:var(--text-2xl);
+  color:var(--color-accent-g);margin-bottom:var(--space-2);}
+.success-sub{font-size:var(--text-sm);color:var(--color-text-dim);margin-bottom:var(--space-6);}
+.success-links{display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;}
+.btn-link{display:inline-flex;align-items:center;gap:6px;padding:var(--space-3) var(--space-5);
+  background:var(--color-accent-c);color:var(--color-btn-fg);border-radius:var(--radius-md);
+  text-decoration:none;font-size:var(--text-sm);font-weight:var(--weight-bold);}
+.btn-link:hover{background:var(--color-accent-g);}
+
+/* ── INPUT BAR ── */
+.input-bar{padding:var(--space-4) var(--space-5) var(--space-5);
+  border-top:1px solid var(--color-border);background:var(--color-bg);}
+.input-row{display:flex;gap:var(--space-3);align-items:flex-end;}
+textarea.ui{flex:1;resize:none;background:var(--color-input-bg);border:1px solid var(--color-input-bd);
+  border-radius:18px;padding:var(--space-3) var(--space-5);font-family:var(--font-body);
+  font-size:var(--text-base);color:var(--color-text);outline:none;
+  transition:border-color var(--transition-fast);line-height:var(--leading-snug);
+  max-height:140px;min-height:50px;}
+textarea.ui::placeholder{color:var(--color-text-hint);}
+textarea.ui:focus{border-color:var(--color-accent-c);box-shadow:0 0 0 3px rgba(0,229,204,.15);}
+.send-btn{width:50px;height:50px;border-radius:50%;background:var(--color-accent-c);
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all var(--transition-fast);}
+.send-btn:hover{background:var(--color-accent-g);transform:scale(1.06);}
+.send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.send-btn svg{width:20px;height:20px;fill:var(--color-btn-fg);}
+
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);
+  font-size:var(--text-xs);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);
+  background:rgba(0,229,204,.06);border:1px solid var(--color-border);color:var(--color-text-dim);}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--color-accent-g);
+  animation:eco-pulse 2s ease-in-out infinite;}
+@keyframes eco-pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+</style>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<!-- KEY GATE -->
+<div class="key-gate" id="key-gate">
+  <div class="key-card">
+    <div class="key-card-icon">🧬</div>
+    <h2>AI Genealogist</h2>
+    <p>A conversational expert that builds your family tree through natural questions — tracing relationships, locations, and generational connections.</p>
+    <div class="key-field">
+      <label class="key-lbl">Anthropic API Key (Claude)</label>
+      <input class="key-input" id="api-key-input" type="password" placeholder="sk-ant-..." autocomplete="off">
+      <p class="key-hint">Get your API key at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a></p>
+  </div>
+</div>
+
+<!-- NAV -->
+
+
+<!-- PROGRESS -->
+<div style="border-bottom:1px solid var(--color-border);">
+  <div class="prog-wrap" style="border-bottom:none;max-width:720px;margin:0 auto;">
+    <div class="prog-row">
+      <span>Interview progress</span>
+      <span id="prog-label">Ready</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- MAIN: chat + tree sidebar -->
+<div class="main-layout">
+  <!-- CHAT -->
+  <div class="chat-col">
+    <div class="messages" id="messages"></div>
+    <div class="input-bar">
+      <div class="input-row">
+        <textarea class="ui" id="user-input" placeholder="Type your answer… (Enter to send)" rows="1"></textarea>
+        <button class="send-btn" id="send-btn" onclick="send()" disabled>
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREE SIDEBAR -->
+  <div class="tree-col" id="tree-col">
+    <div class="tree-header">⚡ New Stars Collected</div>
+    <div id="tree-list">
+      <p class="tree-empty">Your family tree will appear here as we talk.</p>
+    </div>
+    <div id="tree-submit-area" style="display:none;margin-top:auto;padding-top:var(--space-4);
+      border-top:1px solid var(--color-border);">
+      <button class="btn-deploy" style="width:100%;" id="sidebar-deploy" onclick="triggerDeploy()">
+        🌊 Deploy All Stars
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+const SHEETS_URL   = "https://script.google.com/macros/s/AKfycbyTTLmITxQh9BwN87E_exKPGS5FSSdmU7MJkXd3IC2hsmXxSiHnoX1XduMGdt3cAxQi/exec";
+const CLAUDE_API   = "https://api.anthropic.com/v1/messages";
+const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+let CLAUDE_KEY     = '';
+let networkMembers = [];
+let chatHistory    = [];
+let familyTree     = [];
+let busy           = false;
+
+// ═══════════════════════════════════════════════════════════════
+//  API KEY
+// ═══════════════════════════════════════════════════════════════
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  const errEl = document.getElementById('key-error');
+  if (!k.startsWith('sk-ant-') || k.length < 30) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Key should start with "sk-ant-" and be at least 30 characters.';
+    return;
+  }
+  CLAUDE_KEY = k;
+  try { localStorage.setItem('eco_claude_key', k); } catch(e) {}
+  document.getElementById('key-gate').style.display = 'none';
+  init();
+}
+function clearKey() {
+  try { localStorage.removeItem('eco_claude_key'); } catch(e) {}
+  CLAUDE_KEY = '';
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('key-error').style.display = 'none';
+  document.getElementById('key-gate').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOLS — Claude tool_use format
+// ═══════════════════════════════════════════════════════════════
+const TOOLS = [
+  {
+    name: "add_family_member",
+    description: "Saves a confirmed family member to the EternalCurrent network. Call this as soon as you have a name, role, and who they are connected to. Call again to update with more details.",
+    input_schema: {
+      type: "object",
+      properties: {
+        individual:  { type: "string",  description: "Full name of the person" },
+        role:        { type: "string",
+                       enum: ["parent","child","sibling","spouse","grandparent","grandchild","aunt_uncle","cousin","friend","colleague","other"],
+                       description: "Relationship role" },
+        relative_to: { type: "string",  description: "Full name of the person they are related to" },
+        branch:      { type: "string",  enum: ["maternal","paternal","direct"] },
+        firstName:   { type: "string" },
+        lastName:    { type: "string" },
+        gender:      { type: "string",  enum: ["male","female","non-binary","prefer not to say"] },
+        birthCity:   { type: "string",  description: "City and country of birth" },
+        currentCity: { type: "string",  description: "City and country where they live now" },
+        email:       { type: "string" },
+        tier:        { type: "string" },
+        side:        { type: "string",  enum: ["left","right"] },
+        relatedToId: { type: "string" },
+        hasChildren: { type: "string",  enum: ["yes","no","unknown"] }
+      },
+      required: ["individual", "role", "relative_to"]
+    }
+  },
+  {
+    name: "complete_session",
+    description: "Call this when the user has confirmed they have no more people to add.",
+    input_schema: {
+      type: "object",
+      properties: {
+        message:  { type: "string" },
+        progress: { type: "number" }
+      },
+      required: ["message"]
+    }
+  }
+];
+
+function buildSystemPrompt() {
+  const existingList = networkMembers.length
+    ? networkMembers.map(m =>
+        `  \u2022 ${m.name}  [ID: ${m.id} | Tier: ${m.tier} | Role: ${m.role}]`
+      ).join('\n')
+    : '  (Network is empty)';
+
+  const sessionList = familyTree.length
+    ? familyTree.map(p =>
+        `  \u2022 ${p.individual}  \u2192 ${p.role} of ${p.relative_to}  [${p.branch || 'direct'}]` +
+        (p.birthCity   ? `  born: ${p.birthCity}`   : '') +
+        (p.currentCity ? `  lives: ${p.currentCity}` : '')
+      ).join('\n')
+    : '  (none yet)';
+
+  return `## Role
+You are an expert Genealogist for EternalCurrent.Online.
+Conduct a warm, intelligent intake interview to build a multi-generational family tree.
+
+## Existing Network (do NOT re-add these)
+${existingList}
+
+## Collected This Session (do NOT re-add these)
+${sessionList}
+
+## Rules
+1. Recursive Discovery: bridge every gap, always ask maternal vs paternal.
+2. Push UP the tree first (parents, grandparents) before going OUT (siblings, cousins).
+3. One question per message only.
+4. After each person: call add_family_member, then ask if there is more to add.
+5. When user is done: call complete_session.
+
+## Data to collect per person
+firstName, lastName, gender, role, branch, relative_to, birthCity, currentCity, email (optional)
+
+## Response format (every conversational turn)
+JSON only, no markdown fences:
+{"message":"Your warm question","chips":["Yes","No"],"progress":30}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CORE CLAUDE CALL
+// ═══════════════════════════════════════════════════════════════
+function extractFacts(text) {
+  const facts = {};
+  const emailM = text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);
+  if (emailM) facts.email = emailM[0];
+  const cityM = text.match(/(?:from|born in|live(?:s)? in|moved to|in)\s+([A-Z][\w\s,]+(?:CA|NY|TX|FL|India|Fiji|Pakistan|UK|Canada|US|USA)?)/i);
+  if (cityM) facts.mentionedPlace = cityM[1].trim();
+  return facts;
+}
+
+function showModelBadge() {
+  document.getElementById('net-status').textContent =
+    networkMembers.length + ' live \u00b7 Claude';
+}
+
+async function callClaude(userText) {
+  const localFacts = extractFacts(userText);
+  chatHistory.push({ role: 'user', content: userText });
+
+  const body = {
+    model:      CLAUDE_MODEL,
+    max_tokens: 1024,
+    system:     buildSystemPrompt(),
+    messages:   chatHistory,
+    tools:      TOOLS,
+  };
+
+  let res;
+  try {
+    res = await fetch(CLAUDE_API, {
+      method:  'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         CLAUDE_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-calls': 'true',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch(e) { throw new Error('Network error: ' + e.message); }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || 'HTTP ' + res.status);
+  }
+
+  const data = await res.json();
+  chatHistory.push({ role: 'assistant', content: data.content });
+
+  let chatMessage = '', chips = [], progress = 0, sessionDone = false;
+
+  for (const block of (data.content || [])) {
+    if (block.type === 'text') {
+      let parsed;
+      const clean = block.text.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+      try { parsed = JSON.parse(clean); }
+      catch(e) { parsed = { message: block.text }; }
+      if (parsed.message)                chatMessage = parsed.message;
+      if (parsed.chips)                  chips       = parsed.chips;
+      if (parsed.progress !== undefined) progress    = parsed.progress;
+    }
+    if (block.type === 'tool_use') {
+      if (block.name === 'add_family_member') {
+        upsertPerson(block.input);
+        if (familyTree.length && (localFacts.email || localFacts.mentionedPlace)) {
+          const last = familyTree[familyTree.length - 1];
+          if (localFacts.email && !last.email)               last.email       = localFacts.email;
+          if (localFacts.mentionedPlace && !last.currentCity) last.currentCity = localFacts.mentionedPlace;
+        }
+        chatHistory.push({
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: block.id,
+                      content: block.input.individual + ' saved to EternalCurrents network.' }]
+        });
+        const followUp = await getFollowUp();
+        if (followUp.message)                chatMessage = followUp.message;
+        if (followUp.chips)                  chips       = followUp.chips;
+        if (followUp.progress !== undefined) progress    = followUp.progress;
+      }
+      if (block.name === 'complete_session') {
+        chatMessage = block.input.message || "Thank you for sharing your family's energy with us.";
+        progress    = block.input.progress || 95;
+        sessionDone = true;
+      }
+    }
+  }
+  return { message: chatMessage, chips, progress, sessionComplete: sessionDone };
+}
+
+async function getFollowUp() {
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         CLAUDE_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-calls': 'true',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL, max_tokens: 512,
+        system: buildSystemPrompt(), messages: chatHistory, tools: TOOLS,
+      }),
+    });
+    if (!res.ok) return { message: '', chips: [] };
+    const data = await res.json();
+    chatHistory.push({ role: 'assistant', content: data.content });
+    let out = { message: '', chips: [], progress: 0 };
+    for (const b of (data.content || [])) {
+      if (b.type !== 'text') continue;
+      const clean = b.text.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+      try {
+        const p = JSON.parse(clean);
+        if (p.message)                out.message  = p.message;
+        if (p.chips)                  out.chips    = p.chips;
+        if (p.progress !== undefined) out.progress = p.progress;
+      } catch(e) { out.message = b.text; }
+    }
+    return out;
+  } catch(e) {
+    console.warn('Follow-up call failed:', e.message);
+    return { message: '', chips: [] };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NETWORK LOAD
+// ═══════════════════════════════════════════════════════════════
+async function loadNetwork() {
+  try {
+    const res  = await fetch(SHEETS_URL);
+    const data = await res.json();
+    networkMembers = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (r[0] && r[4]) networkMembers.push({
+        id:   String(r[0]).trim(),
+        name: String(r[4]).trim(),
+        tier: String(r[13] || r[7] || '1').trim(),
+        role: String(r[8]  || r[6] || '').trim()
+      });
+    }
+    document.getElementById('net-status').textContent =
+      networkMembers.length + ' members live';
+  } catch(e) {
+    document.getElementById('net-status').textContent = 'Offline mode';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UPSERT — update familyTree and render sidebar
+// ═══════════════════════════════════════════════════════════════
+function upsertPerson(data) {
+  if (!data || !data.individual) return;
+
+  // Find existing entry by name (case-insensitive)
+  const key  = data.individual.toLowerCase().trim();
+  const idx  = familyTree.findIndex(p => p.individual.toLowerCase().trim() === key);
+  const isNew = idx < 0;
+
+  if (isNew) {
+    familyTree.push({ ...data });
+  } else {
+    // Merge — only overwrite non-empty fields
+    Object.keys(data).forEach(k => {
+      if (data[k] !== null && data[k] !== undefined && data[k] !== '')
+        familyTree[idx][k] = data[k];
+    });
+  }
+
+  renderTreeSidebar(isNew ? data.individual : null);
+
+  if (familyTree.length > 0) {
+    document.getElementById('tree-submit-area').style.display = 'block';
+  }
+
+  // Show system confirmation in chat
+  if (isNew) {
+    addSystemMsg('⚡ ' + data.individual + ' added to your family tree');
+  }
+}
+
+function renderTreeSidebar(highlightName) {
+  const list = document.getElementById('tree-list');
+  list.innerHTML = '';
+
+  if (familyTree.length === 0) {
+    list.innerHTML = '<p class="tree-empty">Your family tree will appear here as we talk.</p>';
+    return;
+  }
+
+  familyTree.forEach(p => {
+    const node = document.createElement('div');
+    node.className = 'tree-node' +
+      (p.individual === highlightName ? ' tree-node--new' : '');
+
+    const branchCls = p.branch ? 'branch--' + p.branch : 'branch--direct';
+    node.innerHTML =
+      '<div class="tree-node-name">' + esc(p.individual) + '</div>' +
+      '<div class="tree-node-rel">' + esc(p.role || '') +
+        (p.relative_to ? ' of ' + esc(p.relative_to) : '') + '</div>' +
+      (p.birthCity || p.currentCity
+        ? '<div class="tree-node-locs">' +
+            (p.birthCity   ? '🏠 ' + esc(p.birthCity)   : '') +
+            (p.currentCity && p.currentCity !== p.birthCity
+              ? (p.birthCity ? ' → ' : '📍 ') + esc(p.currentCity) : '') +
+          '</div>' : '') +
+      (p.branch ? '<span class="tree-node-branch ' + branchCls + '">' + p.branch + '</span>' : '');
+
+    list.appendChild(node);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  requestAnimationFrame(() => m.scrollTop = m.scrollHeight);
+}
+
+function addBubble(role, html, chips, nameChips) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg--' + role;
+
+  if (role !== 'system') {
+    const av = document.createElement('div');
+    av.className = 'av av--' + role;
+    av.textContent = role === 'ai' ? '⚡' : '👤';
+    wrap.appendChild(av);
+  }
+
+  const bub = document.createElement('div');
+  bub.className = 'bub bub--' + (role === 'system' ? 'system' : role);
+  bub.innerHTML = html.replace(/\n/g, '<br>');
+
+  // Existing member name chips
+  if (nameChips && nameChips.length) {
+    const cw = document.createElement('div');
+    cw.className = 'chips';
+    nameChips.slice(0, 12).forEach(n => {
+      const c = document.createElement('button');
+      c.className = 'chip chip--name';
+      c.textContent = n;
+      c.onclick = () => send(n);
+      cw.appendChild(c);
+    });
+    bub.appendChild(cw);
+  }
+
+  // Quick-reply chips
+  if (chips && chips.length) {
+    const cw = document.createElement('div');
+    cw.className = 'chips';
+    chips.slice(0, 4).forEach(ch => {
+      const c = document.createElement('button');
+      c.className = 'chip';
+      c.textContent = ch;
+      c.onclick = () => send(ch);
+      cw.appendChild(c);
+    });
+    bub.appendChild(cw);
+  }
+
+  wrap.appendChild(bub);
+  msgs.appendChild(wrap);
+  scrollBottom();
+}
+
+function addSystemMsg(text) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg--system';
+  const bub = document.createElement('div');
+  bub.className = 'bub bub--system';
+  bub.textContent = text;
+  wrap.appendChild(bub);
+  msgs.appendChild(wrap);
+  scrollBottom();
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg--ai'; wrap.id = 'typing';
+  const av = document.createElement('div');
+  av.className = 'av av--ai'; av.textContent = '⚡';
+  const bub = document.createElement('div');
+  bub.className = 'bub bub--ai';
+  bub.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  wrap.appendChild(av); wrap.appendChild(bub);
+  msgs.appendChild(wrap);
+  scrollBottom();
+}
+function hideTyping() { const t = document.getElementById('typing'); if(t) t.remove(); }
+
+function setProgress(pct, label) {
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = label ||
+    (pct < 15 ? 'Starting interview' : pct < 40 ? 'Building the tree' :
+     pct < 70 ? 'Going deeper' : pct < 90 ? 'Almost complete' : 'Finalising');
+}
+
+function setUI(on) {
+  document.getElementById('user-input').disabled = !on;
+  document.getElementById('send-btn').disabled   = !on;
+  if (on) document.getElementById('user-input').focus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SUMMARY + DEPLOY
+// ═══════════════════════════════════════════════════════════════
+function showSummary(people) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg--ai';
+  const av = document.createElement('div');
+  av.className = 'av av--ai'; av.textContent = '⚡';
+
+  const bub = document.createElement('div');
+  bub.className = 'bub bub--ai';
+
+  const card = document.createElement('div');
+  card.className = 'summary-card';
+
+  const head = document.createElement('div');
+  head.className = 'summary-head';
+  head.innerHTML = '⭐ ' + people.length + ' new star' + (people.length !== 1 ? 's' : '') + ' ready to deploy';
+  card.appendChild(head);
+
+  people.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'summary-person';
+    row.innerHTML =
+      '<div class="s-name">' + (i+1) + '. ' + esc(p.individual) + '</div>' +
+      '<div class="s-grid">' +
+        field('Gender',     p.gender)       +
+        field('Related to', p.relative_to)  +
+        field('Role',       p.role)         +
+        field('Branch',     p.branch)       +
+        field('Born in',    p.birthCity)    +
+        field('Lives in',   p.currentCity)  +
+        field('Tier',       p.tier)         +
+        (p.email ? field('Email', p.email) : '') +
+      '</div>';
+    card.appendChild(row);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'summary-actions';
+
+  const deployBtn = document.createElement('button');
+  deployBtn.className = 'btn-deploy';
+  deployBtn.id = 'main-deploy-btn';
+  deployBtn.textContent = '🌊 Deploy ' + people.length + ' star' + (people.length!==1?'s':'') + ' to Network';
+  deployBtn.onclick = () => deployAll(people, deployBtn);
+
+  const changeBtn = document.createElement('button');
+  changeBtn.className = 'btn-secondary';
+  changeBtn.textContent = 'Make changes';
+  changeBtn.onclick = () => send('I need to make some changes');
+
+  actions.appendChild(deployBtn);
+  actions.appendChild(changeBtn);
+  card.appendChild(actions);
+  bub.appendChild(card);
+  wrap.appendChild(av); wrap.appendChild(bub);
+  msgs.appendChild(wrap);
+  scrollBottom();
+  setProgress(95, 'Review & confirm');
+}
+
+function field(label, val) {
+  if (!val) return '';
+  return '<div class="s-f"><div class="s-k">' + esc(label) + '</div>' +
+         '<div class="s-v">' + esc(val) + '</div></div>';
+}
+
+function triggerDeploy() {
+  if (familyTree.length) deployAll(familyTree, document.getElementById('sidebar-deploy'));
+}
+
+async function deployAll(people, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Deploying...'; }
+  setProgress(90, 'Deploying to network...');
+
+  let ok = 0;
+  for (const p of people) {
+    const fn = (p.firstName || p.individual.split(' ')[0] || '').trim();
+    const ln = (p.lastName  || p.individual.split(' ').slice(1).join(' ') || '').trim();
+    const uid = (fn[0]||'X').toUpperCase() + (ln[0]||'X').toUpperCase()
+              + '-' + Math.floor(Math.random()*9000+1000);
+
+    const isFamilyRole = !['friend','colleague','chosen family'].includes((p.role||'').toLowerCase());
+
+    const entry = {
+      userID:     uid,
+      firstname:  fn,
+      lastname:   ln,
+      nickname:   '',
+      name:       p.individual,
+      parent:     p.relatedToId || findIdByName(p.relative_to) || 'STAR',
+      role:       normaliseRole(p.role),
+      tier:       p.tier || '1',
+      side:       p.side || (isFamilyRole ? 'left' : 'right'),
+      partnerID:  'none',
+      gender:     p.gender || '',
+      birthloc:   p.birthCity || '',
+      currentloc: p.currentCity || '',
+      birthCity:  p.birthCity || '',
+      city:       p.currentCity || '',
+      email:      p.email || '',
+      status:     'living',
+      origin:     'birth',
+      petName: '', petType: '', bioParent: 'none'
+    };
+
+    try {
+      await fetch(SHEETS_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(entry) });
+      ok++;
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error('Failed:', p.individual, e); }
+  }
+
+  showSuccess(ok);
+}
+
+function findIdByName(name) {
+  if (!name) return null;
+  const n = name.toLowerCase().trim();
+  const match = networkMembers.find(m => m.name.toLowerCase().trim() === n);
+  return match ? match.id : null;
+}
+
+function normaliseRole(r) {
+  if (!r) return 'member';
+  r = r.toLowerCase();
+  if (/son|daughter|child|grandchild|grandson|granddaughter/.test(r)) return 'son';
+  if (/spouse|partner|husband|wife/.test(r))  return 'spouse';
+  if (/sibling|brother|sister/.test(r))        return 'brother';
+  if (/parent|mother|father|mom|dad/.test(r))  return 'parent';
+  if (/grandparent|grandmother|grandfather/.test(r)) return 'parent';
+  if (/aunt|uncle/.test(r))                    return 'brother';
+  if (/cousin/.test(r))                        return 'brother';
+  if (/friend/.test(r))                        return 'friend';
+  if (/colleague|coworker/.test(r))            return 'colleague';
+  return 'member';
+}
+
+function showSuccess(count) {
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg msg--ai';
+  const av = document.createElement('div');
+  av.className = 'av av--ai'; av.textContent = '⚡';
+  const bub = document.createElement('div');
+  bub.className = 'bub bub--ai';
+  bub.innerHTML =
+    '<div class="success">' +
+    '<div class="success-icon">🌟</div>' +
+    '<div class="success-title">' + count + ' star' + (count!==1?'s':'') + ' deployed!</div>' +
+    '<div class="success-sub">The energy is flowing. New pins are live on the globe.</div>' +
+    '<div class="success-links">' +
+      '<a href="globe-live.html" class="btn-link">🌍 View Globe</a>' +
+      '<button class="btn-secondary" onclick="location.reload()">Add more stars</button>' +
+    '</div></div>';
+  wrap.appendChild(av); wrap.appendChild(bub);
+  msgs.appendChild(wrap);
+  scrollBottom();
+  setProgress(100, 'Complete!');
+  setUI(false);
+  document.getElementById('tree-submit-area').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONVERSATION ENGINE
+// ═══════════════════════════════════════════════════════════════
+async function startChat() {
+  setUI(false);
+  showTyping();
+  try {
+    const kickoff = networkMembers.length
+      ? 'Hello. The network has ' + networkMembers.length +
+        ' existing members. Please begin the genealogical interview.'
+      : 'Hello. The network is empty. Please begin the interview to establish the root star.';
+
+    const resp = await callClaude(kickoff);
+    hideTyping();
+    addBubble('ai', resp.message, resp.chips,
+      networkMembers.length ? networkMembers.map(m => m.name) : null);
+    if (resp.upsert) upsertPerson(resp.upsert);
+    if (resp.progress) setProgress(resp.progress);
+    setUI(true);
+  } catch(e) {
+    hideTyping();
+    addBubble('ai', 'Could not connect to Claude. Error: ' + e.message +
+      '<br><br>Please check your API key.', []);
+  }
+}
+
+async function send(override) {
+  if (busy) return;
+  const input = document.getElementById('user-input');
+  const text  = (override !== undefined ? override : input.value).trim();
+  if (!text) return;
+
+  input.value = ''; input.style.height = 'auto';
+  addBubble('user', text);
+  setUI(false); busy = true;
+  showTyping();
+
+  try {
+    const resp = await callClaude(text);
+    hideTyping(); busy = false;
+
+    // upserts now handled inside callWithRotation via native function calls
+    // resp only carries {message, chips, progress, sessionComplete}
+
+    if (resp.sessionComplete && familyTree.length) {
+      // Gemini called complete_session — show confirmation + deploy UI
+      if (resp.message) addBubble('ai', resp.message);
+      setTimeout(() => showSummary(familyTree), 300);
+      return;
+    }
+
+    if (resp.message) addBubble('ai', resp.message, resp.chips);
+    if (resp.progress !== undefined) setProgress(resp.progress);
+    setUI(true);
+
+  } catch(e) {
+    hideTyping(); busy = false;
+    if (e.message.includes('429') || e.message.includes('rate limit') || e.message.includes('limit')) {
+      addBubble('ai',
+        'Claude is rate limited right now. ' +
+        'The free tier resets each minute — please wait ~60 seconds and try again.',
+        ['Try again']);
+    } else {
+      addBubble('ai', 'Something went wrong: ' + e.message, ['Try again']);
+      console.error(e);
+    }
+    setUI(true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+async function init() {
+  setUI(false);
+  await loadNetwork();
+  showModelBadge();
+  // Try to create a context cache (silently falls back if unsupported)
+  await createOrRefreshCache();
+  await startChat();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('user-input');
+  inp.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  document.getElementById('api-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveKey();
+  });
+
+  // Restore saved key
+  try {
+    const saved = localStorage.getItem('eco_claude_key');
+    if (saved && saved.startsWith('sk-ant-') && saved.length > 30) {
+      CLAUDE_KEY = saved;
+      document.getElementById('key-gate').style.display = 'none';
+      init();
+    }
+  } catch(e) {}
+});
+</script>
+<script src="scripts/theme-selector.js"></script>
+<script src="header.js"></script>
+</body>
+</html>

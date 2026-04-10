@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · WhatsApp Import</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+.page{max-width:720px;margin:0 auto;padding:24px 20px 80px;}
+.sec-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+.sec-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.5rem;margin-bottom:8px;}
+.sec-sub{font-size:13px;color:var(--color-text-dim);margin-bottom:28px;line-height:1.6;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:16px;}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.3);color:var(--blue);font-size: 12px;font-weight:900;margin-right:8px;flex-shrink:0;}
+.step-row{display:flex;align-items:flex-start;gap:0;margin-bottom:16px;}
+.step-label{font-size:13px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.5;padding-top:4px;}
+.drop-zone{border:2px dashed rgba(0,170,255,.2);border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:rgba(0,170,255,.02);}
+.drop-zone:hover,.drop-zone.drag{border-color:rgba(0,170,255,.5);background:rgba(0,170,255,.06);}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.drop-icon{font-size:32px;margin-bottom:10px;}
+.drop-text{font-size:13px;color:var(--color-text-dim);}
+.drop-hint{font-size: 12px;color:var(--dim);margin-top:6px;}
+.preview-box{background:var(--bg);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px;max-height:240px;overflow-y:auto;font-size: 12px;color:var(--color-text-dim);font-family:monospace;line-height:1.7;margin-top:12px;display:none;}
+.parse-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}
+.stat-chip{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.18);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--blue);}
+.member-map-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.member-map-row:last-child{border-bottom:none;}
+.wa-name{font-size:13px;color:var(--white);min-width:140px;}
+.arrow{color:var(--dim);flex-shrink:0;}
+.member-search{flex:1;background:var(--bg);border:1px solid rgba(0,170,255,.15);border-radius:6px;padding:7px 12px;font-size:12px;color:var(--white);outline:none;transition:border-color .15s;}
+.member-search:focus{border-color:rgba(0,170,255,.35);}
+.suggest-wrap{flex:1;position:relative;}
+.suggest-list{position:absolute;top:100%;left:0;right:0;background:#0D1825;border:1px solid rgba(0,170,255,.2);border-radius:8px;z-index:99;max-height:160px;overflow-y:auto;display:none;}
+.suggest-item{padding:8px 12px;font-size:12px;cursor:pointer;}
+.suggest-item:hover{background:rgba(0,170,255,.1);}
+.skip-badge{font-size: 12px;color:var(--dim);padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);cursor:pointer;white-space:nowrap;}
+.skip-badge.skipped{background:rgba(255,80,80,.1);border-color:rgba(255,80,80,.2);color:rgba(255,80,80,.6);}
+.import-btn{background:var(--blue);color:var(--bg);border:none;border-radius:8px;padding:12px 28px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;cursor:pointer;margin-top:16px;transition:filter .15s;}
+.import-btn:hover{filter:brightness(1.1);}
+.import-btn:disabled{opacity:.4;cursor:not-allowed;}
+.progress-bar{height:4px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin:12px 0;}
+.progress-fill{height:100%;background:var(--blue);border-radius:4px;transition:width .3s;}
+.result-list{max-height:300px;overflow-y:auto;}
+.result-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--color-text-dim);line-height:1.5;}
+.result-item:last-child{border-bottom:none;}
+.result-name{color:var(--blue);font-weight:700;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page">
+  <div class="sec-label">ECO · Import</div>
+  <div class="sec-title">WhatsApp Chat Import</div>
+  <div class="sec-sub">Parse a WhatsApp chat export and save meaningful messages as family notes — searchable, attributed, permanent.</div>
+
+  <!-- Step 1: Upload -->
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;">Step 1 — Upload chat file</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:14px;line-height:1.6;">
+      In WhatsApp: open a group or chat → ⋮ Menu → More → Export Chat → Without Media → share the .txt file here.
+    </div>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept=".txt" onchange="handleFile(this.files[0])">
+      <div class="drop-icon">📄</div>
+      <div class="drop-text">Drop your WhatsApp export here, or tap to choose</div>
+      <div class="drop-hint">.txt file only · stays on your device until you choose to save</div>
+    </div>
+    <div class="preview-box" id="preview-box"></div>
+    <div class="parse-stats" id="parse-stats"></div>
+  </div>
+
+  <!-- Step 2: Map senders -->
+  <div class="card" id="map-card" style="display:none;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;">Step 2 — Match senders to network members</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px;">Match each WhatsApp name to someone in your network. Skip anyone you don't want to import.</div>
+    <div id="member-map"></div>
+  </div>
+
+  <!-- Step 3: Import -->
+  <div class="card" id="import-card" style="display:none;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;">Step 3 — Import to ECO</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px;" id="import-summary"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <button class="import-btn" id="import-btn" onclick="runImport()">Import messages →</button>
+    <div id="import-result" style="margin-top:16px;display:none;">
+      <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:10px;" id="result-summary"></div>
+      <div class="result-list" id="result-list"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+let _me = null, _allMembers = [];
+let _parsed = []; // {sender, text, ts}
+let _senders = {}; // {wa_name: {member_id, skip}}
+let _batchId = null;
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    if(!session){window.location.href='enter.html?next=whatsapp-import.html';return;}
+    initPage(session);
+  });
+})();
+
+async function initPage(session){
+  const {data:me} = await sb.from('users').select('user_id,full_name').eq('auth_id',session.user.id).maybeSingle();
+  _me = me;
+  const {data:members} = await sb.from('users').select('user_id,full_name')
+    .eq('network_id','lightning-001').eq('status','Living').order('full_name').limit(200);
+  _allMembers = members||[];
+}
+
+// ── PARSE ──
+function handleFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseChat(e.target.result);
+  reader.readAsText(file, 'utf-8');
+}
+
+function parseChat(raw){
+  // WhatsApp format: "M/D/YY, H:MM AM – Name: message" or "[DD/MM/YYYY, HH:MM:SS] Name: message"
+  const lines = raw.split('\n');
+  const msgs = [];
+  // Two common patterns
+  const re1 = /^(\d{1,2}\/\d{1,2}\/\d{2,4},\s[\d:]+\s[AP]M)\s[–-]\s([^:]+):\s(.+)$/;
+  const re2 = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),\s([\d:]+)\]\s([^:]+):\s(.+)$/;
+  let cur = null;
+
+  lines.forEach(line => {
+    line = line.trim();
+    const m1 = line.match(re1);
+    const m2 = line.match(re2);
+    if(m1){ cur={ts:m1[1],sender:m1[2].trim(),text:m1[3].trim()}; msgs.push(cur); }
+    else if(m2){ cur={ts:`${m2[1]} ${m2[2]}`,sender:m2[3].trim(),text:m2[4].trim()}; msgs.push(cur); }
+    else if(cur && line && !line.startsWith('<Media') && !line.startsWith('‎')) {
+      cur.text += ' '+line; // continuation
+    }
+  });
+
+  // Filter: skip system messages, media omitted, short
+  _parsed = msgs.filter(m =>
+    m.sender &&
+    !m.sender.toLowerCase().includes('messages to this chat') &&
+    m.text.length > 15 &&
+    !m.text.includes('<Media omitted>') &&
+    !m.text.includes('omitted') &&
+    !m.text.toLowerCase().startsWith('messages and calls are end-to-end')
+  );
+
+  const unique = [...new Set(_parsed.map(m=>m.sender))];
+  _senders = {};
+  unique.forEach(s=>{ _senders[s]={member_id:null,skip:false}; });
+
+  // Preview
+  const preview = document.getElementById('preview-box');
+  preview.style.display='block';
+  preview.textContent = _parsed.slice(0,8).map(m=>`[${m.sender}] ${m.text.slice(0,80)}`).join('\n') + `\n… (${_parsed.length} total messages)`;
+
+  // Stats
+  document.getElementById('parse-stats').innerHTML = [
+    `<div class="stat-chip">${_parsed.length} messages</div>`,
+    `<div class="stat-chip">${unique.length} senders</div>`,
+    `<div class="stat-chip">${new Set(_parsed.map(m=>m.ts?.split(',')[0])).size} days</div>`,
+  ].join('');
+
+  renderMemberMap(unique);
+}
+
+function renderMemberMap(senders){
+  const card = document.getElementById('map-card');
+  card.style.display='block';
+  document.getElementById('member-map').innerHTML = senders.map(s=>`
+    <div class="member-map-row" id="row-${CSS.escape(s)}">
+      <div class="wa-name">📱 ${s}</div>
+      <div class="arrow">→</div>
+      <div class="suggest-wrap">
+        <input class="member-search" placeholder="Search member…" autocomplete="off"
+          oninput="suggestMember(this,'${s.replace(/'/g,"\\'")}')">
+        <div class="suggest-list" id="sl-${s.replace(/[^a-z0-9]/gi,'_')}"></div>
+        <input type="hidden" id="mid-${s.replace(/[^a-z0-9]/gi,'_')}">
+      </div>
+      <div class="skip-badge" id="skip-${s.replace(/[^a-z0-9]/gi,'_')}"
+        onclick="toggleSkip('${s.replace(/'/g,"\\'")}')">Skip</div>
+    </div>`).join('');
+  updateImportSummary();
+  document.getElementById('import-card').style.display='block';
+}
+
+function suggestMember(input, waName){
+  const q=input.value.toLowerCase();
+  const key=waName.replace(/[^a-z0-9]/gi,'_');
+  const list=document.getElementById('sl-'+key);
+  if(!q){list.style.display='none';return;}
+  const hits=_allMembers.filter(m=>(m.full_name||'').toLowerCase().includes(q)).slice(0,8);
+  if(!hits.length){list.style.display='none';return;}
+  list.style.display='block';
+  list.innerHTML=hits.map(m=>`<div class="suggest-item" onclick="assignMember('${waName.replace(/'/g,"\\'")}','${m.user_id}','${(m.full_name||'').replace(/'/g,"\\'")}',this)">${m.full_name}</div>`).join('');
+}
+
+function assignMember(waName, memberId, memberName, el){
+  const key=waName.replace(/[^a-z0-9]/gi,'_');
+  _senders[waName]={member_id:memberId,skip:false};
+  el.closest('.suggest-wrap').querySelector('input[type=text]').value=memberName;
+  el.closest('.suggest-list').style.display='none';
+  document.getElementById('mid-'+key).value=memberId;
+  updateImportSummary();
+}
+
+function toggleSkip(waName){
+  const key=waName.replace(/[^a-z0-9]/gi,'_');
+  _senders[waName].skip = !_senders[waName].skip;
+  const badge=document.getElementById('skip-'+key);
+  badge.classList.toggle('skipped',_senders[waName].skip);
+  badge.textContent=_senders[waName].skip?'Skipped':'Skip';
+  updateImportSummary();
+}
+
+function updateImportSummary(){
+  const mapped=Object.entries(_senders).filter(([k,v])=>v.member_id&&!v.skip).length;
+  const skipped=Object.values(_senders).filter(v=>v.skip).length;
+  const msgs=_parsed.filter(m=>_senders[m.sender]?.member_id&&!_senders[m.sender]?.skip).length;
+  document.getElementById('import-summary').textContent=
+    `${msgs} messages from ${mapped} mapped members will be saved. ${skipped} senders skipped.`;
+}
+
+async function runImport(){
+  const btn=document.getElementById('import-btn');
+  btn.disabled=true; btn.textContent='Importing…';
+  _batchId = crypto.randomUUID();
+  const fill=document.getElementById('progress-fill');
+
+  const toImport=_parsed.filter(m=>_senders[m.sender]?.member_id&&!_senders[m.sender]?.skip);
+  if(!toImport.length){showToast('Nothing to import — map at least one sender');btn.disabled=false;btn.textContent='Import messages →';return;}
+
+  // Batch insert in chunks of 50
+  const CHUNK=50; let saved=0;
+  const results=[];
+  for(let i=0;i<toImport.length;i+=CHUNK){
+    const chunk=toImport.slice(i,i+CHUNK).map(m=>({
+      network_id:'lightning-001',
+      about_member_id:_senders[m.sender].member_id,
+      added_by:_me?.user_id||null,
+      note_text:`[WhatsApp · ${m.ts||''}] ${m.text}`,
+      source:'whatsapp_import',
+      import_batch_id:_batchId,
+    }));
+    const {error}=await sb.from('family_notes').insert(chunk);
+    if(!error){saved+=chunk.length; chunk.forEach(c=>results.push(c));}
+    fill.style.width=Math.round(((i+CHUNK)/toImport.length)*100)+'%';
+  }
+
+  fill.style.width='100%';
+  const resultDiv=document.getElementById('import-result');
+  resultDiv.style.display='block';
+  document.getElementById('result-summary').textContent=`✓ ${saved} messages imported successfully`;
+  document.getElementById('result-list').innerHTML=results.slice(0,20).map(r=>`
+    <div class="result-item"><span class="result-name">${r.note_text.split(']')[0].replace('[WhatsApp · ','').replace('[',' ')}</span> — ${r.note_text.split('] ')[1]?.slice(0,80)||''}</div>
+  `).join('')+(saved>20?`<div style="color:var(--dim);font-size:11px;padding:8px 0;">…and ${saved-20} more</div>`:'');
+  showToast(`${saved} messages saved`,'green');
+  btn.textContent='Done ✓';
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>{t.className='toast';},2800);
+}
+
+// Drag and drop
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

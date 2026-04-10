@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Pet</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+.page{max-width:680px;margin:0 auto;padding:24px 20px 80px;}
+
+/* HERO */
+.pet-hero{display:flex;align-items:center;gap:24px;margin-bottom:28px;}
+.pet-photo{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;}
+.pet-avatar{width:96px;height:96px;border-radius:50%;background:rgba(0,170,255,.08);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:42px;flex-shrink:0;}
+.pet-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.8rem;color:var(--white);line-height:1;}
+.pet-type{font-size:13px;color:var(--blue);margin-top:5px;font-weight:600;}
+.pet-breed{font-size:12px;color:var(--dim);margin-top:2px;}
+.pet-status-passed{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:rgba(255,180,80,.8);background:rgba(255,180,80,.08);border:1px solid rgba(255,180,80,.2);border-radius:20px;padding:3px 12px;}
+
+/* DETAILS */
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+.info-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;}
+.info-row{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.info-row:last-child{border-bottom:none;}
+.info-key{font-size:12px;color:var(--dim);width:110px;flex-shrink:0;}
+.info-val{font-size:13px;color:var(--white);}
+.owner-link{color:var(--blue);text-decoration:none;font-weight:600;}
+.owner-link:hover{text-decoration:underline;}
+.bio-text{font-size:14px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.75;}
+
+/* EDIT INLINE */
+.edit-btn{font-size: 12px;color:rgba(0,170,255,.5);cursor:pointer;border:1px solid rgba(0,170,255,.2);background:none;border-radius:6px;padding:3px 9px;margin-left:auto;transition:all .15s;}
+.edit-btn:hover{color:var(--blue);border-color:var(--blue);}
+.field-input{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;margin-bottom:8px;font-family:Arial,sans-serif;}
+.field-input:focus{border-color:rgba(0,170,255,.45);}
+.field-textarea{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;resize:vertical;min-height:80px;font-family:Arial,sans-serif;}
+.save-btn{background:var(--blue);color:var(--bg);border:none;border-radius:8px;padding:8px 20px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;cursor:pointer;transition:filter .15s;}
+.save-btn:hover{filter:brightness(1.1);}
+.cancel-btn{background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer;margin-left:8px;}
+
+/* PHOTO UPLOAD */
+.photo-upload-area{border:2px dashed rgba(0,170,255,.2);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .18s;position:relative;margin-bottom:12px;}
+.photo-upload-area:hover{border-color:rgba(0,170,255,.45);background:rgba(0,170,255,.03);}
+.photo-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.photo-upload-hint{font-size:12px;color:var(--dim);}
+
+/* POSTS */
+.post-compose{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:20px;}
+.post-compose-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;}
+.post-input{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--white);outline:none;resize:none;min-height:72px;font-family:Arial,sans-serif;transition:border-color .15s;}
+.post-input:focus{border-color:rgba(0,170,255,.4);}
+.post-actions{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.post-photo-btn{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.7);font-size: 12px;font-weight:700;border-radius:8px;padding:7px 14px;cursor:pointer;position:relative;transition:all .15s;}
+.post-photo-btn:hover{background:rgba(0,170,255,.15);color:var(--blue);}
+.post-photo-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.post-submit{background:var(--green);color:var(--bg);border:none;border-radius:8px;padding:8px 20px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;cursor:pointer;margin-left:auto;transition:filter .15s;}
+.post-submit:hover{filter:brightness(1.1);}
+.post-submit:disabled{opacity:.4;cursor:not-allowed;}
+.post-preview-img{max-width:100%;border-radius:8px;margin-top:8px;max-height:200px;object-fit:cover;}
+
+/* FEED */
+.posts-section-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+.post-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+.post-meta{font-size: 12px;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.post-author{color:rgba(0,170,255,.6);font-weight:700;}
+.post-content{font-size:14px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.65;}
+.post-img{width:100%;border-radius:8px;margin-top:10px;max-height:320px;object-fit:cover;}
+.post-del{background:none;border:none;color:rgba(255,80,80,.3);font-size: 12px;cursor:pointer;}
+.post-del:hover{color:#ff5050;}
+.empty-posts{text-align:center;padding:36px 0;color:var(--dim);font-size:13px;line-height:1.7;}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page" id="page-content">
+  <div style="color:var(--dim);font-size:13px;padding:40px 0 0;text-align:center;">Loading…</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+const PET_ID = new URLSearchParams(location.search).get('id');
+let _me = null, _pet = null, _isOwner = false, _postPhotoFile = null;
+
+const PET_EMOJI = { Dog:'🐕', Cat:'🐈', Bird:'🦜', Fish:'🐟', Rabbit:'🐇', Horse:'🐴', Other:'🐾' };
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    if(session) loadMe(session).then(()=>loadPet());
+    else loadPet();
+  });
+})();
+
+async function loadMe(session){
+  const {data} = await sb.from('users').select('user_id,full_name').eq('auth_id',session.user.id).maybeSingle();
+  _me = data;
+}
+
+async function loadPet(){
+  if(!PET_ID){
+    document.getElementById('page-content').innerHTML='<div style="color:var(--dim);padding:60px 0;text-align:center;">No pet specified.</div>';
+    return;
+  }
+  const {data:pet} = await sb.from('pets').select('*').eq('pet_id',PET_ID).maybeSingle();
+  if(!pet){
+    document.getElementById('page-content').innerHTML='<div style="color:var(--dim);padding:60px 0;text-align:center;">Pet not found.</div>';
+    return;
+  }
+  _pet = pet;
+
+  // Get owner name
+  const {data:owner} = await sb.from('users').select('user_id,full_name').eq('user_id',pet.owner_id).maybeSingle();
+
+  // Get co-owners names
+  const coOwnerIds = pet.co_owner_ids || [];
+  let coOwners = [];
+  if(coOwnerIds.length){
+    const {data:cos} = await sb.from('users').select('user_id,full_name').in('user_id',coOwnerIds);
+    coOwners = cos||[];
+  }
+
+  _isOwner = _me && (pet.owner_id===_me.user_id || coOwnerIds.includes(_me.user_id));
+
+  renderPet(pet, owner, coOwners);
+  loadPosts();
+}
+
+function renderPet(pet, owner, coOwners){
+  const emoji = PET_EMOJI[pet.type] || '🐾';
+  const isPassed = pet.status === 'Passed' || pet.status === 'passed';
+
+  const photoEl = pet.photo_id
+    ? `<img class="pet-photo" src="${pet.photo_id}" alt="${pet.name}">`
+    : `<div class="pet-avatar">${emoji}</div>`;
+
+  const passedBadge = isPassed
+    ? `<div class="pet-status-passed">🌈 Rainbow Bridge${pet.passed_mm_yyyy ? ' · ' + pet.passed_mm_yyyy : ''}</div>` : '';
+
+  const ownerLinks = [
+    owner ? `<a class="owner-link" href="member.html?id=${owner.user_id}">${owner.full_name}</a>` : null,
+    ...coOwners.map(c=>`<a class="owner-link" href="member.html?id=${c.user_id}">${c.full_name}</a>`)
+  ].filter(Boolean).join(', ');
+
+  const infoRows = [
+    owner ? {key:'Family', val: ownerLinks, raw:true} : null,
+    pet.type ? {key:'Type', val: `${emoji} ${pet.type}`} : null,
+    pet.breed ? {key:'Breed', val: pet.breed} : null,
+    pet.birth_mm_yyyy ? {key:'Born', val: pet.birth_mm_yyyy} : null,
+    pet.birth_location ? {key:'From', val: pet.birth_location} : null,
+    pet.current_location ? {key:'Lives in', val: pet.current_location} : null,
+  ].filter(Boolean);
+
+  const editControls = _isOwner ? `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.05);">
+      <button class="edit-btn" onclick="toggleEditProfile()">✏ Edit profile</button>
+    </div>
+    <div id="edit-profile-form" style="display:none;margin-top:14px;">
+      <input class="field-input" id="edit-breed" placeholder="Breed…" value="${pet.breed||''}">
+      <input class="field-input" id="edit-birth" placeholder="Birth month/year (e.g. 03/2018)…" value="${pet.birth_mm_yyyy||''}">
+      <input class="field-input" id="edit-location" placeholder="Current location…" value="${pet.current_location||''}">
+      <input class="field-input" id="edit-passed" placeholder="Passed month/year (if applicable)…" value="${pet.passed_mm_yyyy||''}">
+      <textarea class="field-textarea" id="edit-bio" placeholder="Tell their story…">${pet.bio||''}</textarea>
+      <div class="photo-upload-area" id="photo-upload-area">
+        <input type="file" accept="image/*" onchange="handlePhotoSelect(this)">
+        <div style="font-size:24px;margin-bottom:6px;">📸</div>
+        <div class="photo-upload-hint">Tap to upload a photo of ${pet.name}</div>
+        <div id="photo-preview-wrap"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+        <button class="save-btn" onclick="saveProfile()">Save</button>
+        <button class="cancel-btn" onclick="toggleEditProfile()">Cancel</button>
+      </div>
+    </div>` : '';
+
+  const postCompose = _me ? `
+    <div class="post-compose">
+      <div class="post-compose-label">Share a moment with ${pet.name}</div>
+      <textarea class="post-input" id="post-input" placeholder="A walk, a trick, a ridiculous thing they did…"></textarea>
+      <div id="post-img-preview"></div>
+      <div class="post-actions">
+        <div class="post-photo-btn">📷 Photo<input type="file" accept="image/*" onchange="handlePostPhoto(this)"></div>
+        <button class="post-submit" id="post-submit" onclick="submitPost()">Post →</button>
+      </div>
+    </div>` : '';
+
+  document.getElementById('page-content').innerHTML = `
+    <div class="pet-hero">
+      ${photoEl}
+      <div>
+        <div class="pet-name">${pet.name}</div>
+        <div class="pet-type">${emoji} ${pet.type||'Pet'}${pet.breed ? ' · ' + pet.breed : ''}</div>
+        ${passedBadge}
+      </div>
+    </div>
+
+    ${pet.bio ? `<div class="info-card"><div class="bio-text">${pet.bio}</div></div>` : ''}
+
+    <div class="info-card">
+      <div class="info-label" style="display:flex;align-items:center;">Details</div>
+      ${infoRows.map(r=>`<div class="info-row">
+        <div class="info-key">${r.key}</div>
+        <div class="info-val">${r.raw ? r.val : r.val}</div>
+      </div>`).join('')}
+      ${editControls}
+    </div>
+
+    ${postCompose}
+
+    <div class="posts-section-label" id="posts-label">Updates</div>
+    <div id="posts-feed"><div style="color:var(--dim);font-size:12px;">Loading…</div></div>
+  `;
+}
+
+async function loadPosts(){
+  const {data:posts} = await sb.from('pet_posts')
+    .select('*').eq('pet_id',PET_ID)
+    .order('created_at',{ascending:false}).limit(50);
+  const ids = [...new Set((posts||[]).map(p=>p.posted_by))];
+  let nameMap = {};
+  if(ids.length){
+    const {data:us} = await sb.from('users').select('user_id,full_name').in('user_id',ids);
+    nameMap = Object.fromEntries((us||[]).map(u=>[u.user_id,u.full_name]));
+  }
+  const feed = document.getElementById('posts-feed');
+  if(!feed) return;
+  if(!posts?.length){
+    feed.innerHTML=`<div class="empty-posts">No updates yet.<br>Be the first to share a moment with ${_pet?.name||'this pet'}.</div>`;
+    return;
+  }
+  feed.innerHTML = posts.map(p=>{
+    const author = nameMap[p.posted_by]||'Network member';
+    const when = new Date(p.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const canDel = _me && (_me.user_id===p.posted_by || _isOwner);
+    return `<div class="post-card">
+      <div class="post-meta">
+        <span><span class="post-author">${author}</span> · ${when}</span>
+        ${canDel?`<button class="post-del" onclick="deletePost('${p.id}')">Remove</button>`:''}
+      </div>
+      <div class="post-content">${p.content}</div>
+      ${p.photo_url?`<img class="post-img" src="${p.photo_url}" alt="Post photo">`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── EDIT PROFILE ──
+function toggleEditProfile(){
+  const f = document.getElementById('edit-profile-form');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+function handlePhotoSelect(input){
+  if(!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('photo-preview-wrap').innerHTML =
+      `<img src="${e.target.result}" style="max-width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:cover;">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+  window._petPhotoFile = input.files[0];
+}
+
+async function saveProfile(){
+  const breed   = document.getElementById('edit-breed')?.value.trim()||null;
+  const birth   = document.getElementById('edit-birth')?.value.trim()||null;
+  const loc     = document.getElementById('edit-location')?.value.trim()||null;
+  const passed  = document.getElementById('edit-passed')?.value.trim()||null;
+  const bio     = document.getElementById('edit-bio')?.value.trim()||null;
+  let photo_id  = _pet.photo_id;
+
+  if(window._petPhotoFile){
+    const ext = window._petPhotoFile.name.split('.').pop();
+    const path = `${PET_ID}/${Date.now()}.${ext}`;
+    const {data:up, error:ue} = await sb.storage.from('pet-photos').upload(path, window._petPhotoFile, {upsert:true});
+    if(!ue){
+      const {data:url} = sb.storage.from('pet-photos').getPublicUrl(path);
+      photo_id = url.publicUrl;
+    }
+  }
+
+  const updates = { breed, birth_mm_yyyy:birth, current_location:loc, passed_mm_yyyy:passed, bio, photo_id,
+    status: passed ? 'Passed' : _pet.status };
+  const {error} = await sb.from('pets').update(updates).eq('pet_id',PET_ID);
+  if(!error){ showToast('Saved ✓','green'); window._petPhotoFile=null; loadPet(); }
+  else showToast('Could not save');
+}
+
+// ── POSTS ──
+function handlePostPhoto(input){
+  if(!input.files[0]) return;
+  _postPhotoFile = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('post-img-preview').innerHTML =
+      `<img src="${e.target.result}" class="post-preview-img">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function submitPost(){
+  const content = document.getElementById('post-input')?.value.trim();
+  if(!content && !_postPhotoFile){ showToast('Write something first'); return; }
+  if(!_me){ showToast('Sign in to post'); return; }
+  const btn = document.getElementById('post-submit');
+  btn.disabled=true; btn.textContent='Posting…';
+  let photo_url = null;
+  if(_postPhotoFile){
+    const ext = _postPhotoFile.name.split('.').pop();
+    const path = `posts/${PET_ID}/${Date.now()}.${ext}`;
+    const {data:up, error:ue} = await sb.storage.from('pet-photos').upload(path, _postPhotoFile, {upsert:true});
+    if(!ue){
+      const {data:url} = sb.storage.from('pet-photos').getPublicUrl(path);
+      photo_url = url.publicUrl;
+    }
+  }
+  const {error} = await sb.from('pet_posts').insert({
+    pet_id:PET_ID, network_id:'lightning-001',
+    posted_by:_me.user_id, content:content||'📸', photo_url
+  });
+  if(!error){
+    showToast('Posted ✓','green');
+    document.getElementById('post-input').value='';
+    document.getElementById('post-img-preview').innerHTML='';
+    _postPhotoFile=null;
+    btn.disabled=false; btn.textContent='Post →';
+    loadPosts();
+  } else { showToast('Could not post'); btn.disabled=false; btn.textContent='Post →'; }
+}
+
+async function deletePost(id){
+  await sb.from('pet_posts').delete().eq('id',id);
+  loadPosts();
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>{t.className='toast';},2800);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

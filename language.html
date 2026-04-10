@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Language Transmission</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+.page{max-width:760px;margin:0 auto;padding:24px 20px 80px;}
+.sec-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+.sec-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.5rem;color:var(--white);margin-bottom:20px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:16px;}
+.stat-row{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;flex:1;min-width:120px;}
+.stat-num{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:2rem;color:var(--blue);line-height:1;}
+.stat-lbl{font-size: 12px;color:var(--dim);margin-top:4px;}
+.pair-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;transition:border-color .15s;}
+.pair-card:hover{border-color:rgba(0,170,255,.28);}
+.pair-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.pair-info{flex:1;}
+.pair-name{font-size:14px;font-weight:700;color:var(--white);margin-bottom:2px;}
+.pair-lang{font-size:12px;color:var(--blue);}
+.pair-role{font-size: 12px;color:var(--dim);margin-top:2px;}
+.pair-badge{padding:3px 10px;border-radius:12px;font-size: 12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;letter-spacing:.05em;}
+.pair-sessions{font-size: 12px;color:var(--dim);white-space:nowrap;}
+.tab-bar{display:flex;gap:4px;margin-bottom:20px;background:rgba(255,255,255,.04);border-radius:10px;padding:4px;}
+.tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;letter-spacing:.06em;color:var(--dim);cursor:pointer;transition:all .15s;}
+.tab.on{background:rgba(0,170,255,.15);color:var(--blue);}
+.action-btn{padding:8px 18px;border-radius:8px;font-size:12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;cursor:pointer;transition:all .15s;border:none;}
+.btn-blue{background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.3);color:var(--blue);}
+.btn-blue:hover{background:rgba(0,170,255,.28);}
+.btn-green{background:rgba(0,204,68,.12);border:1px solid rgba(0,204,68,.28);color:var(--green);}
+.btn-green:hover{background:rgba(0,204,68,.22);}
+.empty{text-align:center;padding:40px 20px;color:var(--dim);font-size:13px;line-height:1.7;}
+/* New pairing panel */
+.np-panel{display:none;background:var(--bg2);border:1px solid rgba(0,170,255,.2);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+.np-panel.open{display:block;}
+.np-label{font-size: 12px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+.np-search{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.18);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--white);outline:none;margin-bottom:10px;}
+.np-search:focus{border-color:rgba(0,170,255,.4);}
+.suggest-wrap{position:relative;}
+.suggest-list{background:#0D1825;border:1px solid rgba(0,170,255,.2);border-radius:8px;max-height:180px;overflow-y:auto;display:none;}
+.suggest-item{padding:9px 14px;font-size:13px;cursor:pointer;transition:background .12s;}
+.suggest-item:hover{background:rgba(0,170,255,.1);}
+.lang-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.lang-pill{padding:6px 13px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--color-text-dim);font-size:12px;cursor:pointer;transition:all .15s;}
+.lang-pill.sel{border-color:var(--green);background:rgba(0,204,68,.1);color:var(--green);}
+.role-toggle{display:flex;gap:8px;margin-bottom:16px;}
+.role-btn{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:var(--color-text-dim);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;}
+.role-btn.sel{border-color:var(--blue);background:rgba(0,170,255,.12);color:var(--blue);}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page">
+  <div class="sec-label">ECO · Language</div>
+  <div class="sec-title">Language Transmission</div>
+
+  <div class="stat-row" id="stats-row">
+    <div class="stat-box"><div class="stat-num" id="s-pairings">—</div><div class="stat-lbl">Active pairings</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-languages">—</div><div class="stat-lbl">Languages in transmission</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-mentors">—</div><div class="stat-lbl">Mentors</div></div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab on" id="tab-my"  onclick="switchTab('my')">My Pairings</div>
+    <div class="tab"    id="tab-all" onclick="switchTab('all')">Network</div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+    <button class="action-btn btn-blue" onclick="toggleNewPanel()">+ New Pairing</button>
+  </div>
+
+  <!-- New Pairing Panel -->
+  <div class="np-panel" id="np-panel">
+    <div class="np-label" style="margin-bottom:14px;font-size:13px;color:var(--white);font-weight:700;">Create a language pairing</div>
+    <div class="np-label">Your role</div>
+    <div class="role-toggle">
+      <div class="role-btn sel" id="role-mentor" onclick="selRole('mentor')">📖 I am the Mentor<br><span style="font-size:10px;font-weight:400;opacity:.6;">I speak this language fluently</span></div>
+      <div class="role-btn" id="role-apprentice" onclick="selRole('apprentice')">🌱 I am the Apprentice<br><span style="font-size:10px;font-weight:400;opacity:.6;">I want to learn this language</span></div>
+    </div>
+    <div class="np-label">Partner</div>
+    <div class="suggest-wrap">
+      <input class="np-search" id="partner-search" placeholder="Search network member…" autocomplete="off" oninput="suggestPartner(this.value)">
+      <div class="suggest-list" id="partner-suggest"></div>
+      <input type="hidden" id="partner-id">
+    </div>
+    <div class="np-label">Language</div>
+    <div class="lang-pills" id="lang-pills"></div>
+    <button class="action-btn btn-green" onclick="createPairing()">Create pairing →</button>
+    <button class="action-btn" style="background:none;border:none;color:var(--dim);margin-left:8px;cursor:pointer;" onclick="toggleNewPanel()">Cancel</button>
+  </div>
+
+  <div id="pairs-container"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+let _me = null, _allMembers = [], _allPairings = [];
+let _selRole = 'mentor', _selLang = null, _curTab = 'my';
+
+const LANG_LIST = ['Hindi','Punjabi','Gujarati','Marathi','Tamil','Telugu','Urdu','Bengali',
+  'Fijian','Fijian Hindi','Sindhi','Kannada','Malayalam','Sanskrit','English','Mandarin',
+  'Arabic','Spanish','French','Portuguese','Swahili','Japanese','Korean'];
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    if(session) initPage(session);
+    else window.location.href='enter.html?next=language.html';
+  });
+})();
+
+async function initPage(session){
+  const {data:me} = await sb.from('users').select('user_id,full_name,languages_spoken').eq('auth_id',session.user.id).maybeSingle();
+  _me = me;
+  const {data:members} = await sb.from('users').select('user_id,full_name,languages_spoken').eq('network_id','lightning-001').eq('status','Living').order('full_name').limit(200);
+  _allMembers = (members||[]).filter(m=>m.user_id!==_me?.user_id);
+  buildLangPills();
+  loadPairings();
+}
+
+function buildLangPills(){
+  const langs = _me?.languages_spoken?.length ? [...new Set([..._me.languages_spoken,...LANG_LIST])] : LANG_LIST;
+  document.getElementById('lang-pills').innerHTML = langs.slice(0,20).map(l=>
+    `<div class="lang-pill" data-lang="${l}" onclick="selLang(this)">${l}</div>`
+  ).join('');
+}
+
+function selLang(el){
+  document.querySelectorAll('.lang-pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  _selLang = el.dataset.lang;
+}
+
+function selRole(r){
+  _selRole = r;
+  document.getElementById('role-mentor').classList.toggle('sel', r==='mentor');
+  document.getElementById('role-apprentice').classList.toggle('sel', r==='apprentice');
+}
+
+function toggleNewPanel(){
+  document.getElementById('np-panel').classList.toggle('open');
+}
+
+function suggestPartner(q){
+  const list = document.getElementById('partner-suggest');
+  if(!q){list.style.display='none';return;}
+  const hits = _allMembers.filter(m=>(m.full_name||'').toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!hits.length){list.style.display='none';return;}
+  list.style.display='block';
+  list.innerHTML = hits.map(m=>`<div class="suggest-item" onclick="selPartner('${m.user_id}','${(m.full_name||'').replace(/'/g,"\\'")}')">
+    ${m.full_name}${m.languages_spoken?.length?` <span style="font-size:10px;opacity:.5;">${m.languages_spoken.join(', ')}</span>`:''}
+  </div>`).join('');
+}
+
+function selPartner(id, name){
+  document.getElementById('partner-id').value = id;
+  document.getElementById('partner-search').value = name;
+  document.getElementById('partner-suggest').style.display='none';
+}
+
+async function createPairing(){
+  const partnerId = document.getElementById('partner-id').value;
+  if(!partnerId){showToast('Select a partner first');return;}
+  if(!_selLang){showToast('Select a language');return;}
+  const mentorId  = _selRole==='mentor' ? _me.user_id : partnerId;
+  const apprenticeId = _selRole==='mentor' ? partnerId : _me.user_id;
+  const {error} = await sb.from('language_pairings').insert({
+    mentor_id:mentorId, apprentice_id:apprenticeId, language:_selLang
+  });
+  if(!error){
+    showToast('Pairing created!','green');
+    document.getElementById('np-panel').classList.remove('open');
+    loadPairings();
+  } else showToast('Could not create — pairing may already exist');
+}
+
+async function loadPairings(){
+  if(!_me) return;
+  const {data} = await sb.from('language_pairings').select('*').eq('network_id','lightning-001').eq('status','active');
+  _allPairings = data||[];
+  updateStats();
+  renderPairings();
+}
+
+function updateStats(){
+  const langs = new Set(_allPairings.map(p=>p.language));
+  const mentors = new Set(_allPairings.map(p=>p.mentor_id));
+  document.getElementById('s-pairings').textContent = _allPairings.length;
+  document.getElementById('s-languages').textContent = langs.size;
+  document.getElementById('s-mentors').textContent = mentors.size;
+}
+
+function switchTab(t){
+  _curTab = t;
+  document.getElementById('tab-my').classList.toggle('on', t==='my');
+  document.getElementById('tab-all').classList.toggle('on', t==='all');
+  renderPairings();
+}
+
+async function renderPairings(){
+  const container = document.getElementById('pairs-container');
+  const pairs = _curTab==='my'
+    ? _allPairings.filter(p=>p.mentor_id===_me.user_id||p.apprentice_id===_me.user_id)
+    : _allPairings;
+
+  if(!pairs.length){
+    container.innerHTML = `<div class="empty">${_curTab==='my'?'No active pairings yet.<br>Create one to start transmitting language across generations.':'No pairings in the network yet.'}</div>`;
+    return;
+  }
+
+  // Fetch names for all user IDs in pairs
+  const ids = [...new Set(pairs.flatMap(p=>[p.mentor_id,p.apprentice_id]))];
+  const {data:members} = await sb.from('users').select('user_id,full_name').in('user_id',ids);
+  const nameMap = Object.fromEntries((members||[]).map(m=>[m.user_id,m.full_name]));
+
+  container.innerHTML = pairs.map(p=>{
+    const isMentor = p.mentor_id===_me.user_id;
+    const otherId = isMentor?p.apprentice_id:p.mentor_id;
+    const otherName = nameMap[otherId]||'Network member';
+    const myRole = isMentor?'Mentor':'Apprentice';
+    const roleColor = isMentor?'var(--blue)':'var(--green)';
+    const initials = otherName.split(' ').map(n=>n[0]).join('').slice(0,2);
+    const canLog = _me.user_id===p.mentor_id||_me.user_id===p.apprentice_id;
+    return `<div class="pair-card">
+      <div class="pair-avatar">${initials}</div>
+      <div class="pair-info">
+        <div class="pair-name">${otherName}</div>
+        <div class="pair-lang">🗣 ${p.language}</div>
+        <div class="pair-role" style="color:${roleColor};">${myRole}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div class="pair-sessions">${p.sessions_count||0} session${p.sessions_count===1?'':'s'}</div>
+        ${canLog?`<button class="action-btn btn-green" style="font-size:10px;padding:5px 12px;" onclick="logSession('${p.id}',${p.sessions_count||0})">Log session</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function logSession(id, current){
+  const {error} = await sb.from('language_pairings').update({sessions_count:current+1}).eq('id',id);
+  if(!error){showToast('Session logged ✓','green'); loadPairings();}
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>{t.className='toast';},2800);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

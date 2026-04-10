@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Sovereign</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#04080F;color:#E8F4F0;font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.shell{width:100%;max-width:560px;padding:40px 32px;}
+.wordmark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.4rem;margin-bottom:4px;}
+.wordmark span:nth-child(1){color:#00AAFF;}
+.wordmark span:nth-child(2){color:#00CC44;}
+.wordmark span:nth-child(3){color:#FFF;}
+.tier-label{font-size:10px;font-weight:700;letter-spacing:.18em;color:rgba(255,80,80,.6);text-transform:uppercase;margin-bottom:32px;}
+.section{background:#0A1520;border:1px solid rgba(255,80,80,.15);border-radius:12px;padding:22px 24px;margin-bottom:16px;}
+.section-title{font-size:10px;font-weight:700;letter-spacing:.12em;color:rgba(255,80,80,.5);text-transform:uppercase;margin-bottom:14px;}
+.member-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.member-row:last-child{border-bottom:none;}
+.member-name{flex:1;font-size:14px;color:#E8F4F0;}
+.member-id{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;}
+.role-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap;}
+.role-select{background:#04080F;border:1px solid rgba(255,255,255,.1);color:#E8F4F0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;}
+.save-row-btn{background:none;border:1px solid rgba(255,80,80,.25);color:rgba(255,80,80,.6);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.save-row-btn:hover{border-color:rgba(255,80,80,.6);color:#ff5050;}
+.search-input{width:100%;background:#04080F;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;font-size:13px;color:#E8F4F0;outline:none;margin-bottom:12px;}
+.search-input:focus{border-color:rgba(255,80,80,.3);}
+.logout-btn{width:100%;background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);border-radius:8px;padding:11px;font-size:12px;cursor:pointer;margin-top:12px;transition:all .15s;}
+.logout-btn:hover{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.6);}
+.gate{text-align:center;padding:40px 0;}
+.gate-title{font-size:1.1rem;font-weight:700;color:rgba(255,80,80,.7);margin-bottom:8px;}
+.gate-sub{font-size:13px;color:rgba(255,255,255,.3);line-height:1.6;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0A1520;border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:10px 20px;font-size:13px;color:#E8F4F0;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="wordmark"><span>E</span><span>C</span><span>O</span></div>
+  <div class="tier-label">⬡ Sovereign · Tier 0 · Break-glass access</div>
+  <div id="app"><div style="color:rgba(255,255,255,.3);font-size:13px;">Authenticating…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+// Sovereign email — must match admin@eternalcurrent.online exactly
+const SOVEREIGN_EMAIL = 'admin@eternalcurrent.online';
+const ALLOWED_ROLES = ['SystemAdmin','SuperUser','NetworkOwner','Conductor','Scholar','Moderator','Guest'];
+
+let _session = null;
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    if(!session){
+      renderLoginGate();
+    } else if(session.user.email !== SOVEREIGN_EMAIL){
+      renderAccessDenied(session.user.email);
+    } else {
+      _session = session;
+      renderSovereign();
+    }
+  });
+})();
+
+function renderLoginGate(){
+  document.getElementById('app').innerHTML = `
+    <div class="gate">
+      <div class="gate-title">Sovereign access required</div>
+      <div class="gate-sub">This page is restricted to the Sovereign account.<br>Sign in with the designated credentials.</div>
+    </div>
+    <a href="enter.html" style="display:block;text-align:center;color:rgba(255,80,80,.5);font-size:13px;margin-top:16px;">Sign in →</a>`;
+}
+
+function renderAccessDenied(email){
+  document.getElementById('app').innerHTML = `
+    <div class="gate">
+      <div class="gate-title">Access denied</div>
+      <div class="gate-sub">Signed in as <strong>${email}</strong>.<br>This page requires the Sovereign account.</div>
+    </div>
+    <button class="logout-btn" onclick="signOut()">Sign out</button>
+    <a href="user.html" style="display:block;text-align:center;color:rgba(0,170,255,.4);font-size:12px;margin-top:12px;">← Back to your network</a>`;
+}
+
+async function renderSovereign(){
+  // Load all SystemAdmin and SuperUser members
+  const {data:admins} = await sb.from('users')
+    .select('user_id,full_name,platform_role,auth_id,email')
+    .in('platform_role',['SystemAdmin','SuperUser'])
+    .order('platform_role').order('full_name');
+
+  const adminRows = (admins||[]).map(u => roleRow(u)).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="section">
+      <div class="section-title">SystemAdmin & SuperUser assignments</div>
+      <input class="search-input" id="member-search" placeholder="Search all members to assign a role…" oninput="searchMembers(this.value)">
+      <div id="search-results"></div>
+      ${adminRows ? `<div style="margin-top:12px;font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.2);text-transform:uppercase;margin-bottom:8px;">Current elevated roles</div>${adminRows}` : '<div style="font-size:12px;color:rgba(255,255,255,.3);">No elevated roles assigned yet.</div>'}
+    </div>
+
+    <div class="section" style="border-color:rgba(255,255,255,.06);">
+      <div class="section-title" style="color:rgba(255,255,255,.2);">Sovereign account</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.4);line-height:1.7;">
+        Signed in as <strong style="color:rgba(255,255,255,.6);">${_session.user.email}</strong><br>
+        This account has no member profile. It exists only to manage elevated role assignments.<br>
+        <span style="font-size:11px;color:rgba(255,80,80,.4);">Never use this account for day-to-day platform activity.</span>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="signOut()">Sign out of Sovereign</button>`;
+}
+
+function roleRow(u){
+  const color = u.platform_role==='SystemAdmin' ? 'rgba(255,80,80,.7)' : 'rgba(0,170,255,.7)';
+  const bg    = u.platform_role==='SystemAdmin' ? 'rgba(255,80,80,.1)' : 'rgba(0,170,255,.1)';
+  return `<div class="member-row" id="row-${u.user_id}">
+    <div style="flex:1;">
+      <div class="member-name">${u.full_name}</div>
+      <div class="member-id">${u.user_id} · ${u.email||'no email'}</div>
+    </div>
+    <span class="role-badge" style="background:${bg};color:${color};border:1px solid ${color};">${u.platform_role}</span>
+    <select class="role-select" id="sel-${u.user_id}">
+      ${ALLOWED_ROLES.map(r=>`<option value="${r}" ${r===u.platform_role?'selected':''}>${r}</option>`).join('')}
+    </select>
+    <button class="save-row-btn" onclick="saveRole('${u.user_id}','${u.full_name}')">Save</button>
+  </div>`;
+}
+
+let _searchTimeout = null;
+async function searchMembers(q){
+  clearTimeout(_searchTimeout);
+  const res = document.getElementById('search-results');
+  if(q.trim().length < 2){res.innerHTML='';return;}
+  _searchTimeout = setTimeout(async()=>{
+    const {data} = await sb.from('users')
+      .select('user_id,full_name,platform_role,email')
+      .ilike('full_name',`%${q}%`)
+      .limit(8);
+    if(!data?.length){res.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.3);padding:8px 0;">No members found.</div>';return;}
+    res.innerHTML = data.map(u=>`<div class="member-row">
+      <div style="flex:1;">
+        <div class="member-name">${u.full_name}</div>
+        <div class="member-id">${u.user_id} · ${u.platform_role}</div>
+      </div>
+      <select class="role-select" id="sel-${u.user_id}">
+        ${ALLOWED_ROLES.map(r=>`<option value="${r}" ${r===u.platform_role?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <button class="save-row-btn" onclick="saveRole('${u.user_id}','${u.full_name}')">Save</button>
+    </div>`).join('');
+  }, 280);
+}
+
+async function saveRole(userId, name){
+  const sel = document.getElementById('sel-'+userId);
+  if(!sel) return;
+  const newRole = sel.value;
+  const {error} = await sb.from('users').update({platform_role:newRole}).eq('user_id',userId);
+  if(!error){
+    showToast(`${name} → ${newRole}`);
+    setTimeout(()=>renderSovereign(), 600);
+  } else {
+    showToast('Could not update role');
+  }
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+  window.location.href = 'enter.html';
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show';
+  setTimeout(()=>{t.className='toast';},2800);
+}
+</script>
+</body>
+</html>

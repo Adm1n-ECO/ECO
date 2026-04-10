@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Milestone</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+/* ── HERO ── */
+.hero{position:relative;min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:80px 24px 60px;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,170,255,.18) 0%,transparent 65%),radial-gradient(ellipse at 80% 80%,rgba(0,204,68,.10) 0%,transparent 50%);}
+.hero-content{position:relative;max-width:600px;}
+.hero-type{font-size: 12px;font-weight:700;letter-spacing:.18em;color:var(--blue);text-transform:uppercase;margin-bottom:16px;}
+.hero-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:clamp(1.8rem,5vw,3rem);line-height:1.1;color:var(--white);margin-bottom:16px;}
+.hero-msg{font-size:15px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.7;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto;}
+.hero-meta{font-size:12px;color:var(--dim);}
+.hero-meta span{color:rgba(0,170,255,.6);}
+/* ── REACTION BAR ── */
+.reaction-bar{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:28px;}
+.react-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);cursor:pointer;transition:all .18s;min-width:56px;}
+.react-btn:hover{border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.08);}
+.react-btn.reacted{border-color:var(--blue);background:rgba(0,170,255,.15);}
+.react-emoji{font-size:22px;line-height:1;}
+.react-count{font-size: 12px;color:var(--dim);font-weight:700;}
+/* ── SHARE ── */
+.share-section{max-width:480px;margin:0 auto;padding:0 24px 60px;text-align:center;}
+.share-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:16px;}
+.share-url{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--color-text-dim);word-break:break-all;margin-bottom:12px;cursor:pointer;transition:border-color .15s;}
+.share-url:hover{border-color:rgba(0,170,255,.3);}
+.share-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.share-btn{padding:9px 18px;border-radius:8px;font-size:12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;cursor:pointer;border:none;transition:all .15s;}
+.btn-copy{background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.28);color:var(--blue);}
+.btn-copy:hover{background:rgba(0,170,255,.24);}
+/* ── QR ── */
+.qr-section{max-width:320px;margin:0 auto 60px;padding:0 24px;text-align:center;}
+.qr-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;display:inline-block;}
+.qr-box canvas{display:block;}
+/* ── CREATE FORM ── */
+.create-section{max-width:620px;margin:0 auto;padding:40px 24px 80px;}
+.create-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.4rem;margin-bottom:24px;}
+.field-label{font-size: 12px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+.field-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--white);outline:none;margin-bottom:16px;font-family:Arial,sans-serif;transition:border-color .15s;}
+.field-input:focus{border-color:rgba(0,170,255,.4);}
+.field-textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--white);outline:none;resize:vertical;min-height:80px;margin-bottom:16px;font-family:Arial,sans-serif;transition:border-color .15s;}
+.field-textarea:focus{border-color:rgba(0,170,255,.4);}
+.type-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.type-pill{padding:7px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:var(--color-text-dim);font-size:12px;cursor:pointer;transition:all .15s;}
+.type-pill.sel{border-color:var(--blue);background:rgba(0,170,255,.12);color:var(--blue);}
+.create-btn{background:var(--blue);color:var(--bg);border:none;border-radius:8px;padding:12px 28px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;cursor:pointer;transition:filter .15s;}
+.create-btn:hover{filter:brightness(1.1);}
+.slug-preview{font-size: 12px;color:rgba(0,170,255,.5);margin-bottom:16px;}
+/* ── STATES ── */
+.state{text-align:center;padding:120px 24px;color:var(--dim);}
+.state .ico{font-size:48px;margin-bottom:16px;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.show{opacity:1;}
+.toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+const params = new URLSearchParams(location.search);
+const SLUG = params.get('s');
+const MODE = params.get('mode'); // 'create'
+
+const REACTIONS = ['🎉','❤️','✨','🙏','💙','🌿'];
+const TYPE_CFG = {
+  personal:    {label:'Personal',    emoji:'✨'},
+  family:      {label:'Family',      emoji:'👨‍👩‍👧'},
+  cultural:    {label:'Cultural',    emoji:'🌍'},
+  achievement: {label:'Achievement', emoji:'🏆'},
+  memory:      {label:'Memory',      emoji:'📸'},
+};
+
+let _me = null, _milestone = null, _myReaction = null;
+let _selType = 'personal';
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    _me = session ? {auth_id:session.user.id} : null;
+    if(_me) loadMyProfile();
+    if(SLUG) loadMilestone();
+    else if(MODE==='create') renderCreate();
+    else renderCreate(); // default: show create
+  });
+})();
+
+async function loadMyProfile(){
+  const {data} = await sb.auth.getUser();
+  if(!data?.user) return;
+  const {data:u} = await sb.from('users').select('user_id,full_name').eq('auth_id',data.user.id).maybeSingle();
+  if(u) _me = {..._me,...u};
+}
+
+async function loadMilestone(){
+  const {data,error} = await sb.from('milestones').select('*').eq('slug',SLUG).maybeSingle();
+  if(error||!data){
+    document.getElementById('app').innerHTML=`<div class="state"><div class="ico">🔍</div><div>Milestone not found.</div></div>`;
+    return;
+  }
+  _milestone = data;
+  // increment view count
+  sb.from('milestones').update({view_count:(data.view_count||0)+1}).eq('id',data.id);
+  renderMilestone(data);
+}
+
+function renderMilestone(m){
+  const type = TYPE_CFG[m.milestone_type]||TYPE_CFG.personal;
+  const reactions = m.guest_reactions||[];
+  const counts = {};
+  REACTIONS.forEach(r=>counts[r]=0);
+  reactions.forEach(r=>{ if(counts[r.emoji]!==undefined) counts[r.emoji]++; });
+  const guestId = getGuestId();
+  _myReaction = reactions.find(r=>r.guest_id===guestId)?.emoji||null;
+
+  const reactionHtml = REACTIONS.map(emoji=>`
+    <div class="react-btn ${_myReaction===emoji?'reacted':''}" onclick="toggleReaction('${emoji}')">
+      <div class="react-emoji">${emoji}</div>
+      <div class="react-count">${counts[emoji]||0}</div>
+    </div>`).join('');
+
+  const url = `${location.origin}/milestone.html?s=${m.slug}`;
+
+  document.getElementById('app').innerHTML = `
+    <div class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-type">${type.emoji} ${type.label} Milestone</div>
+        <div class="hero-title">${m.title}</div>
+        ${m.cover_message?`<div class="hero-msg">${m.cover_message}</div>`:''}
+        <div class="hero-meta">Shared by <span>${m.network_id}</span> · ${new Date(m.created_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+        <div class="reaction-bar">${reactionHtml}</div>
+      </div>
+    </div>
+    <div class="share-section">
+      <div class="share-label">Share this milestone</div>
+      <div class="share-url" onclick="copyUrl('${url}')">${url}</div>
+      <div class="share-btns">
+        <button class="share-btn btn-copy" onclick="copyUrl('${url}')">Copy link</button>
+      </div>
+    </div>`;
+
+  // QR code (lightweight canvas-based)
+  if(m.qr_enabled) renderQR(url);
+}
+
+function getGuestId(){
+  let id = localStorage.getItem('eco_guest_id');
+  if(!id){ id='g-'+Math.random().toString(36).slice(2,10); localStorage.setItem('eco_guest_id',id); }
+  return id;
+}
+
+async function toggleReaction(emoji){
+  if(!_milestone) return;
+  const guestId = getGuestId();
+  const reactions = [...(_milestone.guest_reactions||[])];
+  const idx = reactions.findIndex(r=>r.guest_id===guestId);
+  if(idx>=0){
+    if(reactions[idx].emoji===emoji) reactions.splice(idx,1); // remove
+    else reactions[idx].emoji=emoji; // change
+  } else {
+    reactions.push({guest_id:guestId,emoji,at:new Date().toISOString()});
+  }
+  const {error} = await sb.from('milestones').update({guest_reactions:reactions}).eq('id',_milestone.id);
+  if(!error){ _milestone.guest_reactions=reactions; renderMilestone(_milestone); }
+}
+
+// Minimal QR (URL → canvas via data URI pattern using SVG path)
+function renderQR(url){
+  const app = document.getElementById('app');
+  const qrDiv = document.createElement('div');
+  qrDiv.className='qr-section';
+  qrDiv.innerHTML=`<div class="share-label">Or scan to open</div>
+    <div class="qr-box">
+      <div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;padding:8px;">
+        QR code<br><span style="font-size:9px;opacity:.5;">(scan with phone camera)</span>
+      </div>
+      <div id="qr-placeholder" style="width:180px;height:180px;background:rgba(0,170,255,.05);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.15);font-size:11px;">
+        📱 ${url.slice(0,32)}…
+      </div>
+    </div>`;
+  app.appendChild(qrDiv);
+}
+
+// ── CREATE FLOW ──
+function renderCreate(){
+  if(!_me){
+    document.getElementById('app').innerHTML=`<div class="state">
+      <div class="ico">✨</div>
+      <div style="font-size:16px;margin-bottom:12px;">Create a Milestone</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:20px;">Sign in to create and share milestones with your network.</div>
+      <a href="enter.html?next=milestone.html" style="background:var(--blue);color:var(--bg);padding:10px 24px;border-radius:8px;font-weight:900;text-decoration:none;font-family:'Arial Black',Arial,sans-serif;font-size:13px;">Sign In →</a>
+    </div>`;
+    return;
+  }
+  const typePills = Object.entries(TYPE_CFG).map(([k,v])=>
+    `<div class="type-pill ${k==='personal'?'sel':''}" data-type="${k}" onclick="selType(this)">${v.emoji} ${v.label}</div>`
+  ).join('');
+  document.getElementById('app').innerHTML=`
+    <div class="create-section">
+      <div class="create-title">Create a Milestone</div>
+      <div class="field-label">Type</div>
+      <div class="type-pills">${typePills}</div>
+      <div class="field-label">Title</div>
+      <input class="field-input" id="m-title" placeholder="e.g. Reema's 60th Birthday · Our Family Reunion 2025" oninput="updateSlug()">
+      <div class="slug-preview" id="slug-preview">milestone.html?s=</div>
+      <div class="field-label">Message</div>
+      <textarea class="field-textarea" id="m-msg" placeholder="A short message to go with this milestone…"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.6);">
+          <input type="checkbox" id="m-public" checked style="accent-color:var(--blue);"> Make public (anyone with link can view)
+        </label>
+      </div>
+      <button class="create-btn" onclick="createMilestone()">Create milestone →</button>
+    </div>`;
+}
+
+function selType(el){
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  _selType = el.dataset.type;
+}
+
+function updateSlug(){
+  const title = document.getElementById('m-title')?.value||'';
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)
+    + '-' + Math.random().toString(36).slice(2,6);
+  document.getElementById('slug-preview').textContent = `milestone.html?s=${slug}`;
+  document.getElementById('slug-preview').dataset.slug = slug;
+}
+
+async function createMilestone(){
+  const title = document.getElementById('m-title').value.trim();
+  if(!title){showToast('Title required');return;}
+  const slug = document.getElementById('slug-preview').dataset.slug
+    || title.toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,32)+'-'+Date.now().toString(36);
+  const msg = document.getElementById('m-msg').value.trim();
+  const isPublic = document.getElementById('m-public').checked;
+
+  const {data,error} = await sb.from('milestones').insert({
+    slug, title,
+    milestone_type: _selType,
+    cover_message: msg||null,
+    created_by: _me?.user_id||null,
+    is_public: isPublic,
+  }).select().maybeSingle();
+
+  if(error){showToast('Could not create — slug may be taken, try changing the title');return;}
+  showToast('Milestone created!','green');
+  setTimeout(()=>{ location.href=`milestone.html?s=${slug}`; },800);
+}
+
+function copyUrl(url){
+  navigator.clipboard.writeText(url).then(()=>showToast('Copied!','green'));
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>{t.className='toast';},2800);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

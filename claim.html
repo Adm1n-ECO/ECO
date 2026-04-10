@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO - Claim Your Profile</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+  --color-text-mid:var(--color-text-dim);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+.page{max-width:520px;margin:0 auto;padding:48px 24px 80px;}
+.eco-mark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.6rem;margin-bottom:32px;}
+.eco-e{color:#00AAFF;}.eco-c{color:#00CC44;}.eco-o{color:#FFF;}
+.eco-sub{font-size:12px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-left:4px;}
+.step{display:none;}.step.active{display:block;}
+.step-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.3rem;color:var(--white);margin-bottom:6px;}
+.step-sub{font-size:13px;color:var(--color-text-dim);line-height:1.6;margin-bottom:24px;}
+.search-input{width:100%;background:var(--bg2);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:14px 18px;font-size:15px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;}
+.search-input:focus{border-color:rgba(0,170,255,.5);}
+.search-hint{font-size:12px;color:var(--dim);margin:8px 0 20px;}
+.result-card{background:var(--bg2);border:2px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;margin-bottom:12px;cursor:pointer;transition:all .18s;}
+.result-card:hover{border-color:rgba(0,170,255,.35);}
+.result-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.1rem;color:var(--white);margin-bottom:6px;}
+.result-detail{font-size:12px;color:var(--dim);margin-bottom:8px;}
+.result-rels{font-size:13px;color:var(--color-text-mid);line-height:1.65;}
+.result-more{font-size:12px;color:rgba(0,170,255,.5);margin-top:4px;}
+.no-results{text-align:center;padding:32px 0;color:var(--dim);font-size:13px;line-height:1.8;}
+.confirm-card{background:var(--bg2);border:1px solid rgba(0,204,68,.2);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+.confirm-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.4rem;color:var(--white);margin-bottom:4px;}
+.confirm-detail{font-size:12px;color:var(--dim);margin-bottom:12px;}
+.confirm-rels{font-size:13px;color:var(--color-text-mid);line-height:1.8;}
+.confirm-rels strong{color:var(--color-text);}
+.field-label{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;margin-top:16px;}
+.field-input{width:100%;background:var(--bg2);border:1px solid rgba(0,170,255,.18);border-radius:10px;padding:13px 16px;font-size:14px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;}
+.field-input:focus{border-color:rgba(0,170,255,.5);}
+.pw-wrap{position:relative;}
+.pw-wrap .field-input{padding-right:52px;}
+.pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);font-size:12px;font-weight:700;user-select:none;text-transform:uppercase;letter-spacing:.05em;}
+.pw-eye:hover{color:var(--blue);}
+.age-check{display:flex;align-items:center;gap:10px;margin:16px 0;cursor:pointer;}
+.age-check input{width:18px;height:18px;accent-color:#00AAFF;}
+.age-check span{font-size:13px;color:var(--color-text-dim);}
+.btn-primary{width:100%;background:#00AAFF;color:#080D14;border:none;border-radius:10px;padding:14px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:14px;cursor:pointer;transition:filter .15s;margin-top:8px;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{width:100%;background:none;border:1px solid rgba(255,255,255,.1);color:var(--color-text-dim);border-radius:10px;padding:12px;font-size:13px;cursor:pointer;margin-top:10px;transition:all .15s;}
+.btn-ghost:hover{border-color:var(--color-text-dim);color:var(--color-text);}
+.err{font-size:12px;color:#ff6b6b;margin-top:8px;min-height:18px;}
+.link{font-size:13px;text-align:center;margin-top:16px;}
+.link a{color:rgba(0,170,255,.6);text-decoration:none;}
+.link a:hover{color:#00AAFF;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eco-mark">
+    <span class="eco-e">E</span><span class="eco-c">C</span><span class="eco-o">O</span>
+    <span class="eco-sub">EternalCurrent.Online</span>
+  </div>
+
+  <div class="step active" id="step-search">
+    <div class="step-title">Find your profile</div>
+    <div class="step-sub">Your name is already in this network. Search for yourself to claim your profile and set up your login.</div>
+    <input class="search-input" id="name-input" placeholder="Type your first or last name..." autocomplete="off" oninput="onSearch(this.value)">
+    <div class="search-hint">Try first name only, last name only, or both.</div>
+    <div id="search-results"></div>
+    <div class="link"><a href="enter.html">Already have an account? Sign in</a></div>
+  </div>
+
+  <div class="step" id="step-confirm">
+    <div class="step-title">Is this you?</div>
+    <div class="step-sub">Check your name and connections. If this is your profile, tap Confirm.</div>
+    <div class="confirm-card" id="confirm-card"></div>
+    <button class="btn-primary" onclick="goToCredentials()">Yes, this is me</button>
+    <button class="btn-ghost" onclick="goBack('step-search')">Not me - go back</button>
+  </div>
+
+  <div class="step" id="step-credentials">
+    <div class="step-title">Set up your access</div>
+    <div class="step-sub">Your profile and all your connections are ready. Add your email and a password to get in.</div>
+    <div class="field-label">Email address</div>
+    <input class="field-input" id="cred-email" type="email" placeholder="your@email.com" autocomplete="email">
+    <div class="field-label">Password</div>
+    <div class="pw-wrap">
+      <input class="field-input" id="cred-password" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      <span class="pw-eye" id="pw-toggle" onclick="togglePw()">show</span>
+    </div>
+    <label class="age-check">
+      <input type="checkbox" id="age-confirm">
+      <span>I confirm I am 18 years of age or older</span>
+    </label>
+    <div class="err" id="cred-err"></div>
+    <button class="btn-primary" id="cred-btn" onclick="claimProfile()">Claim my profile</button>
+    <button class="btn-ghost" onclick="goBack('step-confirm')">Go back</button>
+  </div>
+
+  <div class="step" id="step-success">
+    <div style="font-size:48px;text-align:center;margin-bottom:16px;">🎉</div>
+    <div class="step-title" style="text-align:center;">Welcome to your network.</div>
+    <div class="step-sub" style="text-align:center;">Your profile is live. Your connections are waiting.</div>
+    <button class="btn-primary" onclick="window.location.href='user.html'">Open my network</button>
+  </div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+let _selectedProfile = null;
+let _searchTimeout   = null;
+
+function onSearch(q) {
+  clearTimeout(_searchTimeout);
+  const res = document.getElementById('search-results');
+  if (!q || q.trim().length < 2) { res.innerHTML = ''; return; }
+  _searchTimeout = setTimeout(function() { doSearch(q.trim()); }, 300);
+}
+
+async function doSearch(q) {
+  const res = document.getElementById('search-results');
+  res.innerHTML = '<div style="color:var(--dim);font-size:12px;padding:8px 0;">Searching...</div>';
+
+  try {
+    const r1 = await sb.from('users')
+      .select('user_id,full_name,first_name,birth_mm_yyyy,birth_location,auth_id')
+      .eq('network_id','lightning-001').is('auth_id',null)
+      .ilike('full_name','%' + q + '%').limit(8);
+
+    const r2 = await sb.from('users')
+      .select('user_id,full_name,first_name,birth_mm_yyyy,birth_location,auth_id')
+      .eq('network_id','lightning-001').is('auth_id',null)
+      .ilike('first_name','%' + q + '%').limit(8);
+
+    const seen = new Set();
+    const matches = (r1.data||[]).concat(r2.data||[]).filter(function(m) {
+      if (seen.has(m.user_id)) return false;
+      seen.add(m.user_id); return true;
+    }).slice(0,8);
+
+    if (!matches.length) {
+      res.innerHTML = '<div class="no-results">No unclaimed profiles found for "' + q + '".<br>' +
+        'Try your first name only or a different spelling.</div>';
+      return;
+    }
+
+    // Load relationships for each match
+    const relData = await Promise.all(matches.map(function(m) {
+      return sb.from('relationships').select('relation_type,target_id')
+        .eq('subject_id',m.user_id).limit(6);
+    }));
+
+    // Get all relationship target names
+    const tIds = Array.from(new Set(
+      [].concat.apply([], relData.map(function(r){ return (r.data||[]).map(function(x){ return x.target_id; }); }))
+    ));
+    const nMap = {};
+    if (tIds.length) {
+      const nr = await sb.from('users').select('user_id,full_name').in('user_id',tIds);
+      (nr.data||[]).forEach(function(n){ nMap[n.user_id]=n.full_name; });
+    }
+
+    res.innerHTML = matches.map(function(m, idx) {
+      const rels = (relData[idx].data||[]).slice(0,4);
+      const extra = (relData[idx].data||[]).length > 4 ? (relData[idx].data||[]).length-4 : 0;
+      const relText = rels.map(function(r){
+        return nMap[r.target_id] ? '<strong>'+r.relation_type+'</strong> of '+nMap[r.target_id] : null;
+      }).filter(Boolean).join(' &middot; ');
+      const detail = [m.birth_mm_yyyy,m.birth_location].filter(Boolean).join(' &middot; ');
+      return '<div class="result-card" onclick="selectProfile(\''+m.user_id+'\')">' +
+        '<div class="result-name">'+(m.full_name||'Unknown')+'</div>' +
+        (detail?'<div class="result-detail">'+detail+'</div>':'') +
+        (relText
+          ?'<div class="result-rels">'+relText+'</div>'
+          :'<div class="result-rels" style="color:var(--dim);font-style:italic;">No connections on record yet</div>') +
+        (extra?'<div class="result-more">...and '+extra+' more connection'+(extra>1?'s':'')+'</div>':'') +
+        '</div>';
+    }).join('');
+
+  } catch(err) {
+    res.innerHTML = '<div style="color:#ff6b6b;font-size:12px;">Search error — please refresh and try again.</div>';
+    console.error('Claim search error:', err);
+  }
+}
+
+async function selectProfile(userId) {
+  const pr = await sb.from('users')
+    .select('user_id,full_name,birth_mm_yyyy,birth_location,current_location,auth_id')
+    .eq('user_id',userId).maybeSingle();
+
+  if (!pr.data || pr.data.auth_id) {
+    alert('This profile has already been claimed. Contact your network admin if this is incorrect.');
+    return;
+  }
+  _selectedProfile = pr.data;
+
+  const rr = await sb.from('relationships').select('relation_type,target_id').eq('subject_id',userId).limit(6);
+  const rels = rr.data||[];
+  const tIds = rels.map(function(r){ return r.target_id; });
+  const nMap = {};
+  if (tIds.length) {
+    const nr = await sb.from('users').select('user_id,full_name').in('user_id',tIds);
+    (nr.data||[]).forEach(function(n){ nMap[n.user_id]=n.full_name; });
+  }
+
+  const shown  = rels.slice(0,5);
+  const extra  = rels.length>5 ? rels.length-5 : 0;
+  const lines  = shown.map(function(r){
+    return nMap[r.target_id] ? '<div>'+r.relation_type+' of <strong>'+nMap[r.target_id]+'</strong></div>' : null;
+  }).filter(Boolean).join('');
+  const xLine  = extra ? '<div class="result-more" style="margin-top:6px;">...and '+extra+' more</div>' : '';
+  const detail = [pr.data.birth_mm_yyyy,pr.data.birth_location,pr.data.current_location].filter(Boolean).join(' - ');
+
+  document.getElementById('confirm-card').innerHTML =
+    '<div class="confirm-name">'+pr.data.full_name+'</div>' +
+    (detail?'<div class="confirm-detail">'+detail+'</div>':'') +
+    '<div class="confirm-rels">'+lines+xLine+'</div>';
+
+  showStep('step-confirm');
+}
+
+function goToCredentials() { showStep('step-credentials'); }
+
+async function claimProfile() {
+  const email    = document.getElementById('cred-email').value.trim();
+  const password = document.getElementById('cred-password').value;
+  const ageOk    = document.getElementById('age-confirm').checked;
+  const errEl    = document.getElementById('cred-err');
+  const btn      = document.getElementById('cred-btn');
+
+  errEl.textContent = '';
+  if (!email)              { errEl.textContent='Email required.'; return; }
+  if (password.length < 8) { errEl.textContent='Password must be at least 8 characters.'; return; }
+  if (!ageOk)              { errEl.textContent='Please confirm you are 18 or older.'; return; }
+  if (!_selectedProfile)   { errEl.textContent='No profile selected. Please go back.'; return; }
+
+  btn.disabled=true; btn.textContent='Claiming...';
+
+  const sa = await sb.auth.signUp({ email:email, password:password });
+  if (sa.error) {
+    errEl.textContent=sa.error.message;
+    btn.disabled=false; btn.textContent='Claim my profile'; return;
+  }
+
+  const authId = sa.data && sa.data.user ? sa.data.user.id : null;
+  if (!authId) {
+    errEl.textContent='Could not create account. Please try again.';
+    btn.disabled=false; btn.textContent='Claim my profile'; return;
+  }
+
+  const chk = await sb.from('users').select('auth_id').eq('user_id',_selectedProfile.user_id).maybeSingle();
+  if (chk.data && chk.data.auth_id) {
+    errEl.textContent='This profile was just claimed by someone else.';
+    btn.disabled=false; btn.textContent='Claim my profile'; return;
+  }
+
+  const lnk = await sb.rpc('claim_profile',{
+    p_user_id: _selectedProfile.user_id,
+    p_auth_id: authId,
+    p_email:   email
+  });
+
+  if (lnk.error) {
+    errEl.textContent='Profile link failed: '+lnk.error.message;
+    btn.disabled=false; btn.textContent='Claim my profile'; return;
+  }
+
+  showStep('step-success');
+}
+
+function togglePw() {
+  const inp = document.getElementById('cred-password');
+  const eye = document.getElementById('pw-toggle');
+  const show = inp.type==='password';
+  inp.type = show?'text':'password';
+  eye.textContent = show?'hide':'show';
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goBack(stepId) { showStep(stepId); }
+</script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

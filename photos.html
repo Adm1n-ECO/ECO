@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EternalCurrent — Photos</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased;}
+.page{max-width:1200px;margin:0 auto;padding:28px 20px 80px;}
+
+/* ── UPLOAD BAR ── */
+.upload-bar{background:#0D1820;border:1px solid rgba(0,170,255,.18);border-radius:14px;padding:18px 20px;margin-bottom:28px;}
+.upload-bar-top{display:flex;align-items:center;gap:12px;margin-bottom:0;}
+.upload-prompt{flex:1;background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:10px;padding:11px 16px;font-size:13px;color:#5A8A80;cursor:pointer;transition:border-color .13s;}
+.upload-prompt:hover{border-color:rgba(0,170,255,.35);color:#7AADA0;}
+.upload-photo-btn{background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);color:#00AAFF;font-size:12px;font-weight:700;padding:11px 18px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:background .13s;display:flex;align-items:center;gap:6px;}
+.upload-photo-btn:hover{background:rgba(0,170,255,.22);}
+/* Upload form (hidden until triggered) */
+.upload-form{display:none;margin-top:16px;border-top:1px solid rgba(0,170,255,.08);padding-top:16px;}
+.upload-form.open{display:block;}
+.uf-preview{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.uf-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,170,255,.15);}
+.uf-thumb img{width:100%;height:100%;object-fit:cover;}
+.uf-thumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:4px;width:18px;height:18px;font-size: 12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.uf-add-more{width:80px;height:80px;border:2px dashed rgba(0,170,255,.25);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3A5A54;font-size:22px;transition:all .13s;}
+.uf-add-more:hover{border-color:rgba(0,170,255,.5);color:#00AAFF;}
+.uf-caption{width:100%;background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--color-text);outline:none;resize:none;min-height:42px;font-family:Arial,sans-serif;margin-bottom:12px;}
+.uf-caption:focus{border-color:rgba(0,170,255,.35);}
+.uf-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;}
+.uf-type-label{font-size: 12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;margin-bottom:6px;}
+.uf-type-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.uf-type-btn{font-size: 12px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,170,255,.18);color:#3A5A54;background:none;transition:all .13s;}
+.uf-type-btn.active{background:rgba(0,170,255,.15);border-color:rgba(0,170,255,.4);color:#00AAFF;}
+.uf-meta{display:none;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
+.uf-meta.open{display:flex;}
+.uf-input{flex:1;min-width:160px;background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--color-text);outline:none;font-family:Arial,sans-serif;}
+.uf-input:focus{border-color:rgba(0,170,255,.35);}
+.uf-milestone-select{flex:1;min-width:160px;background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--color-text);outline:none;}
+.uf-tag-wrap{margin-bottom:12px;}
+.uf-tag-search{width:100%;background:var(--color-bg);border:1px solid rgba(0,204,68,.15);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--color-text);outline:none;font-family:Arial,sans-serif;}
+.uf-tag-search:focus{border-color:rgba(0,204,68,.35);}
+.uf-tag-results{background:#0D1820;border:1px solid rgba(0,204,68,.18);border-radius:8px;max-height:140px;overflow-y:auto;margin-top:4px;display:none;}
+.uf-tag-results.open{display:block;}
+.uf-tag-result{padding:8px 14px;font-size:12px;color:#C8D4D0;cursor:pointer;transition:background .12s;}
+.uf-tag-result:hover{background:rgba(0,204,68,.08);}
+.uf-tags-selected{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.uf-tag-chip{font-size: 12px;padding:3px 10px;border-radius:999px;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.22);color:#00CC44;display:flex;align-items:center;gap:5px;}
+.uf-tag-chip button{background:none;border:none;color:#00CC44;cursor:pointer;font-size: 12px;padding:0;}
+.uf-actions{display:flex;gap:8px;justify-content:flex-end;}
+.uf-cancel{background:none;border:1px solid rgba(255,255,255,.10);color:#5A8A80;font-size:12px;padding:9px 18px;border-radius:8px;cursor:pointer;}
+.uf-cancel:hover{border-color:var(--color-text-dim);color:#E8F4F0;}
+.uf-share{background:#00AAFF;color:#080D14;border:none;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;padding:9px 22px;border-radius:8px;cursor:pointer;transition:filter .13s;}
+.uf-share:hover{filter:brightness(1.1);}
+.uf-share:disabled{opacity:.4;cursor:not-allowed;}
+.uf-progress{font-size:12px;color:#5A8A80;margin-top:8px;display:none;}
+
+/* ── TABS ── */
+.tab-row{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{font-size: 12px;font-weight:700;letter-spacing:.06em;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid transparent;color:#3A5A54;background:none;transition:all .13s;}
+.tab-btn.active{background:rgba(0,170,255,.10);border-color:rgba(0,170,255,.22);color:#00AAFF;}
+
+/* ── FILTERS ── */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px;}
+.filter-member{background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:7px 12px;font-size:12px;color:#E8F4F0;outline:none;min-width:160px;}
+
+/* ── PHOTO GRID ── */
+.photo-grid{columns:3 280px;gap:12px;}
+@media(max-width:600px){.photo-grid{columns:2 140px;}}
+.photo-cell{break-inside:avoid;margin-bottom:12px;position:relative;cursor:pointer;border-radius:10px;overflow:hidden;background:#0D1820;border:1px solid rgba(0,170,255,.08);transition:border-color .13s;}
+.photo-cell:hover{border-color:rgba(0,170,255,.3);}
+.photo-cell img{width:100%;display:block;}
+.photo-cell-meta{padding:10px 12px 8px;}
+.pc-caption{font-size:12px;color:#C8D4D0;line-height:1.5;margin-bottom:5px;}
+.pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;}
+.pc-tag{font-size: 12px;padding:2px 7px;border-radius:999px;background:rgba(0,204,68,.08);border:1px solid rgba(0,204,68,.15);color:#3A5A54;}
+.pc-footer{display:flex;align-items:center;justify-content:space-between;}
+.pc-by{font-size: 12px;color:#3A5A54;}
+.pc-type{font-size: 12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;}
+.pc-type-share{background:rgba(0,170,255,.07);color:#3A5A54;border:1px solid rgba(0,170,255,.12);}
+.pc-type-journey{background:rgba(0,204,68,.07);color:#2A6A3A;border:1px solid rgba(0,204,68,.12);}
+.pc-type-milestone{background:rgba(144,96,224,.08);color:#7A6A90;border:1px solid rgba(144,96,224,.15);}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:60px 20px;color:#3A5A54;}
+.empty-icon{font-size:2.5rem;margin-bottom:14px;}
+.empty-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1rem;color:#5A8A80;margin-bottom:8px;}
+.empty-sub{font-size:13px;line-height:1.6;}
+
+/* ── LOADING ── */
+.skeleton{background:rgba(0,170,255,.06);border-radius:6px;height:14px;margin-bottom:8px;animation:pulse 1.4s ease infinite;}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ── LIGHTBOX ── */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9900;display:none;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lb-inner{display:flex;max-width:96vw;max-height:94vh;gap:0;border-radius:14px;overflow:hidden;background:#0D1820;border:1px solid rgba(0,170,255,.15);}
+.lb-img-wrap{flex-shrink:0;max-width:70vw;max-height:94vh;display:flex;align-items:center;justify-content:center;background:var(--color-bg);}
+.lb-img-wrap img{max-width:100%;max-height:94vh;display:block;object-fit:contain;}
+.lb-panel{width:300px;flex-shrink:0;display:flex;flex-direction:column;max-height:94vh;}
+.lb-panel-head{padding:16px 18px;border-bottom:1px solid rgba(0,170,255,.08);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.lb-by{font-size:12px;color:#5A8A80;}
+.lb-close{background:none;border:1px solid rgba(255,255,255,.12);color:#5A8A80;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;}
+.lb-close:hover{color:#fff;}
+.lb-body{flex:1;overflow-y:auto;padding:16px 18px;}
+.lb-body::-webkit-scrollbar{width:3px;}
+.lb-body::-webkit-scrollbar-thumb{background:rgba(0,170,255,.2);border-radius:99px;}
+.lb-caption{font-size:13px;color:#C8D4D0;line-height:1.6;margin-bottom:14px;}
+.lb-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+.lb-tag{font-size: 12px;padding:3px 9px;border-radius:999px;background:rgba(0,204,68,.08);border:1px solid rgba(0,204,68,.15);color:#00CC44;text-decoration:none;cursor:pointer;}
+.lb-section-label{font-size: 12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#3A5A54;margin-bottom:10px;}
+.lb-comments{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.lb-comment{background:var(--color-bg);border-radius:8px;padding:10px 12px;}
+.lb-comment-author{font-size: 12px;font-weight:700;color:#5A8A80;margin-bottom:3px;}
+.lb-comment-text{font-size:12px;color:#C8D4D0;line-height:1.5;}
+.lb-no-comments{font-size:12px;color:#2A3A34;font-style:italic;}
+.lb-comment-input{width:100%;background:var(--color-bg);border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--color-text);outline:none;resize:none;font-family:Arial,sans-serif;margin-bottom:8px;}
+.lb-comment-input:focus{border-color:rgba(0,170,255,.35);}
+.lb-comment-btn{background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);color:#00AAFF;font-size: 12px;font-weight:700;padding:7px 16px;border-radius:8px;cursor:pointer;width:100%;transition:background .13s;}
+.lb-comment-btn:hover{background:rgba(0,170,255,.22);}
+.lb-actions{display:flex;gap:6px;padding:12px 18px;border-top:1px solid rgba(0,170,255,.08);flex-shrink:0;}
+.lb-action-btn{flex:1;font-size: 12px;font-weight:700;padding:7px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:none;color:#3A5A54;transition:all .13s;}
+.lb-action-btn:hover{color:#E8F4F0;border-color:var(--color-text-dim);}
+.lb-action-btn.reacted{color:#00CC44;border-color:rgba(0,204,68,.3);background:rgba(0,204,68,.07);}
+.lb-prev,.lb-next{position:fixed;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);color:#fff;width:40px;height:40px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:9901;transition:background .13s;}
+.lb-prev{left:16px;} .lb-next{right:316px;}
+.lb-prev:hover,.lb-next:hover{background:rgba(0,170,255,.3);}
+@media(max-width:700px){
+  .lb-inner{flex-direction:column;max-width:98vw;}
+  .lb-img-wrap{max-width:98vw;}
+  .lb-panel{width:100%;max-height:40vh;}
+  .lb-next{right:16px;}
+}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<div class="page">
+  <div style="margin-bottom:24px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3A5A54;margin-bottom:4px;">ECO · Network Photos</div>
+    <div style="font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.5rem;color:#E8F4F0;">Photos</div>
+  </div>
+
+  <!-- UPLOAD BAR -->
+  <div class="upload-bar" id="upload-bar">
+    <div class="upload-bar-top">
+      <div class="upload-prompt" onclick="openUploadForm()">Share photos with your network…</div>
+      <div class="upload-photo-btn" onclick="triggerFilePicker()">📷 Add Photos</div>
+      <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif" multiple style="display:none;" onchange="onFilesSelected(this.files)">
+    </div>
+    <div class="upload-form" id="upload-form">
+      <div class="uf-preview" id="uf-preview">
+        <div class="uf-add-more" onclick="triggerFilePicker()" title="Add more photos">+</div>
+      </div>
+      <textarea class="uf-caption" id="uf-caption" placeholder="Add a caption… (optional)" rows="2"></textarea>
+
+      <div style="margin-bottom:12px;">
+        <div class="uf-type-label">What kind of share is this?</div>
+        <div class="uf-type-btns">
+          <button class="uf-type-btn active" onclick="setType('share',this)">Share</button>
+          <button class="uf-type-btn" onclick="setType('journey',this)">Journey</button>
+          <button class="uf-type-btn" onclick="setType('milestone',this)">Milestone</button>
+        </div>
+      </div>
+
+      <!-- Journey meta -->
+      <div class="uf-meta" id="uf-journey-meta">
+        <input class="uf-input" id="uf-location" placeholder="Where? (e.g. Dominican Republic)">
+        <input class="uf-input" id="uf-journey-date" type="date" style="max-width:160px;">
+      </div>
+
+      <!-- Milestone meta -->
+      <div class="uf-meta" id="uf-milestone-meta">
+        <select class="uf-milestone-select" id="uf-milestone-type">
+          <option value="">Select milestone type…</option>
+          <option value="wedding">Wedding</option>
+          <option value="birthday">Birthday</option>
+          <option value="graduation">Graduation</option>
+          <option value="birth">Birth</option>
+          <option value="anniversary">Anniversary</option>
+          <option value="arrival">Arrival — new city or country</option>
+          <option value="memorial">Memorial</option>
+          <option value="reunion">Reunion</option>
+          <option value="other">Other</option>
+        </select>
+        <input class="uf-input" id="uf-milestone-date" type="date" style="max-width:160px;">
+      </div>
+
+      <!-- Tag members -->
+      <div class="uf-tag-wrap">
+        <div class="uf-type-label">Tag people in these photos</div>
+        <input class="uf-tag-search" id="uf-tag-search" placeholder="Search by name…" oninput="searchMembers(this.value)" autocomplete="off">
+        <div class="uf-tag-results" id="uf-tag-results"></div>
+        <div class="uf-tags-selected" id="uf-tags-selected"></div>
+      </div>
+
+      <div class="uf-progress" id="uf-progress"></div>
+
+      <div class="uf-actions">
+        <button class="uf-cancel" onclick="closeUploadForm()">Cancel</button>
+        <button class="uf-share" id="uf-share-btn" onclick="submitPhotos()" disabled>Share with network</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('all',this)">All Photos</button>
+    <button class="tab-btn" onclick="switchTab('journey',this)">Journeys</button>
+    <button class="tab-btn" onclick="switchTab('milestone',this)">Milestones</button>
+    <button class="tab-btn" onclick="switchTab('tagged',this)">Tagged Me</button>
+  </div>
+
+  <!-- MEMBER FILTER -->
+  <div class="filter-row">
+    <select class="filter-member" id="member-filter" onchange="applyFilter()">
+      <option value="">All members</option>
+    </select>
+  </div>
+
+  <!-- GRID -->
+  <div class="photo-grid" id="photo-grid">
+    <div style="color:#3A5A54;font-size:13px;padding:20px 0;">Loading photos…</div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightboxOnBg(event)">
+  <button class="lb-prev" id="lb-prev" onclick="lbNav(-1)">‹</button>
+  <div class="lb-inner">
+    <div class="lb-img-wrap"><img id="lb-img" src="" alt=""></div>
+    <div class="lb-panel">
+      <div class="lb-panel-head">
+        <span class="lb-by" id="lb-by"></span>
+        <button class="lb-close" onclick="closeLightbox()">✕</button>
+      </div>
+      <div class="lb-body">
+        <div class="lb-caption" id="lb-caption"></div>
+        <div class="lb-tags" id="lb-tags"></div>
+        <div class="lb-section-label">Comments</div>
+        <div class="lb-comments" id="lb-comments"></div>
+        <textarea class="lb-comment-input" id="lb-comment-input" placeholder="Add a comment…" rows="2"></textarea>
+        <button class="lb-comment-btn" onclick="submitComment()">Post comment</button>
+      </div>
+      <div class="lb-actions">
+        <button class="lb-action-btn" id="lb-remember" onclick="reactPhoto('remember')">I remember this</button>
+        <button class="lb-action-btn" id="lb-tellmore" onclick="reactPhoto('tellmore')">Tell me more</button>
+        <button class="lb-action-btn" onclick="hidePhoto()">Hide</button>
+      </div>
+    </div>
+  </div>
+  <button class="lb-next" id="lb-next" onclick="lbNav(1)">›</button>
+</div>
+
+<script>
+const sb = window.ecoSB;
+const NETWORK_ID = 'lightning-001';
+let _me = null;
+let _members = [];
+let _allPhotos = [];
+let _visiblePhotos = [];
+let _currentTab = 'all';
+let _currentMember = '';
+let _lbIndex = 0;
+let _pendingFiles = [];
+let _selectedType = 'share';
+let _taggedMembers = [];
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+ecoAuthGuard(async function(session) {
+  const { data: me } = await sb.from('users')
+    .select('user_id,full_name,network_id').eq('auth_id', session.user.id).maybeSingle();
+  _me = me;
+
+  const { data: members } = await sb.from('users')
+    .select('user_id,full_name').eq('network_id', NETWORK_ID)
+    .eq('status','Living').order('full_name');
+  _members = members || [];
+
+  // Populate member filter
+  const sel = document.getElementById('member-filter');
+  _members.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.user_id; o.textContent = m.full_name;
+    sel.appendChild(o);
+  });
+
+  await loadPhotos();
+});
+
+// ── LOAD PHOTOS ───────────────────────────────────────────────────────────────
+async function loadPhotos() {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = '<div style="color:#3A5A54;font-size:13px;padding:20px 0;">Loading…</div>';
+
+  // Load photos + tags + post type in one query
+  const { data: photos } = await sb.from('photos')
+    .select(`
+      id, uploaded_by, public_url, caption, created_at, post_id,
+      network_posts!post_id(post_type, posted_by_name),
+      photo_tags(tagged_user_id)
+    `)
+    .eq('network_id', NETWORK_ID)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  // Load hides for this user
+  let hiddenIds = new Set();
+  if (_me) {
+    const { data: hides } = await sb.from('photo_hides')
+      .select('photo_id').eq('user_id', _me.user_id);
+    (hides || []).forEach(h => hiddenIds.add(h.photo_id));
+  }
+
+  _allPhotos = (photos || []).filter(p => !hiddenIds.has(p.id));
+  renderGrid();
+}
+
+function renderGrid() {
+  const tab = _currentTab;
+  const memberFilter = _currentMember;
+
+  let photos = _allPhotos;
+
+  // Tab filter
+  if (tab === 'journey') photos = photos.filter(p => p.network_posts?.post_type === 'journey');
+  else if (tab === 'milestone') photos = photos.filter(p => p.network_posts?.post_type === 'milestone');
+  else if (tab === 'tagged') photos = photos.filter(p =>
+    _me && (p.photo_tags || []).some(t => t.tagged_user_id === _me.user_id));
+
+  // Member filter
+  if (memberFilter) photos = photos.filter(p => p.uploaded_by === memberFilter);
+
+  _visiblePhotos = photos;
+  const grid = document.getElementById('photo-grid');
+
+  if (!photos.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon">📷</div>
+      <div class="empty-title">No photos yet</div>
+      <div class="empty-sub">Be the first to share photos with your network.</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = photos.map((p, i) => {
+    const type = p.network_posts?.post_type || 'share';
+    const by = p.network_posts?.posted_by_name || nameFor(p.uploaded_by);
+    const tags = (p.photo_tags || []).map(t => nameFor(t.tagged_user_id))
+      .filter(Boolean).slice(0,3);
+    const typeLabel = type === 'journey' ? 'Journey' : type === 'milestone' ? 'Milestone' : 'Share';
+    const typeClass = `pc-type-${type}`;
+    return `<div class="photo-cell" onclick="openLightbox(${i})">
+      <img src="${p.public_url}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+      <div class="photo-cell-meta">
+        ${p.caption ? `<div class="pc-caption">${esc(p.caption)}</div>` : ''}
+        ${tags.length ? `<div class="pc-tags">${tags.map(t=>`<span class="pc-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        <div class="pc-footer">
+          <span class="pc-by">${esc(by)} · ${ago(p.created_at)}</span>
+          <span class="pc-type ${typeClass}">${typeLabel}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function nameFor(userId) {
+  return (_members.find(m => m.user_id === userId) || {}).full_name || '';
+}
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ago(d) { const n=Math.floor((Date.now()-new Date(d))/86400000); return n===0?'Today':n===1?'Yesterday':n+'d ago'; }
+
+function switchTab(tab, btn) {
+  _currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function applyFilter() {
+  _currentMember = document.getElementById('member-filter').value;
+  renderGrid();
+}
+
+// ── UPLOAD FLOW ───────────────────────────────────────────────────────────────
+function openUploadForm() {
+  document.getElementById('upload-form').classList.add('open');
+  triggerFilePicker();
+}
+
+function triggerFilePicker() {
+  document.getElementById('file-input').click();
+}
+
+function closeUploadForm() {
+  document.getElementById('upload-form').classList.remove('open');
+  _pendingFiles = [];
+  _taggedMembers = [];
+  document.getElementById('uf-preview').innerHTML = '<div class="uf-add-more" onclick="triggerFilePicker()" title="Add more photos">+</div>';
+  document.getElementById('uf-caption').value = '';
+  document.getElementById('uf-share-btn').disabled = true;
+  document.getElementById('uf-tags-selected').innerHTML = '';
+  document.getElementById('uf-tag-search').value = '';
+  setType('share', document.querySelector('.uf-type-btn'));
+}
+
+function onFilesSelected(files) {
+  if (!files.length) return;
+  Array.from(files).forEach(f => {
+    if (!_pendingFiles.find(p => p.name === f.name && p.size === f.size)) {
+      _pendingFiles.push(f);
+    }
+  });
+  renderPreviews();
+  document.getElementById('upload-form').classList.add('open');
+  document.getElementById('uf-share-btn').disabled = _pendingFiles.length === 0;
+  // Reset file input so same file can be re-selected
+  document.getElementById('file-input').value = '';
+}
+
+function renderPreviews() {
+  const wrap = document.getElementById('uf-preview');
+  wrap.innerHTML = _pendingFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="uf-thumb">
+      <img src="${url}" alt="">
+      <button class="uf-thumb-del" onclick="removeFile(${i})">✕</button>
+    </div>`;
+  }).join('') + '<div class="uf-add-more" onclick="triggerFilePicker()" title="Add more">+</div>';
+}
+
+function removeFile(i) {
+  _pendingFiles.splice(i, 1);
+  renderPreviews();
+  document.getElementById('uf-share-btn').disabled = _pendingFiles.length === 0;
+}
+
+function setType(type, btn) {
+  _selectedType = type;
+  document.querySelectorAll('.uf-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('uf-journey-meta').classList.toggle('open', type === 'journey');
+  document.getElementById('uf-milestone-meta').classList.toggle('open', type === 'milestone');
+}
+
+// Member tag search
+function searchMembers(q) {
+  const results = document.getElementById('uf-tag-results');
+  if (!q.trim()) { results.classList.remove('open'); return; }
+  const matches = _members.filter(m =>
+    m.full_name.toLowerCase().includes(q.toLowerCase()) &&
+    !_taggedMembers.find(t => t.user_id === m.user_id)
+  ).slice(0, 8);
+  if (!matches.length) { results.classList.remove('open'); return; }
+  results.innerHTML = matches.map(m =>
+    `<div class="uf-tag-result" onclick="addTag('${m.user_id}','${esc(m.full_name)}')">${esc(m.full_name)}</div>`
+  ).join('');
+  results.classList.add('open');
+}
+
+function addTag(userId, name) {
+  if (_taggedMembers.find(t => t.user_id === userId)) return;
+  _taggedMembers.push({ user_id: userId, full_name: name });
+  document.getElementById('uf-tag-results').classList.remove('open');
+  document.getElementById('uf-tag-search').value = '';
+  renderTagChips();
+}
+
+function removeTag(userId) {
+  _taggedMembers = _taggedMembers.filter(t => t.user_id !== userId);
+  renderTagChips();
+}
+
+function renderTagChips() {
+  document.getElementById('uf-tags-selected').innerHTML = _taggedMembers.map(t =>
+    `<span class="uf-tag-chip">${esc(t.full_name)}<button onclick="removeTag('${t.user_id}')">✕</button></span>`
+  ).join('');
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+async function submitPhotos() {
+  if (!_me || !_pendingFiles.length) return;
+  const btn = document.getElementById('uf-share-btn');
+  const progress = document.getElementById('uf-progress');
+  btn.disabled = true; btn.textContent = 'Sharing…';
+  progress.style.display = 'block';
+
+  try {
+    // 1. Create network post
+    const caption = document.getElementById('uf-caption').value.trim();
+    const postContent = caption || (_selectedType === 'journey'
+      ? (document.getElementById('uf-location').value || 'A journey')
+      : _selectedType === 'milestone'
+      ? (document.getElementById('uf-milestone-type').options[document.getElementById('uf-milestone-type').selectedIndex]?.text || 'A milestone')
+      : 'Photos');
+
+    const { data: post, error: postErr } = await sb.from('network_posts').insert({
+      network_id: NETWORK_ID,
+      posted_by: _me.user_id,
+      posted_by_name: _me.full_name,
+      post_type: _selectedType,
+      content: postContent
+    }).select().maybeSingle();
+
+    if (postErr || !post) throw new Error('Failed to create post');
+
+    // 2. Journey / milestone metadata
+    if (_selectedType === 'journey') {
+      await sb.from('journeys').insert({
+        network_id: NETWORK_ID, post_id: post.id, created_by: _me.user_id,
+        title: document.getElementById('uf-location').value || 'Journey',
+        location: document.getElementById('uf-location').value,
+        journey_date: document.getElementById('uf-journey-date').value || null,
+        description: caption
+      });
+    } else if (_selectedType === 'milestone') {
+      await sb.from('milestones').insert({
+        network_id: NETWORK_ID, post_id: post.id, created_by: _me.user_id,
+        milestone_type: document.getElementById('uf-milestone-type').value || 'other',
+        title: caption || 'Milestone',
+        event_date: document.getElementById('uf-milestone-date').value || null,
+        description: caption
+      });
+    }
+
+    // 3. Upload photos
+    const uploaded = [];
+    for (let i = 0; i < _pendingFiles.length; i++) {
+      const file = _pendingFiles[i];
+      progress.textContent = `Uploading photo ${i+1} of ${_pendingFiles.length}…`;
+      const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+      const path = `${NETWORK_ID}/${_me.user_id}/${Date.now()}_${i}.${ext}`;
+      const { error: upErr } = await sb.storage.from('photos').upload(path, file, {
+        contentType: file.type, upsert: false
+      });
+      if (upErr) { console.error('Upload error:', upErr); continue; }
+      const { data: { publicUrl } } = sb.storage.from('photos').getPublicUrl(path);
+
+      const { data: photo } = await sb.from('photos').insert({
+        network_id: NETWORK_ID, uploaded_by: _me.user_id,
+        post_id: post.id, storage_path: path, public_url: publicUrl,
+        caption: caption, mime_type: file.type,
+        file_size_bytes: file.size, sort_order: i
+      }).select().maybeSingle();
+
+      if (photo) uploaded.push(photo);
+
+      // 4. Photo tags
+      if (_taggedMembers.length && photo) {
+        await sb.from('photo_tags').insert(
+          _taggedMembers.map(t => ({
+            photo_id: photo.id, tagged_user_id: t.user_id, tagged_by: _me.user_id
+          }))
+        );
+      }
+    }
+
+    progress.textContent = `✓ ${uploaded.length} photo${uploaded.length!==1?'s':''} shared with your network.`;
+    setTimeout(() => {
+      closeUploadForm();
+      loadPhotos();
+    }, 1200);
+
+  } catch(e) {
+    progress.textContent = 'Something went wrong. Please try again.';
+    btn.disabled = false; btn.textContent = 'Share with network';
+  }
+}
+
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────────
+async function openLightbox(i) {
+  _lbIndex = i;
+  await renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+async function renderLightbox() {
+  const p = _visiblePhotos[_lbIndex];
+  if (!p) return;
+
+  document.getElementById('lb-img').src = p.public_url;
+  document.getElementById('lb-by').textContent =
+    (p.network_posts?.posted_by_name || nameFor(p.uploaded_by)) + ' · ' + ago(p.created_at);
+  document.getElementById('lb-caption').textContent = p.caption || '';
+
+  // Tags
+  const tags = (p.photo_tags || []).map(t => nameFor(t.tagged_user_id)).filter(Boolean);
+  document.getElementById('lb-tags').innerHTML = tags.map(t =>
+    `<span class="lb-tag">@${esc(t)}</span>`).join('');
+
+  // Nav buttons
+  document.getElementById('lb-prev').style.display = _lbIndex > 0 ? 'flex' : 'none';
+  document.getElementById('lb-next').style.display = _lbIndex < _visiblePhotos.length - 1 ? 'flex' : 'none';
+
+  // Load comments
+  const { data: comments } = await sb.from('photo_comments')
+    .select('*').eq('photo_id', p.id).order('created_at');
+  const commentsEl = document.getElementById('lb-comments');
+  commentsEl.innerHTML = (comments || []).length
+    ? (comments || []).map(c => `<div class="lb-comment">
+        <div class="lb-comment-author">${esc(c.commented_by_name || 'Member')}</div>
+        <div class="lb-comment-text">${esc(c.content)}</div>
+      </div>`).join('')
+    : '<div class="lb-no-comments">No comments yet.</div>';
+
+  // Load reactions
+  if (_me) {
+    const { data: rxns } = await sb.from('network_post_reactions')
+      .select('reaction').eq('post_id', p.post_id).eq('user_id', _me.user_id).maybeSingle();
+    document.getElementById('lb-remember').classList.toggle('reacted', rxns?.reaction === 'remember');
+    document.getElementById('lb-tellmore').classList.toggle('reacted', rxns?.reaction === 'tellmore');
+  }
+
+  document.getElementById('lb-comment-input').value = '';
+}
+
+async function lbNav(dir) {
+  const next = _lbIndex + dir;
+  if (next < 0 || next >= _visiblePhotos.length) return;
+  _lbIndex = next;
+  await renderLightbox();
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeLightboxOnBg(e) {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+}
+
+async function submitComment() {
+  if (!_me) return;
+  const input = document.getElementById('lb-comment-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const p = _visiblePhotos[_lbIndex];
+  await sb.from('photo_comments').insert({
+    photo_id: p.id, network_id: NETWORK_ID,
+    commented_by: _me.user_id, commented_by_name: _me.full_name, content: text
+  });
+  input.value = '';
+  await renderLightbox();
+}
+
+async function reactPhoto(reaction) {
+  if (!_me) return;
+  const p = _visiblePhotos[_lbIndex];
+  if (!p.post_id) return;
+  await sb.from('network_post_reactions').upsert({
+    post_id: p.post_id, user_id: _me.user_id, reaction
+  });
+  await renderLightbox();
+}
+
+async function hidePhoto() {
+  if (!_me) return;
+  const p = _visiblePhotos[_lbIndex];
+  await sb.from('photo_hides').upsert({ photo_id: p.id, user_id: _me.user_id });
+  _allPhotos = _allPhotos.filter(ph => ph.id !== p.id);
+  closeLightbox();
+  renderGrid();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'Escape') closeLightbox();
+});
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

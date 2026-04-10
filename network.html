@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lightning-001 · EternalCurrent.Online</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased;}
+.page{max-width:960px;margin:0 auto;padding:60px 24px 80px;}
+
+/* HERO */
+.hero{text-align:center;padding:80px 0 60px;}
+.hero-eyebrow{font-size: 12px;letter-spacing:.28em;color:#00AAFF;text-transform:uppercase;margin-bottom:20px;}
+.hero-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:clamp(2.5rem,7vw,4.5rem);line-height:1.1;margin-bottom:16px;}
+.hero-name .e{color:#00AAFF;}.hero-name .c{color:#00CC44;}
+.hero-sub{font-size:clamp(15px,2vw,18px);color:var(--color-text-mid,var(--color-text-dim));line-height:1.7;max-width:560px;margin:0 auto 40px;}
+.hero-cta{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;}
+.btn-primary{background:#00AAFF;color:#080D14;border:none;border-radius:10px;padding:13px 28px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:filter .15s;}
+.btn-primary:hover{filter:brightness(1.12);}
+.btn-outline{background:transparent;color:#00AAFF;border:1px solid rgba(0,170,255,.4);border-radius:10px;padding:13px 28px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:all .15s;}
+.btn-outline:hover{background:rgba(0,170,255,.08);}
+
+/* STATS */
+.stats-band{display:flex;justify-content:center;gap:0;border-top:1px solid rgba(0,170,255,.1);border-bottom:1px solid rgba(0,170,255,.1);margin-bottom:60px;}
+.stat{flex:1;max-width:180px;text-align:center;padding:28px 16px;border-right:1px solid rgba(0,170,255,.08);}
+.stat:last-child{border-right:none;}
+.stat-n{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:2rem;color:#00AAFF;line-height:1;}
+.stat-n.green{color:#00CC44;}
+.stat-l{font-size: 12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-dim);margin-top:6px;}
+
+/* GLOBE PREVIEW */
+.globe-wrap{width:100%;height:420px;border-radius:16px;overflow:hidden;border:1px solid rgba(0,170,255,.12);margin-bottom:60px;position:relative;}
+.globe-wrap iframe{width:100%;height:100%;border:none;display:block;}
+.globe-caption{text-align:center;font-size: 12px;color:var(--color-text-dim);margin-top:10px;letter-spacing:.06em;}
+
+/* FEATURES */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:60px;}
+@media(max-width:640px){.features{grid-template-columns:1fr;}}
+.feat{background:#0D1820;border:1px solid rgba(0,170,255,.09);border-radius:14px;padding:24px 20px;}
+.feat-icon{font-size:1.6rem;margin-bottom:12px;}
+.feat-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:.9rem;color:#E8F4F0;margin-bottom:6px;}
+.feat-desc{font-size:12px;color:var(--color-text-dim);line-height:1.6;}
+
+/* MEMBERS PREVIEW */
+.members-preview{margin-bottom:60px;}
+.mp-label{font-size: 12px;letter-spacing:.2em;text-transform:uppercase;color:var(--color-text-dim);margin-bottom:20px;text-align:center;}
+.avatars{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Arial,sans-serif;font-size: 12px;font-weight:900;color:#080D14;flex-shrink:0;}
+.av-more{background:#0D1820;border:1px solid rgba(0,170,255,.2);color:var(--color-text-dim);font-size: 12px;}
+
+/* CTA BOTTOM */
+.cta-bottom{text-align:center;padding:60px 0 0;}
+.cta-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:clamp(1.4rem,4vw,2.2rem);margin-bottom:12px;}
+.cta-sub{font-size:14px;color:var(--color-text-dim);margin-bottom:28px;}
+.invite-note{font-size: 12px;color:var(--color-text-dim);margin-top:14px;letter-spacing:.04em;}
+
+/* FOOTER */
+footer{border-top:1px solid rgba(0,170,255,.08);padding:32px 24px;text-align:center;margin-top:60px;}
+.ft{font-family:'Arial Black',Arial,sans-serif;font-size:.8rem;color:var(--color-text-dim);margin-bottom:8px;}
+.ft .fe{color:#00AAFF;}.ft .fc{color:#00CC44;}
+.fc2{font-size: 12px;color:var(--color-text-dim);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">EternalCurrent.Online · Founding Network</div>
+    <div class="hero-name">lightning<span class="e">-</span><span class="c">001</span></div>
+    <div class="hero-sub">The first network on EternalCurrent.Online. A living record of family, migration, language, and memory across generations.</div>
+    <div class="hero-cta">
+      <a href="enter.html" class="btn-primary">Sign In →</a>
+      <a href="globe.html" class="btn-outline">View the Globe</a>
+    </div>
+  </div>
+
+  <!-- LIVE STATS -->
+  <div class="stats-band">
+    <div class="stat"><div class="stat-n" id="sn-members">—</div><div class="stat-l">Members</div></div>
+    <div class="stat"><div class="stat-n green" id="sn-living">—</div><div class="stat-l">Living</div></div>
+    <div class="stat"><div class="stat-n" id="sn-rels">—</div><div class="stat-l">Connections</div></div>
+    <div class="stat"><div class="stat-n" id="sn-langs">—</div><div class="stat-l">Languages</div></div>
+    <div class="stat"><div class="stat-n" id="sn-locs">—</div><div class="stat-l">Locations</div></div>
+  </div>
+
+  <!-- GLOBE -->
+  <div class="globe-wrap">
+    <iframe src="globe-min.html" loading="lazy" title="lightning-001 network globe"></iframe>
+  </div>
+  <div class="globe-caption">Migration arcs from birth locations · India · Fiji · Pakistan · USA</div>
+
+  <!-- FEATURES -->
+  <div class="features">
+    <div class="feat"><div class="feat-icon">🌍</div><div class="feat-title">Migration Globe</div><div class="feat-desc">Every member's journey rendered as a live arc on a 3D globe. Birth location to current home.</div></div>
+    <div class="feat"><div class="feat-icon">🔗</div><div class="feat-title">Network Map</div><div class="feat-desc">Force graph of every relationship. Filter by type, generation, or household.</div></div>
+    <div class="feat"><div class="feat-icon">✦</div><div class="feat-title">AI Story Sessions</div><div class="feat-desc">A memory companion that asks the right questions — and never the same one twice.</div></div>
+    <div class="feat"><div class="feat-icon">📖</div><div class="feat-title">Cultural Vocabulary</div><div class="feat-desc">173 terms from 28 cultures, held as they are actually used — with emotional weight intact.</div></div>
+    <div class="feat"><div class="feat-icon">⚡</div><div class="feat-title">Network Quests</div><div class="feat-desc">Weekly challenges that surface stories only your family can tell. Shared, reacted to, preserved.</div></div>
+    <div class="feat"><div class="feat-icon">🔵</div><div class="feat-title">Pulse</div><div class="feat-desc">Daily cultural discoveries — history, etymology, and meaning your network can respond to.</div></div>
+  </div>
+
+  <!-- MEMBER AVATARS -->
+  <div class="members-preview">
+    <div class="mp-label">Members in this network</div>
+    <div class="avatars" id="avatar-row"></div>
+  </div>
+
+  <!-- BOTTOM CTA -->
+  <div class="cta-bottom">
+    <div class="cta-title">Your story is already here.</div>
+    <div class="cta-sub">Sign in to access your network and start contributing.</div>
+    <a href="enter.html" class="btn-primary" style="font-size:13px;padding:14px 32px;">Sign In →</a>
+    <div class="invite-note">Invite-only · No public signup</div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="ft"><span class="fe">Eternal.&nbsp;</span><span class="fc">Current.&nbsp;</span>Only Yours. Forever.</div>
+  <div class="fc2">© 2026 EternalCurrent.Online · A CRUNOD / LookMeUp.Online product</div>
+</footer>
+
+<script>
+const AV_COLORS = [
+  'linear-gradient(135deg,#00AAFF,#0070CC)',
+  'linear-gradient(135deg,#00CC44,#008830)',
+  'linear-gradient(135deg,#9060E0,#6030B0)',
+  'linear-gradient(135deg,#E09040,#B06010)',
+  'linear-gradient(135deg,#00AAFF,#00CC44)',
+];
+const ini = n => n ? n.trim().split(/\s+/).map(p=>p[0]).join('').toUpperCase().slice(0,2) : '?';
+
+async function init() {
+  const sb = window.ecoSB;
+  if (!sb) { setTimeout(init, 50); return; }
+
+  const [mRes, rRes] = await Promise.all([
+    sb.from('users').select('user_id,full_name,status,visible_to').eq('network_id','lightning-001'),
+    sb.from('relationships').select('id',{count:'exact',head:true}).eq('network_id','lightning-001'),
+  ]);
+
+  const members = mRes.data || [];
+  const living = members.filter(m=>m.status==='Living').length;
+
+  document.getElementById('sn-members').textContent = members.length;
+  document.getElementById('sn-living').textContent = living;
+  document.getElementById('sn-rels').textContent = rRes.count || 917;
+  document.getElementById('sn-langs').textContent = '13';
+  document.getElementById('sn-locs').textContent = '25';
+
+  // Avatar row — show visible members
+  const visible = members.filter(m=>m.visible_to==='all').slice(0,20);
+  const remaining = members.length - visible.length;
+  const row = document.getElementById('avatar-row');
+  row.innerHTML = visible.map((m,i)=>`
+    <div class="av" style="background:${AV_COLORS[i%AV_COLORS.length]}">${ini(m.full_name)}</div>`).join('')
+    + (remaining > 0 ? `<div class="av av-more">+${remaining}</div>` : '');
+}
+
+init();
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

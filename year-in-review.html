@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECO · Year in Review</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+.page{max-width:680px;margin:0 auto;padding:24px 20px 100px;}
+
+/* YEAR SELECTOR */
+.year-bar{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.year-btn{width:36px;height:36px;border-radius:50%;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.2);color:var(--blue);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.year-btn:hover{background:rgba(0,170,255,.18);}
+.year-display{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:2.2rem;color:var(--white);flex:1;text-align:center;}
+
+/* HERO */
+.review-hero{text-align:center;padding:32px 0 24px;position:relative;overflow:hidden;margin-bottom:32px;}
+.review-hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,170,255,.12) 0%,transparent 65%);}
+.review-headline{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:clamp(1.4rem,4vw,2.2rem);line-height:1.15;color:var(--white);position:relative;margin-bottom:10px;}
+.review-sub{font-size:13px;color:var(--color-text-dim);position:relative;}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px;}
+@media(min-width:480px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.stat-num{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.8rem;color:var(--blue);line-height:1;}
+.stat-lbl{font-size: 12px;color:var(--dim);margin-top:5px;text-transform:uppercase;letter-spacing:.08em;}
+
+/* SECTIONS */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:16px;}
+.section-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:.95rem;color:var(--white);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.member-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.member-row:last-child{border-bottom:none;}
+.member-avatar{width:34px;height:34px;border-radius:50%;background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue);flex-shrink:0;}
+.member-name{font-size:13px;color:var(--white);flex:1;}
+.member-detail{font-size: 12px;color:var(--dim);}
+.lang-bar-row{display:flex;align-items:center;gap:10px;padding:7px 0;}
+.lang-name{font-size:12px;color:var(--white);width:110px;flex-shrink:0;}
+.lang-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.lang-bar-fill{height:100%;border-radius:3px;background:var(--blue);}
+.lang-count{font-size: 12px;color:var(--dim);width:32px;text-align:right;flex-shrink:0;}
+.origin-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:20px;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.15);color:var(--color-text-mid,var(--color-text-dim));font-size:12px;margin:4px;}
+.highlight-card{background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.12);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.highlight-quote{font-size:14px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.6;font-style:italic;margin-bottom:6px;}
+.highlight-attr{font-size: 12px;color:var(--dim);}
+
+/* SHARE */
+.share-bar{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+.share-btn{padding:9px 20px;border-radius:8px;font-size:12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;cursor:pointer;border:none;transition:all .15s;}
+.btn-blue{background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.3);color:var(--blue);}
+.btn-blue:hover{background:rgba(0,170,255,.26);}
+.loading{text-align:center;padding:60px;color:var(--dim);font-size:13px;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page">
+
+  <div class="year-bar">
+    <div class="year-btn" onclick="changeYear(-1)">‹</div>
+    <div class="year-display" id="year-display">2025</div>
+    <div class="year-btn" onclick="changeYear(1)">›</div>
+  </div>
+
+  <div id="review-content"><div class="loading">Loading your year…</div></div>
+
+</div>
+
+<script>
+const sb = window.ecoSB;
+let _me = null, _year = new Date().getFullYear();
+document.getElementById('year-display').textContent = _year;
+
+(function waitForAuth(){
+  if(!window.ecoSB){setTimeout(waitForAuth,50);return;}
+  window.ecoSB.auth.getSession().then(({data:{session}})=>{
+    if(!session){window.location.href='enter.html?next=year-in-review.html';return;}
+    initPage(session);
+  });
+})();
+
+async function initPage(session){
+  const {data:me}=await sb.from('users').select('user_id,full_name').eq('auth_id',session.user.id).maybeSingle();
+  _me=me;
+  loadYear(_year);
+}
+
+function changeYear(d){
+  const cur=parseInt(document.getElementById('year-display').textContent);
+  const ny=cur+d;
+  if(ny>new Date().getFullYear()||ny<2020) return;
+  document.getElementById('year-display').textContent=ny;
+  _year=ny;
+  loadYear(ny);
+}
+
+async function loadYear(year){
+  document.getElementById('review-content').innerHTML='<div class="loading">Building your '+year+' review…</div>';
+  const start=`${year}-01-01T00:00:00Z`;
+  const end=`${year}-12-31T23:59:59Z`;
+
+  const [
+    {data:newMembers},
+    {data:allMembers},
+    {data:notes},
+    {data:photos},
+    {data:pins},
+    {data:pairings},
+  ] = await Promise.all([
+    sb.from('users').select('user_id,full_name,cultural_origin,birth_location,languages_spoken')
+      .gte('created_at',start).lte('created_at',end).eq('network_id','lightning-001'),
+    sb.from('users').select('user_id,full_name,cultural_origin,languages_spoken,birth_location')
+      .eq('network_id','lightning-001').eq('status','Living'),
+    sb.from('family_notes').select('note_text,about_member_id,created_at')
+      .gte('created_at',start).lte('created_at',end).eq('network_id','lightning-001').limit(200),
+    sb.from('member_photos').select('id,created_at')
+      .gte('created_at',start).lte('created_at',end).limit(500),
+    sb.from('map_pins').select('id,location_name,pin_category,created_at')
+      .gte('created_at',start).lte('created_at',end).eq('network_id','lightning-001'),
+    sb.from('language_pairings').select('id,language,mentor_id,apprentice_id,sessions_count')
+      .gte('created_at',start).lte('created_at',end).eq('network_id','lightning-001'),
+  ]);
+
+  renderYear(year, {
+    newMembers:newMembers||[],
+    allMembers:allMembers||[],
+    notes:notes||[],
+    photos:photos||[],
+    pins:pins||[],
+    pairings:pairings||[],
+  });
+}
+
+function renderYear(year, data){
+  const {newMembers,allMembers,notes,photos,pins,pairings}=data;
+  const totalMembers=allMembers.length;
+
+  // Language breakdown
+  const langCounts={};
+  allMembers.forEach(m=>{(m.languages_spoken||[]).forEach(l=>{langCounts[l]=(langCounts[l]||0)+1;});});
+  const topLangs=Object.entries(langCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxLang=topLangs[0]?.[1]||1;
+
+  // Cultural origins
+  const origins={};
+  allMembers.forEach(m=>{if(m.cultural_origin){origins[m.cultural_origin]=(origins[m.cultural_origin]||0)+1;}});
+  const topOrigins=Object.entries(origins).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // Notable notes
+  const longNotes=notes.filter(n=>n.note_text&&n.note_text.length>60).slice(0,4);
+
+  // Pin categories
+  const pinCats={};
+  pins.forEach(p=>{const c=p.pin_category||'general';pinCats[c]=(pinCats[c]||0)+1;});
+
+  const headline = newMembers.length > 0
+    ? `${newMembers.length} new voice${newMembers.length>1?'s':''} joined your network in ${year}`
+    : `${totalMembers} members — your network in ${year}`;
+
+  const content = `
+    <div class="review-hero">
+      <div class="review-hero-bg"></div>
+      <div class="review-headline">${headline}</div>
+      <div class="review-sub">Here is what your network built together</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${totalMembers}</div><div class="stat-lbl">Members</div></div>
+      <div class="stat-card"><div class="stat-num">${notes.length}</div><div class="stat-lbl">Notes added</div></div>
+      <div class="stat-card"><div class="stat-num">${photos.length}</div><div class="stat-lbl">Photos</div></div>
+      <div class="stat-card"><div class="stat-num">${pins.length}</div><div class="stat-lbl">Places pinned</div></div>
+    </div>
+
+    ${newMembers.length ? `
+    <div class="section">
+      <div class="section-title">🌱 New members in ${year}</div>
+      ${newMembers.slice(0,8).map(m=>{
+        const initials=(m.full_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2);
+        return `<div class="member-row">
+          <div class="member-avatar">${initials}</div>
+          <div class="member-name">${m.full_name}</div>
+          <div class="member-detail">${m.cultural_origin||m.birth_location||''}</div>
+        </div>`;
+      }).join('')}
+      ${newMembers.length>8?`<div style="font-size:11px;color:var(--dim);padding:8px 0;">+${newMembers.length-8} more</div>`:''}
+    </div>` : ''}
+
+    ${topLangs.length ? `
+    <div class="section">
+      <div class="section-title">🗣 Languages in your network</div>
+      ${topLangs.map(([lang,count])=>`
+        <div class="lang-bar-row">
+          <div class="lang-name">${lang}</div>
+          <div class="lang-bar-wrap"><div class="lang-bar-fill" style="width:${Math.round((count/maxLang)*100)}%;"></div></div>
+          <div class="lang-count">${count}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${topOrigins.length ? `
+    <div class="section">
+      <div class="section-title">🌍 Cultural origins</div>
+      <div style="display:flex;flex-wrap:wrap;margin:-4px;">
+        ${topOrigins.map(([o,c])=>`<div class="origin-chip">${o} <span style="color:var(--dim);margin-left:4px;">${c}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${pairings.length ? `
+    <div class="section">
+      <div class="section-title">📚 Language transmission</div>
+      ${pairings.map(p=>`
+        <div class="member-row">
+          <div style="font-size:20px;">🗣</div>
+          <div class="member-name">${p.language}</div>
+          <div class="member-detail">${p.sessions_count||0} session${p.sessions_count===1?'':'s'}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${Object.keys(pinCats).length ? `
+    <div class="section">
+      <div class="section-title">📍 Places your network shared</div>
+      <div style="display:flex;flex-wrap:wrap;margin:-4px;">
+        ${Object.entries(pinCats).map(([cat,count])=>`<div class="origin-chip">${cat.replace(/_/g,' ')} <span style="color:var(--dim);margin-left:4px;">${count}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${longNotes.length ? `
+    <div class="section">
+      <div class="section-title">💬 Moments captured</div>
+      ${longNotes.map(n=>`
+        <div class="highlight-card">
+          <div class="highlight-quote">"${n.note_text.slice(0,160).replace(/"/g,"'")}${n.note_text.length>160?'…':''}"</div>
+          <div class="highlight-attr">${new Date(n.created_at).toLocaleDateString('en-US',{month:'long',day:'numeric'})}</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div class="share-bar">
+      <button class="share-btn btn-blue" onclick="window.print()">🖨 Print / Save PDF</button>
+      <button class="share-btn btn-blue" onclick="copyYearSummary(${year},${totalMembers},${notes.length},${photos.length})">Copy summary</button>
+    </div>`;
+
+  document.getElementById('review-content').innerHTML=content;
+}
+
+function copyYearSummary(year,members,notes,photos){
+  const text=`ECO ${year} Year in Review\n${members} members · ${notes} notes · ${photos} photos\neternalcurrent.online`;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied!','green'));
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast')||Object.assign(document.body.appendChild(document.createElement('div')),{id:'toast',className:'toast'});
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>{t.className='toast';},2800);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

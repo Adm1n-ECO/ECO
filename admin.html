@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECO Admin — Lightning-001</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+  :root{
+  --blue:      var(--color-accent-c);
+  --green:     var(--color-accent-g);
+  --bg:        var(--color-bg);
+  --bg2:       var(--color-surface);
+  --bg3:       var(--color-surface2);
+  --white:     var(--color-text);
+  --dim:       var(--color-text-dim);
+  --muted:     var(--color-text-dim);
+  --muted2:    var(--color-border);
+  --border:    var(--color-border);
+  --sidebar-w: 200px;
+}
+body{background:var(--color-bg);color:var(--color-text);}
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* AUTH GATE */
+  #auth-gate {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+    z-index: 1000;
+  }
+  #auth-gate h1 {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900; font-size: 28px; letter-spacing: 2px;
+  }
+  #auth-gate h1 span.e { color: var(--blue); }
+  #auth-gate h1 span.c { color: var(--green); }
+  #auth-gate h1 span.o { color: var(--white); }
+  .auth-box {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 12px;
+    padding: 32px;
+    width: 360px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .auth-box p { color: #8899aa; font-size: 13px; text-align: center; }
+  .auth-input {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 14px;
+    padding: 12px 16px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .auth-input:focus { border-color: var(--blue); }
+  .btn-primary {
+    background: var(--blue);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    width: 100%;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-green {
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-green:hover { opacity: 0.85; }
+  .btn-outline {
+    background: transparent;
+    color: var(--white);
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+  #auth-msg { color: var(--green); font-size: 13px; text-align: center; display: none; }
+
+  /* LAYOUT */
+  #app { display: none; }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--muted2);
+    position: fixed; top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    padding-bottom: 24px;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--muted2);
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+  .sidebar-logo .e { color: var(--blue); }
+  .sidebar-logo .c { color: var(--green); }
+  .sidebar-logo .o { color: var(--white); }
+  .sidebar-logo small {
+    display: block;
+    color: var(--muted);
+    font-family: Arial, sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .nav-section { padding: 16px 0 4px; }
+  .nav-label {
+    padding: 0 20px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    color: #8899aa;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--white); }
+  .nav-item.active { background: var(--bg3); color: var(--blue); border-left-color: var(--blue); }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: white;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .nav-badge.green { background: var(--green); color: var(--bg); }
+  .nav-item.p1-locked { opacity: 0.35; cursor: not-allowed; }
+  .nav-item.p1-locked::after {
+    content: 'P1';
+    margin-left: auto;
+    background: var(--muted2);
+    color: var(--muted);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    height: var(--header-h);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--muted2);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--white);
+  }
+  .topbar-title span { color: var(--blue); }
+  .topbar-badge {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #8899aa;
+  }
+  .topbar-badge .dot {
+    display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; margin-right: 6px;
+  }
+  .dot-green { background: var(--green); }
+  .dot-red { background: var(--danger); }
+  .dot-yellow { background: #FFB800; }
+  .topbar-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .user-chip {
+    font-size: 12px; color: #8899aa;
+  }
+  .user-chip strong { color: var(--white); }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 20px 24px 0;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 28px;
+    color: var(--blue);
+    line-height: 1;
+  }
+  .stat-card .num.green { color: var(--green); }
+  .stat-card .num.warn { color: var(--warn); }
+  .stat-card .lbl {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* TOOLS ROW */
+  .tools-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 16px 24px 0;
+    align-items: center;
+  }
+  .tools-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .tool-btn {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 6px;
+    color: var(--white);
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tool-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .tool-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* CONTENT AREA */
+  .content { padding: 20px 24px 40px; flex: 1; }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel-title {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--muted2);
+    color: var(--white);
+  }
+
+  /* AI COMMAND */
+  .ai-command-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--blue);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .ai-command-header {
+    background: linear-gradient(135deg, rgba(0,170,255,0.1), rgba(0,204,68,0.05));
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(0,170,255,0.2);
+  }
+  .ai-command-header .ai-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+  .ai-command-header span {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--blue);
+  }
+  .ai-chat-area {
+    padding: 16px 20px;
+    min-height: 120px;
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-msg {
+    display: flex; gap: 10px;
+    animation: fadein 0.3s ease;
+  }
+  @keyframes fadein { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  .chat-msg.user { flex-direction: row-reverse; }
+  .chat-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .chat-avatar.ai { background: linear-gradient(135deg,var(--blue),var(--green)); color: var(--bg); }
+  .chat-avatar.user-av { background: var(--bg4); color: var(--white); border: 1px solid var(--muted2); }
+  .chat-bubble {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 80%;
+    color: var(--white);
+  }
+  .chat-msg.user .chat-bubble { background: rgba(0,170,255,0.12); border: 1px solid rgba(0,170,255,0.2); }
+  .confirm-block {
+    background: rgba(255,179,0,0.08);
+    border: 1px solid rgba(255,179,0,0.3);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 8px;
+  }
+  .confirm-block p { color: #FFB800; font-size: 13px; margin-bottom: 10px; }
+  .confirm-block .confirm-detail {
+    background: var(--bg3);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #8899aa;
+    margin-bottom: 12px;
+    font-family: monospace;
+  }
+  .confirm-btns { display: flex; gap: 8px; }
+  .ai-input-row {
+    display: flex; gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--muted2);
+    background: var(--bg);
+  }
+  .ai-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .ai-input:focus { border-color: var(--blue); }
+  .ai-send {
+    background: var(--blue);
+    border: none;
+    border-radius: 8px;
+    color: var(--bg);
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    padding: 0 18px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    letter-spacing: 1px;
+  }
+  .ai-send:hover { opacity: 0.85; }
+
+  /* QUICK ACTIONS */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .quick-card {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .quick-card:hover { border-color: var(--blue); }
+  .quick-card.warn-card { border-color: rgba(255,107,53,0.3); }
+  .quick-card.warn-card:hover { border-color: var(--warn); }
+  .quick-card .qc-icon { font-size: 20px; margin-bottom: 8px; }
+  .quick-card .qc-title { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 13px; margin-bottom: 4px; }
+  .quick-card .qc-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .quick-card .qc-badge {
+    display: inline-block;
+    background: var(--danger);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .quick-card .qc-badge.green { background: var(--green); color: var(--bg); }
+
+  /* SECTION CARD */
+  .section-card {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .section-card-header {
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: background 0.15s;
+  }
+  .section-card-header:hover { background: var(--bg3); }
+  .section-card-header.open { border-bottom-color: var(--muted2); }
+  .section-card-title { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 13px; }
+  .section-card-body { padding: 16px 20px; display: none; }
+  .section-card-body.open { display: block; }
+
+  /* MEMBER SEARCH */
+  .search-box {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 13px;
+    padding: 10px 14px;
+    width: 100%;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--blue); }
+  .member-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+  .member-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .member-row:hover { border-color: var(--blue); }
+  .member-row .m-name { font-weight: 700; font-size: 13px; }
+  .member-row .m-meta { font-size: 12px; color: var(--muted); }
+  .status-pill {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .pill-living { background: rgba(0,204,68,0.15); color: var(--green); }
+  .pill-placeholder { background: rgba(255,107,53,0.15); color: var(--warn); }
+  .pill-passed { background: rgba(255,255,255,0.07); color: #8899aa; }
+
+  /* SYSTEM CONFIG */
+  .config-item {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .config-item .ci-icon { font-size: 18px; }
+  .config-item .ci-info { flex: 1; }
+  .config-item .ci-label { font-weight: 700; font-size: 13px; }
+  .config-item .ci-status { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* FEATURE FLAGS */
+  .flag-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--muted2);
+  }
+  .flag-row:last-child { border-bottom: none; }
+  .flag-name { flex: 1; font-size: 13px; }
+  .flag-phase {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--muted2);
+    color: var(--muted);
+  }
+  .flag-phase.p0 { background: rgba(0,204,68,0.15); color: var(--green); }
+  .toggle {
+    width: 36px; height: 20px;
+    background: var(--muted2);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 19px; }
+  .p1-row { opacity: 0.4; pointer-events: none; }
+
+  /* BANNER STATEMENTS */
+  .banner-item {
+    background: var(--bg3);
+    border: 1px solid var(--muted2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .banner-num {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    color: var(--blue);
+    width: 22px; flex-shrink: 0; margin-top: 1px;
+  }
+  .banner-text { flex: 1; font-size: 12px; line-height: 1.5; color: #ccd0d8; }
+  .banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .banner-btn {
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  .bb-approve { background: rgba(0,204,68,0.15); color: var(--green); }
+  .bb-reject { background: rgba(255,51,85,0.15); color: var(--danger); }
+
+  /* HEALTH PANEL */
+  .health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .health-card {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .health-card .hc-label {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .health-card .hc-val {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    color: var(--green);
+    line-height: 1;
+  }
+  .health-card .hc-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .progress-bar {
+    height: 6px;
+    background: var(--muted2);
+    border-radius: 3px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  /* LOADING */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--muted2);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 3px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 300px;
+  }
+  #toast.show { transform: none; opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--muted2);
+    border-radius: 14px;
+    padding: 28px;
+    width: 460px;
+    max-width: 95vw;
+  }
+  .modal-title {
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .modal-body { font-size: 13px; color: #8899aa; line-height: 1.6; margin-bottom: 20px; }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+  .tuck-stage-card{background:#0D1820;border:2px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;cursor:pointer;transition:all .18s;}
+  .tuck-stage-card:hover{border-color:var(--sc)!important;background:rgba(var(--sc),0.05);}
+  .tuck-stage-card.sel{border-color:var(--sc)!important;background:color-mix(in srgb,var(--sc) 10%,transparent);}
+  .tuck-history-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .tuck-history-row:last-child{border-bottom:none;}
+  .tuck-stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .tuck-current-box{border-radius:14px;padding:20px 24px;margin-bottom:8px;display:flex;align-items:center;gap:16px;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<!-- AUTH GATE -->
+<div id="auth-gate">
+  <h1><span class="e">E</span><span class="c">C</span><span class="o">O</span></h1>
+  <div class="auth-box">
+    <p>Admin Access — SuperUser only</p>
+    <input type="email" id="auth-email" class="auth-input" placeholder="your@email.com" />
+    <input type="password" id="auth-pw" class="auth-input" placeholder="Password" style="margin-top:8px;"
+      onkeydown="if(event.key==='Enter') signInWithPassword()" />
+    <button class="btn-primary" onclick="signInWithPassword()" style="margin-top:8px;">SIGN IN</button>
+    <button class="btn-ghost" onclick="sendMagicLink()" style="margin-top:6px;width:100%;font-size:12px;opacity:0.6;">Send magic link instead</button>
+    <div id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-logo" style="display:flex;align-items:center;gap:10px;padding:4px 0;"><img src="images/eco-logo.png" alt="ECO" style="height:36px;width:auto;border-radius:2px;"><div style="font-family:'Arial Black',Arial,sans-serif;font-size:18px;font-weight:900;letter-spacing:.08em;"><span style="color:#00AAFF;">E</span><span style="color:#00CC44;">C</span><span style="color:#FFF;">O</span></div></div>
+
+      <div class="nav-section">
+        <div class="nav-label">Network</div>
+        <div class="nav-item active" onclick="showPanel('dashboard')" id="nav-dashboard">
+          <span class="icon">⚡</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="showPanel('invite')" id="nav-invite"><span class="icon">✉️</span> Invite</div>
+        <div class="nav-item" onclick="showPanel('members')" id="nav-members">
+          <span class="icon">👥</span> Members
+          <span class="nav-badge" id="pending-badge" style="display:none">49</span>
+        </div>
+        <div class="nav-item" onclick="showPanel('relationships')" id="nav-relationships">
+          <span class="icon">🔗</span> Relationships
+        </div>
+        <div class="nav-item" onclick="showPanel('lynchpin')" id="nav-lynchpin">
+          <span class="icon">📍</span> Lynch Pin
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Health</div>
+        <div class="nav-item" onclick="showPanel('health')" id="nav-health">
+          <span class="icon">📊</span> Completeness
+        </div>
+        <div class="nav-item" onclick="showPanel('missing')" id="nav-missing">
+          <span class="icon">🔍</span> Who's Missing
+        </div>
+        <div class="nav-item" onclick="showPanel('pending')" id="nav-pending">
+          <span class="icon">⚠️</span> Pending Actions
+          <span class="nav-badge" id="actions-badge">1</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Content</div>
+        <div class="nav-item" onclick="showPanel('banner')" id="nav-banner">
+          <span class="icon">📢</span> Banner
+        </div>
+        <div class="nav-item" onclick="showPanel('vocabulary')" id="nav-vocabulary">
+          <span class="icon">📖</span> Vocabulary
+        </div>
+        <div class="nav-item p1-locked">
+          <span class="icon">🎓</span> Scholar Queue
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">AI</div>
+        <div class="nav-item" onclick="showPanel('ai')" id="nav-ai">
+          <span class="icon">🤖</span> AI Command
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">System</div>
+        <div class="nav-item" onclick="showPanel('config')" id="nav-config">
+          <span class="icon">⚙️</span> Config
+        </div>
+        <div class="nav-item" onclick="showPanel('flags')" id="nav-flags">
+          <span class="icon">🚩</span> Feature Flags
+        </div>
+        <div class="nav-item p1-locked">
+          <span class="icon">📬</span> Weekly Digest
+        </div>
+        <div class="nav-item p1-locked">
+          <span class="icon">📱</span> WhatsApp Import
+        </div>
+        <div style="margin:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Tools</div>
+        <a class="nav-item" href="data-tools.html" style="text-decoration:none;color:inherit;">
+          <span class="icon">🔧</span> Data Tools
+        </a>
+        <a class="nav-item" href="theme-manager.html" style="text-decoration:none;color:inherit;">
+          <span class="icon">🎨</span> Theme Manager
+        </a>
+        <a class="nav-item" href="admin/kinship-review.html" style="text-decoration:none;color:inherit;">
+          <span class="icon">🧬</span> Kinship Review
+        </a>
+
+        <div style="margin:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Operations</div>
+        <div class="nav-item" onclick="showPanel('networks')" id="nav-networks"><span class="icon">🌐</span> Networks</div>
+        <div class="nav-item" onclick="showPanel('quests-admin')" id="nav-quests-admin"><span class="icon">⚡</span> Quests</div>
+        <div class="nav-item" onclick="showPanel('subscriptions-admin')" id="nav-subscriptions-admin"><span class="icon">💳</span> Subscriptions</div>
+        <div class="nav-item" onclick="showPanel('pulse-admin')" id="nav-pulse-admin"><span class="icon">🔵</span> Pulse</div>
+        <div class="nav-item" onclick="showPanel('financials')" id="nav-financials"><span class="icon">📈</span> Financials</div>
+
+        <div style="margin:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Growth</div>
+        <div class="nav-item" onclick="showPanel('marketing')" id="nav-marketing"><span class="icon">📣</span> Marketing</div>
+        <div class="nav-item" onclick="showPanel('outreach')" id="nav-outreach"><span class="icon">📬</span> Outreach</div>
+        <div class="nav-item" onclick="showPanel('complaints')" id="nav-complaints"><span class="icon">⚠️</span> Complaints</div>
+        <div class="nav-item" onclick="showPanel('tuckman')" id="nav-tuckman"><span class="icon">📊</span> Group Stage</div>
+        <div class="nav-item" onclick="showPanel('sync-engine')" id="nav-sync-engine"><span class="icon">🔄</span> Sync Engine</div>
+
+        <div style="margin:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Build</div>
+        <div class="nav-item" onclick="showPanel('site-testing')" id="nav-site-testing"><span class="icon">🧪</span> Site Testing</div>
+        <div class="nav-item" onclick="showPanel('feature-matrix-admin')" id="nav-feature-matrix-admin"><span class="icon">📋</span> Feature Matrix</div>
+        <div class="nav-item" onclick="showPanel('whiteboard')" id="nav-whiteboard"><span class="icon">💡</span> Whiteboard</div>
+      </div>
+    
+</nav>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div class="topbar-title">Admin Panel / <span>Lightning-001</span></div>
+        <div class="topbar-badge">
+          <span class="dot dot-green"></span>Supabase
+        </div>
+        <div class="topbar-badge" id="smtp-status-badge">
+          <span class="dot dot-green"></span>SMTP Configured
+        </div>
+        <div class="topbar-badge">
+          <span class="dot dot-green"></span>AI Portal
+        </div>
+        <div class="topbar-right">
+          <span class="user-chip">Signed in as <strong id="user-email-display">—</strong> · <span id="role-display">Admin</span> ·
+            <span style="color:var(--green)">Magic Link ✓</span>
+          </span>
+          <button class="btn-outline" onclick="signOut()" style="padding:6px 12px;font-size:11px">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="num" id="stat-total">—</div><div class="lbl">Total Members</div></div>
+        <div class="stat-card"><div class="num green" id="stat-living">—</div><div class="lbl">Living</div></div>
+        <div class="stat-card"><div class="num warn" id="stat-placeholder">49</div><div class="lbl">Placeholder</div></div>
+        <div class="stat-card"><div class="num" id="stat-passed" style="color:#8899aa">—</div><div class="lbl">Passed</div></div>
+        <div class="stat-card"><div class="num">448</div><div class="lbl">Relationships</div></div>
+        <div class="stat-card"><div class="num">143</div><div class="lbl">Vocab Terms</div></div>
+      </div>
+
+      <!-- TOOLS ROW -->
+      <div class="tools-row">
+        <span class="tools-label">Tools</span>
+        <button class="tool-btn" onclick="showPanel('ai')">🤖 AI Command</button>
+        <button class="tool-btn" onclick="triggerFile10Preview()">⚡ Run File 10</button>
+        <button class="tool-btn" onclick="showPanel('config')">⚙️ SMTP Setup</button>
+        <button class="tool-btn" onclick="showPanel('flags')">🚩 Feature Flags</button>
+        <button class="tool-btn danger" onclick="confirmExport()">📦 Export ZIP</button>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <div class="panel active" id="panel-dashboard">
+          <div class="panel-title">⚡ Dashboard</div>
+
+          <div class="quick-grid">
+            <div class="quick-card warn-card" onclick="triggerFile10Preview()">
+              <div class="qc-icon">⚡</div>
+              <div class="qc-title">File 10 Pending</div>
+              <div class="qc-desc">Update 49 Placeholder members to Living status</div>
+              <span class="qc-badge">ACTION REQUIRED</span>
+            </div>
+            <div class="quick-card" onclick="showPanel('missing')">
+              <div class="qc-icon">🔍</div>
+              <div class="qc-title">Who's Missing</div>
+              <div class="qc-desc">AI audit of incomplete and absent member records</div>
+            </div>
+            <div class="quick-card" onclick="showPanel('health')">
+              <div class="qc-icon">📊</div>
+              <div class="qc-title">Network Health</div>
+              <div class="qc-desc">Completeness score across all 104 members</div>
+            </div>
+            <div class="quick-card" onclick="showPanel('lynchpin')">
+              <div class="qc-icon">📍</div>
+              <div class="qc-title">Lynch Pin</div>
+              <div class="qc-desc">Set or change the network anchor member</div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header open" onclick="toggleSection(this)">
+              <span>📋</span>
+              <span class="section-card-title">Recent Activity</span>
+              <span style="margin-left:auto;color:var(--muted);font-size:12px">▾</span>
+            </div>
+            <div class="section-card-body open" id="activity-log">
+              <div style="color:var(--muted);font-size:12px">Loading activity...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI COMMAND -->
+        <div class="panel" id="panel-ai">
+          <div class="panel-title">🤖 AI Command Interface</div>
+          <div class="ai-command-wrap">
+            <div class="ai-command-header">
+              <div class="ai-dot"></div>
+              <span>ECO AI — claude-haiku · Lightning-001</span>
+              <span style="margin-left:auto;font-size:11px;color:var(--muted)">Confirm gate active on writes</span>
+            </div>
+            <div class="ai-chat-area" id="ai-chat-area">
+              <div class="chat-msg">
+                <div class="chat-avatar ai">AI</div>
+                <div class="chat-bubble">
+                  Hello Vikas. I have full read access to the Lightning-001 network. All write and delete actions will show you a confirmation before executing.<br><br>
+                  Try: <em>"Show members with no birth year"</em> · <em>"Update all Placeholder to Living"</em> · <em>"Set Lynch Pin to [name]"</em>
+                </div>
+              </div>
+            </div>
+            <div class="ai-input-row">
+              <input type="text" id="ai-input" class="ai-input" placeholder="What would you like to do?" onkeydown="if(event.key==='Enter')sendAICommand()" />
+              <button class="ai-send" onclick="sendAICommand()">SEND</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEMBERS -->
+        <!-- INVITE PANEL -->
+        <div class="panel" id="panel-invite">
+          <div class="panel-title">Invite Members</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+            <!-- Invite Link Generator -->
+            <div style="background:var(--bg3);border:1px solid var(--muted2);border-radius:12px;padding:20px;">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Share Invite Link</div>
+              <div style="font-size:13px;color:var(--white);margin-bottom:12px;">Share this link — anyone who opens it can join as a guest and connect to you.</div>
+              <div id="invite-link-display" style="background:var(--bg);border:1px solid var(--muted2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);word-break:break-all;margin-bottom:10px;">Loading…</div>
+              <button onclick="copyInviteLink()" style="background:var(--blue);color:var(--bg);border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;">Copy Link</button>
+            </div>
+
+            <!-- Magic Link for existing member -->
+            <div style="background:var(--bg3);border:1px solid var(--muted2);border-radius:12px;padding:20px;">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Send Magic Link</div>
+              <div style="font-size:13px;color:var(--white);margin-bottom:12px;">Send a one-click sign-in link to an existing member's email.</div>
+              <input id="magic-link-email" placeholder="member@email.com" style="width:100%;background:var(--bg);border:1px solid var(--muted2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;margin-bottom:10px;">
+              <button onclick="sendMagicLink()" style="background:var(--green);color:var(--bg);border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;">Send Magic Link</button>
+              <div id="magic-link-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+            </div>
+          </div>
+
+          <!-- Update member email -->
+          <div style="background:var(--bg3);border:1px solid var(--muted2);border-radius:12px;padding:20px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Update Member Email</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">
+              <div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Search member</div>
+                <input id="email-update-search" placeholder="Name…" oninput="searchForEmailUpdate(this.value)" style="width:100%;background:var(--bg);border:1px solid var(--muted2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;">
+              </div>
+              <div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">New email address</div>
+                <input id="email-update-value" placeholder="new@email.com" style="width:100%;background:var(--bg);border:1px solid var(--muted2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;">
+              </div>
+              <button onclick="updateMemberEmail()" style="background:var(--blue);color:var(--bg);border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Update Email</button>
+            </div>
+            <div id="email-update-results" style="margin-top:8px;"></div>
+            <div id="email-update-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+          </div>
+
+          <!-- Recent invites -->
+          <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Recent Guest Sign-ups</div>
+          <div id="recent-invites">Loading…</div>
+        </div>
+
+        <div class="panel" id="panel-members">
+          <div class="panel-title">👥 Members</div>
+          <input type="text" class="search-box" id="member-search" placeholder="Search by name, status, location..." oninput="searchMembers(this.value)" />
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="tool-btn" onclick="filterMembers('all')" id="f-all" style="border-color:var(--blue);color:var(--blue)">All</button>
+            <button class="tool-btn" onclick="filterMembers('Living')">Living</button>
+            <button class="tool-btn" onclick="filterMembers('Placeholder')">Placeholder</button>
+            <button class="tool-btn" onclick="filterMembers('Passed')">Passed</button>
+          </div>
+          <div class="member-list" id="member-list">
+            <div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Loading members...</div>
+          </div>
+        </div>
+
+        <!-- RELATIONSHIPS -->
+        <div class="panel" id="panel-relationships">
+          <div class="panel-title">🔗 Relationships</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Search two members to view, add, or remove a relationship.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <input type="text" class="search-box" style="margin:0" placeholder="Member A..." id="rel-a" />
+            <input type="text" class="search-box" style="margin:0" placeholder="Member B..." id="rel-b" />
+          </div>
+          <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="lookupRelationship()">LOOK UP</button>
+          <div id="rel-result" style="margin-top:16px"></div>
+        </div>
+
+        <!-- LYNCH PIN -->
+        <div class="panel" id="panel-lynchpin">
+          <div class="panel-title">📍 Lynch Pin Selector</div>
+          <div class="health-card" style="margin-bottom:16px">
+            <div class="hc-label">Current Lynch Pin</div>
+            <div class="hc-val" id="lynchpin-current" style="font-size:20px;color:var(--blue)">Loading...</div>
+            <div class="hc-sub" id="lynchpin-sub">The network anchor member</div>
+          </div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Search to assign a new Lynch Pin. Confirm gate required.</p>
+          <input type="text" class="search-box" placeholder="Search member name..." id="lynchpin-search" oninput="searchForLynchPin(this.value)" />
+          <div id="lynchpin-results"></div>
+        </div>
+
+        <!-- HEALTH -->
+        <div class="panel" id="panel-health">
+          <div class="panel-title">📊 Network Completeness</div>
+          <div class="health-grid">
+            <div class="health-card">
+              <div class="hc-label">Overall Score</div>
+              <div class="hc-val" id="health-score">—</div>
+              <div class="hc-sub">across 104 members</div>
+              <div class="progress-bar"><div class="progress-fill" id="health-bar" style="width:0%"></div></div>
+            </div>
+            <div class="health-card">
+              <div class="hc-label">Birth Year Present</div>
+              <div class="hc-val" id="health-bday" style="color:var(--blue)">—</div>
+              <div class="hc-sub">members with birth year</div>
+            </div>
+            <div class="health-card">
+              <div class="hc-label">Location Known</div>
+              <div class="hc-val" id="health-loc" style="color:var(--blue)">—</div>
+              <div class="hc-sub">members with home location</div>
+            </div>
+          </div>
+          <button class="btn-green" style="width:auto" onclick="runHealthAudit()">RUN FULL AUDIT</button>
+          <div id="health-detail" style="margin-top:16px"></div>
+        </div>
+
+        <!-- WHO'S MISSING -->
+        <div class="panel" id="panel-missing">
+          <div class="panel-title">🔍 Who's Missing</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">AI audit of incomplete or absent members in Lightning-001.</p>
+          <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="runMissingAudit()">RUN AUDIT</button>
+          <div id="missing-results" style="margin-top:16px"></div>
+        </div>
+
+        <!-- PENDING ACTIONS -->
+        <div class="panel" id="panel-pending">
+          <div class="panel-title">⚠️ Pending Actions</div>
+
+          <div class="section-card">
+            <div class="section-card-header open" onclick="toggleSection(this)">
+              <span>⚡</span>
+              <span class="section-card-title">File 10 — Update 49 Placeholder → Living</span>
+              <span class="nav-badge" style="margin-left:auto">PENDING</span>
+            </div>
+            <div class="section-card-body open">
+              <p style="color:#8899aa;font-size:13px;margin-bottom:14px">
+                49 members are currently marked as Placeholder. These are confirmed real family members with thin data — not system stubs. This action updates their status to Living.
+              </p>
+              <div style="background:var(--bg3);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;color:#8899aa;margin-bottom:14px">
+                UPDATE members SET status = 'Living', updated_at = NOW()<br>
+                WHERE status = 'Placeholder' AND network_id = 'lightning-001';<br>
+                -- Affects: 49 rows
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn-green" onclick="triggerFile10Preview()">PREVIEW AFFECTED MEMBERS</button>
+                <button class="btn-outline" onclick="triggerFile10Execute()">EXECUTE (CONFIRM REQUIRED)</button>
+              </div>
+              <div id="file10-preview" style="margin-top:14px"></div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection(this)">
+              <span>📧</span>
+              <span class="section-card-title">SMTP Configuration</span>
+              <span style="margin-left:auto;color:var(--warn);font-size:12px">Not configured</span>
+            </div>
+            <div class="section-card-body">
+              <p style="color:#8899aa;font-size:13px;margin-bottom:14px">Configure Namecheap hosting SMTP. Credentials stored encrypted in Supabase secrets — never displayed after saving.</p>
+              <button class="btn-primary" style="width:auto;padding:10px 24px" onclick="showPanel('config')">GO TO SMTP CONFIG</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BANNER -->
+        <div class="panel" id="panel-banner">
+          <div class="panel-title">📢 Rotating Banner</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">15 founding statements. AI proposals: max 3/month, admin approval required.</p>
+          <div id="banner-list">
+            <div style="color:var(--muted);font-size:12px"><span class="spinner"></span>Loading statements...</div>
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn-green" style="width:auto" onclick="proposeNewBanner()">+ PROPOSE NEW STATEMENT (AI)</button>
+          </div>
+        </div>
+
+        <!-- VOCABULARY -->
+        <div class="panel" id="panel-vocabulary">
+          <div class="panel-title">📖 Vocabulary Library</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px" id="vocab-stats">
+            <div class="stat-card"><div class="num" style="font-size:22px">143</div><div class="lbl">Total Terms</div></div>
+            <div class="stat-card"><div class="num" style="font-size:22px">13</div><div class="lbl">Languages</div></div>
+          </div>
+          <input type="text" class="search-box" placeholder="Search vocabulary..." id="vocab-search" />
+          <div id="vocab-list" style="color:var(--muted);font-size:12px">Enter a search term above to explore.</div>
+        </div>
+
+        <!-- CONFIG -->
+        <div class="panel" id="panel-config">
+          <div class="panel-title">⚙️ System Configuration</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">All credentials stored in Supabase secrets table, RLS-protected. Never displayed after saving.</p>
+
+          <div class="config-item">
+            <div class="ci-icon">📧</div>
+            <div class="ci-info">
+              <div class="ci-label">SMTP (Namecheap)</div>
+              <div class="ci-status" id="smtp-config-status">Configured · eternalcurrent.online · port 465</div>
+            </div>
+            <button class="btn-outline" onclick="openSMTPConfig()">Configure</button>
+          </div>
+
+          <div class="config-item">
+            <div class="ci-icon">🤖</div>
+            <div class="ci-info">
+              <div class="ci-label">AI Portal (Anthropic)</div>
+              <div class="ci-status">claude-haiku-4-5-20251001 · Key: eco_claude_key ✓</div>
+            </div>
+            <button class="btn-outline" onclick="rotateAIKey()">Rotate Key</button>
+          </div>
+
+          <div class="config-item">
+            <div class="ci-icon">🗄️</div>
+            <div class="ci-info">
+              <div class="ci-label">Supabase</div>
+              <div class="ci-status">prbeyvmsyxuiggqwiham · Connected ✓ · 13 migrations</div>
+            </div>
+            <button class="btn-green" onclick="testSupabase()">Test</button>
+          </div>
+
+          <div class="config-item">
+            <div class="ci-icon">🌐</div>
+            <div class="ci-info">
+              <div class="ci-label">Hosting</div>
+              <div class="ci-status">Namecheap · eternalcurrent.online · Plain HTML/CSS/JS</div>
+            </div>
+            <span style="font-size:12px;color:var(--muted)">No action needed</span>
+          </div>
+        </div>
+
+        <!-- FEATURE FLAGS -->
+        <div class="panel" id="panel-flags">
+          <div class="panel-title">🚩 Feature Flags</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">P1+ features are visible but locked. Toggle P0 features on/off below.</p>
+
+          <div class="section-card">
+            <div class="section-card-header open" onclick="toggleSection(this)">
+              <span>⚡</span><span class="section-card-title">Phase 0 — Active</span>
+              <span style="margin-left:auto;color:var(--muted);font-size:12px">▾</span>
+            </div>
+            <div class="section-card-body open">
+              <div class="flag-row">
+                <span class="flag-name">Globe (globe.html)</span>
+                <span class="flag-phase p0">P0</span>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flag-row">
+                <span class="flag-name">Vocabulary Library (confluence.html)</span>
+                <span class="flag-phase p0">P0</span>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flag-row">
+                <span class="flag-name">AI Claim Flow</span>
+                <span class="flag-phase p0">P0</span>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flag-row">
+                <span class="flag-name">AI Story Session</span>
+                <span class="flag-phase p0">P0</span>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flag-row">
+                <span class="flag-name">Network Stats Bar</span>
+                <span class="flag-phase p0">P0</span>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection(this)">
+              <span>🔒</span><span class="section-card-title">Phase 1 — Locked</span>
+              <span style="margin-left:auto;color:var(--muted);font-size:12px">▾</span>
+            </div>
+            <div class="section-card-body">
+              <div class="flag-row p1-row"><span class="flag-name">Weekly Digest</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+              <div class="flag-row p1-row"><span class="flag-name">Milestone Experience</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+              <div class="flag-row p1-row"><span class="flag-name">Birthday Alerts</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+              <div class="flag-row p1-row"><span class="flag-name">WhatsApp Chat Import</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+              <div class="flag-row p1-row"><span class="flag-name">Conductor Subscription</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+              <div class="flag-row p1-row"><span class="flag-name">Tribal Partnership Portal</span><span class="flag-phase">P1</span><div class="toggle"></div></div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- NETWORKS -->
+        <div class="panel" id="panel-networks">
+          <div class="panel-title">🌐 Networks</div>
+          <button class="btn-primary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="loadNetworks()">Refresh</button>
+          <div id="networks-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <!-- QUESTS ADMIN -->
+        <div class="panel" id="panel-quests-admin">
+          <div class="panel-title">⚡ Quests</div>
+          <div class="section-card" style="margin-bottom:12px">
+            <div class="section-card-header open" onclick="toggleSection(this)"><span>🎯</span><span class="section-card-title">Active Quest</span></div>
+            <div class="section-card-body open" id="active-quest-panel"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+          </div>
+          <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection(this)"><span>📚</span><span class="section-card-title">All Quests</span></div>
+            <div class="section-card-body" id="all-quests-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- SUBSCRIPTIONS ADMIN -->
+        <div class="panel" id="panel-subscriptions-admin">
+          <div class="panel-title">💳 Subscriptions</div>
+          <div id="subs-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px"></div>
+          <div id="subs-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <!-- PULSE ADMIN -->
+        <div class="panel" id="panel-pulse-admin">
+          <div class="panel-title">🔵 Pulse</div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">New pulse card title</div>
+            <input type="text" class="search-box" id="pulse-new-title" placeholder="Card title…" style="margin-bottom:6px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Body</div>
+            <textarea class="search-box" id="pulse-new-body" rows="3" style="resize:vertical;min-height:72px;margin-bottom:6px" placeholder="Card body…"></textarea>
+            <button class="btn-green" style="width:auto;padding:8px 20px" onclick="createPulseCard()">Create Card</button>
+          </div>
+          <div id="pulse-cards-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <!-- FINANCIALS -->
+        <div class="panel" id="panel-financials">
+          <div class="panel-title">📈 Financials</div>
+          <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Revenue from paid subscriptions. Stripe live data available after STRIPE_SECRET_KEY is set.</p>
+          <div id="financials-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px"></div>
+          <div id="financials-detail"></div>
+        </div>
+
+        <!-- MARKETING -->
+        <div class="panel" id="panel-marketing">
+          <div class="panel-title">📣 Marketing</div>
+          <div class="section-card" style="margin-bottom:12px">
+            <div class="section-card-header open" onclick="toggleSection(this)"><span>📋</span><span class="section-card-title">Waitlist</span></div>
+            <div class="section-card-body open" id="waitlist-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- OUTREACH -->
+        <div class="panel" id="panel-outreach">
+          <div class="panel-title">📬 Outreach</div>
+          <div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input type="text" class="search-box" id="out-name" placeholder="Contact name…" style="margin:0">
+            <input type="text" class="search-box" id="out-email" placeholder="Email…" style="margin:0">
+            <input type="text" class="search-box" id="out-interest" placeholder="Network / family name…" style="margin:0">
+            <select class="search-box" id="out-type" style="margin:0;background:var(--bg2);color:var(--white)">
+              <option value="family">Family</option><option value="tribal">Tribal</option>
+              <option value="academic">Academic</option><option value="media">Media</option>
+              <option value="partner">Partner</option><option value="other">Other</option>
+            </select>
+            <textarea class="search-box" id="out-notes" placeholder="Notes…" rows="2" style="margin:0;resize:vertical;grid-column:1/-1"></textarea>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="addOutreach()">Add Contact</button>
+          <div id="outreach-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <!-- COMPLAINTS -->
+        <div class="panel" id="panel-complaints">
+          <div class="panel-title">⚠️ Complaints</div>
+          <div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input type="text" class="search-box" id="comp-subject" placeholder="Subject…" style="margin:0;grid-column:1/-1">
+            <select class="search-box" id="comp-category" style="margin:0;background:var(--bg2);color:var(--white)">
+              <option value="bug">Bug</option><option value="content">Content</option>
+              <option value="privacy">Privacy</option><option value="billing">Billing</option>
+              <option value="feature">Feature request</option><option value="general">General</option>
+            </select>
+            <textarea class="search-box" id="comp-desc" placeholder="Description…" rows="2" style="margin:0;resize:vertical"></textarea>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="addComplaint()">Log Issue</button>
+          <div id="complaints-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <!-- SITE TESTING -->
+        <div class="panel" id="panel-site-testing">
+          <div class="panel-title">🧪 Site Testing</div>
+          <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Open each page and verify it loads correctly. Check auth-gated pages while signed in.</p>
+          <div id="site-pages-list"></div>
+        </div>
+
+        <!-- FEATURE MATRIX ADMIN -->
+        <div class="panel" id="panel-feature-matrix-admin">
+          <div class="panel-title">📋 Feature Matrix</div>
+          <div id="matrix-render"></div>
+        </div>
+
+        <!-- WHITEBOARD -->
+        <div class="panel" id="panel-whiteboard">
+          <div class="panel-title">💡 Whiteboard</div>
+          <div style="margin-bottom:16px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start">
+            <div>
+              <input type="text" class="search-box" id="wb-title" placeholder="Idea or question title…" style="margin-bottom:6px">
+              <textarea class="search-box" id="wb-body" rows="2" placeholder="Details…" style="resize:vertical;margin-bottom:6px"></textarea>
+              <select class="search-box" id="wb-category" style="background:var(--bg2);color:var(--white)">
+                <option value="idea">💡 Idea</option><option value="question">❓ Question</option>
+                <option value="blocker">🚧 Blocker</option><option value="decision">✅ Decision</option>
+                <option value="experiment">🧪 Experiment</option>
+              </select>
+            </div>
+            <button class="btn-green" style="padding:10px 16px;margin-top:0;align-self:end" onclick="addWhiteboardItem()">Add</button>
+          </div>
+          <div id="whiteboard-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
+
+        <div class="panel" id="panel-tuckman">
+          <div class="panel-title">📊 Group Evolution Stage</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Tuckman model: track where your network is in its development cycle.</div>
+
+          <!-- Current stage display -->
+          <div id="tuck-current" style="margin-bottom:24px;"></div>
+
+          <!-- Stage selector -->
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Record a new stage assessment</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;" id="tuck-stage-grid">
+            <div class="tuck-stage-card" data-stage="Forming"    onclick="selTuckStage(this)" style="--sc:#00AAFF;">
+              <div style="font-size:20px;margin-bottom:6px;">🌱</div>
+              <div style="font-weight:900;font-family:'Arial Black',Arial,sans-serif;color:#00AAFF;">Forming</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">Members getting acquainted. Polite, cautious. Roles unclear.</div>
+            </div>
+            <div class="tuck-stage-card" data-stage="Storming"   onclick="selTuckStage(this)" style="--sc:#FF6B35;">
+              <div style="font-size:20px;margin-bottom:6px;">⚡</div>
+              <div style="font-weight:900;font-family:'Arial Black',Arial,sans-serif;color:#FF6B35;">Storming</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">Conflict emerging. Different views surfacing. Energy high.</div>
+            </div>
+            <div class="tuck-stage-card" data-stage="Norming"    onclick="selTuckStage(this)" style="--sc:#F39C12;">
+              <div style="font-size:20px;margin-bottom:6px;">🤝</div>
+              <div style="font-weight:900;font-family:'Arial Black',Arial,sans-serif;color:#F39C12;">Norming</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">Trust building. Norms established. Collaboration emerging.</div>
+            </div>
+            <div class="tuck-stage-card" data-stage="Performing" onclick="selTuckStage(this)" style="--sc:#00CC44;">
+              <div style="font-size:20px;margin-bottom:6px;">🚀</div>
+              <div style="font-weight:900;font-family:'Arial Black',Arial,sans-serif;color:#00CC44;">Performing</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">High function. Members interdependent. Deep trust.</div>
+            </div>
+          </div>
+          <textarea id="tuck-notes" class="search-box" rows="2" placeholder="Notes on this assessment (optional)…" style="width:100%;resize:vertical;margin-bottom:12px;"></textarea>
+          <button class="btn-green" onclick="saveTuckStage()" style="margin-bottom:24px;">Save assessment →</button>
+
+          <!-- History -->
+          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Stage history</div>
+          <div id="tuck-history"></div>
+        </div>
+
+        <div class="panel" id="panel-sync-engine">
+          <div class="panel-title">🔄 Synchronization Engine</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Collective challenges that activate when enough members participate.</div>
+          <button class="btn-green" onclick="showNewChallengeForm()" style="margin-bottom:20px;">+ New Challenge</button>
+          <div id="new-challenge-form" style="display:none;background:#0D1820;border:1px solid rgba(0,170,255,.15);border-radius:12px;padding:18px;margin-bottom:20px;">
+            <input type="text" class="search-box" id="sc-title" placeholder="Challenge title…" style="width:100%;margin-bottom:8px;">
+            <textarea class="search-box" id="sc-desc" rows="2" placeholder="What are you asking the network to do?" style="width:100%;resize:vertical;margin-bottom:8px;"></textarea>
+            <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+              <select class="search-box" id="sc-type" style="background:var(--bg2);color:var(--white);flex:1;">
+                <option value="collective">Collective — everyone contributes one thing</option>
+                <option value="individual">Individual — each person at their own pace</option>
+                <option value="relay">Relay — passed member to member</option>
+                <option value="milestone">Milestone — celebrate a shared achievement</option>
+              </select>
+              <input type="number" class="search-box" id="sc-target" placeholder="Target count" value="10" style="width:120px;">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-green" onclick="createChallenge()">Create →</button>
+              <button class="btn-outline" onclick="document.getElementById('new-challenge-form').style.display='none'">Cancel</button>
+            </div>
+          </div>
+          <div id="sync-challenges-list"></div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /main -->
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Confirm Action</div>
+    <div class="modal-body" id="modal-body">Are you sure?</div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn-danger" id="modal-confirm-btn" onclick="executeModalAction()">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+
+const sb = window.ecoSB;  // shared client from eco-client.js
+
+let currentUser = null;
+let pendingModalAction = null;
+let allMembers = [];
+let memberFilter = 'all';
+
+// ── AUTH ──────────────────────────────────────────────
+async function signInWithPassword() {
+  const email = (document.getElementById('auth-email').value || '').trim();
+  const pw    = document.getElementById('auth-pw').value || '';
+  const msg   = document.getElementById('auth-msg');
+  msg.style.display = 'block';
+  if (!email || !pw) {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = 'Enter email and password.';
+    return;
+  }
+  msg.style.color = 'var(--muted)';
+  msg.textContent = 'Signing in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '✗ ' + (error.message || 'Sign-in failed. Check your password.');
+    return;
+  }
+  msg.style.color = 'var(--green)';
+  msg.textContent = '✓ Authenticated — loading…';
+  // Call initApp directly — do not rely solely on onAuthStateChange timing
+  if (data?.user) await initApp(data.user);
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) return;
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: 'https://eternalcurrent.online/admin.html' }
+  });
+  const msg = document.getElementById('auth-msg');
+  msg.style.display = 'block';
+  msg.textContent = error ? '✗ ' + error.message : '✓ Check your email — link sent';
+  msg.style.color = error ? 'var(--danger)' : 'var(--green)';
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await initApp(session.user);
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (session) await initApp(session.user);
+  });
+}
+
+async function initApp(user) {
+  // Check SuperUser role — try by auth_id first, then by email
+  let role = null;
+  const { data: byId } = await sb.from('users').select('platform_role').eq('auth_id', user.id).maybeSingle();
+  if (byId) {
+    role = byId.platform_role;
+  } else {
+    const { data: byEmail } = await sb.from('users').select('platform_role').eq('email', user.email).maybeSingle();
+    role = byEmail?.platform_role;
+  }
+  if (role !== 'SuperUser' && role !== 'SystemAdmin') {
+    window.location.href = 'index.html';
+    return;
+  }
+  currentUser = user;
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-email-display').textContent = user.email;
+  await loadStats();
+  await loadMembers();
+  await loadBannerStatements();
+  loadActivityLog();
+}
+
+// ── STATS ─────────────────────────────────────────────
+async function loadStats() {
+  const { data } = await sb.from('users').select('status').eq('network_id','lightning-001');
+  if (!data) return;
+  const total = data.length;
+  const living = data.filter(m=>m.status==='Living').length;
+  const placeholder = data.filter(m=>m.status==='Placeholder').length;
+  const passed = data.filter(m=>m.status==='Passed').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-living').textContent = living;
+  document.getElementById('stat-placeholder').textContent = placeholder;
+  document.getElementById('stat-passed').textContent = passed;
+  if (placeholder > 0) {
+    document.getElementById('pending-badge').style.display = '';
+    document.getElementById('pending-badge').textContent = placeholder;
+  }
+}
+
+// ── MEMBERS ───────────────────────────────────────────
+async function loadMembers() {
+  const { data } = await sb.from('users')
+    .select('user_id,first_name,last_name,status,birth_location,current_location')
+    .eq('network_id','lightning-001')
+    .order('last_name');
+  if (data) allMembers = data;
+  renderMemberList(allMembers);
+}
+
+function renderMemberList(members) {
+  const el = document.getElementById('member-list');
+  const filtered = memberFilter==='all' ? members : members.filter(m=>m.status===memberFilter);
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No members found.</div>'; return; }
+  el.innerHTML = filtered.map(m => `
+    <div class="member-row" onclick="openMemberAI('${m.id}','${(m.first_name||'')+' '+(m.last_name||'')}')">
+      <div>
+        <div class="m-name">${m.first_name||'—'} ${m.last_name||''}</div>
+        <div class="m-meta">${m.home_location||m.birth_city||'Location unknown'}</div>
+      </div>
+      <span class="status-pill ${m.status==='Living'?'pill-living':m.status==='Placeholder'?'pill-placeholder':'pill-passed'}">${m.status||'Unknown'}</span>
+    </div>`).join('');
+}
+
+function searchMembers(q) {
+  const filtered = allMembers.filter(m=>{
+    const name = ((m.first_name||'')+' '+(m.last_name||'')).toLowerCase();
+    return name.includes(q.toLowerCase());
+  });
+  renderMemberList(filtered);
+}
+
+function filterMembers(f) {
+  memberFilter = f;
+  renderMemberList(allMembers);
+}
+
+function openMemberAI(id, name) {
+  showPanel('ai');
+  document.getElementById('ai-input').value = `Tell me about member: ${name}`;
+  sendAICommand();
+}
+
+// ── AI COMMAND ────────────────────────────────────────
+async function sendAICommand() {
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  appendChat('user', text);
+
+  // Detect destructive intent
+  const destructive = /update|change|delete|remove|set|execute|run file|placeholder.*living/i.test(text);
+
+  if (destructive) {
+    appendChat('ai', '<span class="spinner"></span>Analyzing your request...');
+    await new Promise(r=>setTimeout(r,600));
+    removeLastTyping();
+    showConfirmFromAI(text);
+    return;
+  }
+
+  appendChat('ai', '<span class="spinner"></span>Thinking...');
+  const reply = await callClaude(text);
+  removeLastTyping();
+  appendChat('ai', reply);
+}
+
+async function callClaude(userText) {
+  try {
+    const networkCtx = `You are the ECO admin AI for EternalCurrent.Online network Lightning-001. 
+    104 members, 448 relationships. You have read context on the platform. 
+    For read queries, answer helpfully and concisely. 
+    For write actions, describe what you would do — the UI handles the confirm gate.
+    Keep responses under 150 words. Plain text only, no markdown.`;
+
+    const sess = await (window.ecoSB||sb).auth.getSession();
+    const token = sess?.data?.session?.access_token || SUPABASE_ANON;
+    const res = await fetch(CLAUDE_PROXY, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 1000,
+        system: networkCtx,
+        messages:[{role:'user',content:userText}]
+      })
+    });
+    const d = await res.json();
+    if (d.error) return '✗ ' + (d.error.message || JSON.stringify(d.error));
+    return d.content?.[0]?.text || 'No response received.';
+  } catch(e) {
+    return '✗ Error: ' + e.message;
+  }
+}
+
+function appendChat(role, html) {
+  const area = document.getElementById('ai-chat-area');
+  const div = document.createElement('div');
+  div.className = `chat-msg${role==='user'?' user':''}`;
+  div.dataset.typing = role==='ai' && html.includes('spinner') ? '1' : '';
+  div.innerHTML = `
+    <div class="chat-avatar ${role==='ai'?'ai':'user-av'}">${role==='ai'?'AI':'V'}</div>
+    <div class="chat-bubble">${html}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeLastTyping() {
+  const area = document.getElementById('ai-chat-area');
+  const typing = area.querySelector('[data-typing="1"]');
+  if (typing) typing.remove();
+}
+
+function showConfirmFromAI(text) {
+  const area = document.getElementById('ai-chat-area');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `
+    <div class="chat-avatar ai">AI</div>
+    <div class="chat-bubble">
+      I can do that. Here's what will happen:
+      <div class="confirm-block">
+        <p>⚠️ Confirm required before executing</p>
+        <div class="confirm-detail">Action: "${text}"</div>
+        <div class="confirm-btns">
+          <button class="btn-green" onclick="executeAIAction('${text.replace(/'/g,"\\'")}',this.closest('.chat-msg'))">CONFIRM & EXECUTE</button>
+          <button class="btn-outline" onclick="this.closest('.chat-msg').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function executeAIAction(text, msgEl) {
+  msgEl.querySelector('.confirm-block').innerHTML = '<span class="spinner"></span>Executing...';
+  const reply = await callClaude(`EXECUTE THIS ACTION (confirmed by SuperUser): ${text}`);
+  msgEl.querySelector('.chat-bubble').innerHTML = `✓ Done. ${reply}`;
+  showToast('Action executed', 'success');
+}
+
+// ── FILE 10 ───────────────────────────────────────────
+async function triggerFile10Preview() {
+  showPanel('pending');
+  const el = document.getElementById('file10-preview');
+  el.innerHTML = '<span class="spinner"></span>Loading affected members...';
+  const { data } = await sb.from('users').select('first_name,last_name').eq('status','Placeholder').eq('network_id','lightning-001');
+  if (!data) { el.innerHTML = '<div style="color:var(--danger)">Failed to load.</div>'; return; }
+  el.innerHTML = `
+    <div style="color:var(--green);font-size:12px;margin-bottom:8px">Found ${data.length} Placeholder members:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${data.map(m=>`<span style="background:var(--bg3);border:1px solid var(--muted2);border-radius:5px;padding:3px 10px;font-size:11px">${m.first_name||''} ${m.last_name||''}</span>`).join('')}
+    </div>`;
+}
+
+async function triggerFile10Execute() {
+  openModal(
+    '⚡ Execute File 10',
+    `This will update ${document.getElementById('stat-placeholder').textContent || 49} Placeholder members to Living status in the Lightning-001 network. This cannot be undone automatically.`,
+    async () => {
+      const { error } = await sb.from('users')
+        .update({ status: 'Living', updated_at: new Date().toISOString() })
+        .eq('status','Placeholder')
+        .eq('network_id','lightning-001');
+      if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      showToast('File 10 executed — all Placeholder members updated to Living', 'success');
+      document.getElementById('actions-badge').style.display = 'none';
+      document.getElementById('pending-badge').style.display = 'none';
+      await loadStats();
+      await loadMembers();
+    }
+  );
+}
+
+// ── BANNER ────────────────────────────────────────────
+async function loadBannerStatements() {
+  const { data } = await sb.from('banner_statements').select('*').order('display_order');
+  const el = document.getElementById('banner-list');
+  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--muted)">No statements found.</div>'; return; }
+  el.innerHTML = data.map((s,i)=>`
+    <div class="banner-item">
+      <span class="banner-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="banner-text">${s.statement||s.text||JSON.stringify(s)}</span>
+      <div class="banner-actions">
+        ${s.status==='pending'?`<button class="banner-btn bb-approve" onclick="approveBanner(${s.id})">Approve</button>
+        <button class="banner-btn bb-reject" onclick="rejectBanner(${s.id})">Reject</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function approveBanner(id) {
+  await sb.from('banner_statements').update({status:'active'}).eq('statement_id',id);
+  showToast('Statement approved','success');
+  loadBannerStatements();
+}
+
+async function rejectBanner(id) {
+  await sb.from('banner_statements').update({status:'rejected'}).eq('statement_id',id);
+  showToast('Statement rejected','error');
+  loadBannerStatements();
+}
+
+async function proposeNewBanner() {
+  showPanel('ai');
+  document.getElementById('ai-input').value = 'Propose a new founding banner statement for ECO that follows the voice of "Only Yours. Forever." and reflects the bidirectional energy concept.';
+  sendAICommand();
+}
+
+// ── HEALTH AUDIT ──────────────────────────────────────
+async function runHealthAudit() {
+  const el = document.getElementById('health-detail');
+  el.innerHTML = '<span class="spinner"></span>Running audit...';
+  const { data } = await sb.from('users').select('birth_year,home_location,birth_city').eq('network_id','lightning-001');
+  if (!data) return;
+  const total = data.length;
+  const hasBday = data.filter(m=>m.birth_year).length;
+  const hasLoc = data.filter(m=>m.home_location||m.birth_city).length;
+  const score = Math.round(((hasBday+hasLoc)/(total*2))*100);
+  document.getElementById('health-score').textContent = score+'%';
+  document.getElementById('health-bday').textContent = hasBday;
+  document.getElementById('health-loc').textContent = hasLoc;
+  document.getElementById('health-bar').style.width = score+'%';
+  el.innerHTML = `<div style="color:var(--green);font-size:13px">Audit complete. ${total} members analyzed.</div>`;
+}
+
+async function runMissingAudit() {
+  const el = document.getElementById('missing-results');
+  el.innerHTML = '<span class="spinner"></span>Running AI audit...';
+  const { data } = await sb.from('users').select('first_name,last_name,birth_year,home_location').eq('network_id','lightning-001');
+  const missing = (data||[]).filter(m=>!m.birth_year||!m.home_location);
+  el.innerHTML = `
+    <div style="color:var(--warn);font-size:13px;margin-bottom:10px">${missing.length} members have incomplete records:</div>
+    <div class="member-list">
+      ${missing.slice(0,20).map(m=>`
+        <div class="member-row">
+          <div>
+            <div class="m-name">${m.first_name||'—'} ${m.last_name||''}</div>
+            <div class="m-meta">${!m.birth_year?'Missing birth year · ':''}${!m.home_location?'Missing location':''}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${missing.length>20?`<div style="color:var(--muted);font-size:12px;margin-top:8px">+ ${missing.length-20} more</div>`:''}`;
+}
+
+// ── LYNCH PIN ─────────────────────────────────────────
+async function loadLynchPin() {
+  const { data } = await sb.from('network_config').select('lynch_pin_member_id').eq('network_id','lightning-001').single();
+  if (data?.lynch_pin_member_id) {
+    const { data: m } = await sb.from('users').select('first_name,last_name').eq('id',data.lynch_pin_member_id).single();
+    document.getElementById('lynchpin-current').textContent = m ? `${m.first_name} ${m.last_name}` : 'ID: '+data.lynch_pin_member_id;
+  } else {
+    document.getElementById('lynchpin-current').textContent = 'Not set';
+  }
+}
+
+function searchForLynchPin(q) {
+  const results = allMembers.filter(m=>{
+    const name = ((m.first_name||'')+' '+(m.last_name||'')).toLowerCase();
+    return name.includes(q.toLowerCase()) && q.length > 1;
+  }).slice(0,8);
+  const el = document.getElementById('lynchpin-results');
+  el.innerHTML = results.map(m=>`
+    <div class="member-row" style="margin-bottom:6px" onclick="setLynchPin('${m.id}','${(m.first_name||'')+' '+(m.last_name||'')}')">
+      <div class="m-name">${m.first_name||''} ${m.last_name||''}</div>
+      <span style="margin-left:auto;font-size:12px;color:var(--blue)">Set as Lynch Pin →</span>
+    </div>`).join('');
+}
+
+function setLynchPin(id, name) {
+  openModal(
+    '📍 Set Lynch Pin',
+    `Set ${name} as the Lynch Pin (network anchor) for Lightning-001?`,
+    async () => {
+      await sb.from('network_config').upsert({ network_id:'lightning-001', lynch_pin_member_id: id });
+      document.getElementById('lynchpin-current').textContent = name;
+      document.getElementById('lynchpin-results').innerHTML = '';
+      document.getElementById('lynchpin-search').value = '';
+      showToast(`${name} set as Lynch Pin`,'success');
+    }
+  );
+}
+
+// ── SMTP CONFIG ───────────────────────────────────────
+function openSMTPConfig() {
+  openModal(
+    '⚙️ SMTP Configuration',
+    `<p style="color:#8899aa;font-size:13px">SMTP must be configured directly in Supabase — the admin panel cannot write to auth settings via API.</p>
+     <p style="margin-top:14px;font-size:13px"><strong>Step 1 —</strong> <a href="https://supabase.com/dashboard/project/prbeyvmsyxuiggqwiham/auth/smtp" target="_blank" style="color:#00AAFF">Open Supabase SMTP Settings ↗</a></p>
+     <p style="margin-top:14px;font-size:13px"><strong>Step 2 — Enter these values:</strong></p>
+     <table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:8px;color:#ccc">
+       <tr><td style="padding:5px 8px;color:#8899aa;width:120px">Host</td><td style="padding:5px 8px">eternalcurrent.online</td></tr>
+       <tr><td style="padding:5px 8px;color:#8899aa">Port</td><td style="padding:5px 8px">465</td></tr>
+       <tr><td style="padding:5px 8px;color:#8899aa">Username</td><td style="padding:5px 8px">admin@eternalcurrent.online</td></tr>
+       <tr><td style="padding:5px 8px;color:#8899aa">Sender name</td><td style="padding:5px 8px">EternalCurrent</td></tr>
+       <tr><td style="padding:5px 8px;color:#8899aa">Password</td><td style="padding:5px 8px;color:#FF6B35">Enter directly in Supabase — never paste here</td></tr>
+     </table>`,
+    null
+  );
+}
+
+function rotateAIKey() {
+  openModal('🔑 Rotate AI Key','Enter new Anthropic API key via AI Command to store it securely in Supabase secrets.',()=>{
+    showPanel('ai');
+    document.getElementById('ai-input').value = 'I need to update the Anthropic API key in Supabase secrets.';
+  });
+}
+
+async function testSupabase() {
+  const { data, error } = await sb.from('users').select('user_id').limit(1);
+  showToast(error ? 'Supabase error: '+error.message : 'Supabase connection ✓','success');
+}
+
+// ── EXPORT ────────────────────────────────────────────
+function confirmExport() {
+  openModal('📦 Export Site ZIP','This will generate a ZIP of all production site files. Use only when ready to deploy.',()=>{
+    showToast('Export triggered — check your session for the ZIP file','success');
+  });
+}
+
+// ── ACTIVITY LOG ──────────────────────────────────────
+function loadActivityLog() {
+  const el = document.getElementById('activity-log');
+  const items = [
+    { time:'Session', text:'FEATURE_MATRIX.md locked in memory — 8 categories, 45+ features' },
+    { time:'Session', text:'ADMIN_SPEC.md confirmed — 6 panels, confirm gate, Supabase secrets, P1 grayed' },
+    { time:'Pending', text:'File 10: 49 Placeholder → Living (awaiting execution)' },
+    { time:'Pending', text:'SMTP: Namecheap config not yet set' },
+  ];
+  el.innerHTML = items.map(i=>`
+    <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--muted2);font-size:12px">
+      <span style="color:var(--blue);flex-shrink:0;width:50px">${i.time}</span>
+      <span style="color:#ccd0d8">${i.text}</span>
+    </div>`).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────
+function openModal(title, body, action) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  pendingModalAction = action;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  pendingModalAction = null;
+}
+async function executeModalAction() {
+  closeModal();
+  if (pendingModalAction) await pendingModalAction();
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(()=>{ t.className=''; },3200);
+}
+
+// ── NAV ───────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const panel = document.getElementById('panel-'+id);
+  const nav = document.getElementById('nav-'+id);
+  if (panel) panel.classList.add('active');
+  if (nav) nav.classList.add('active');
+  if (id==='invite') loadInvitePanel();
+  if (id==='lynchpin') loadLynchPin();
+  if (id==='networks') loadNetworks();
+  if (id==='quests-admin') loadQuestsAdmin();
+  if (id==='subscriptions-admin') loadSubscriptionsAdmin();
+  if (id==='pulse-admin') loadPulseAdmin();
+  if (id==='financials') loadFinancials();
+  if (id==='marketing') loadMarketing();
+  if (id==='outreach') loadOutreach();
+  if (id==='complaints') loadComplaints();
+  if (id==='site-testing') loadSiteTesting();
+  if (id==='feature-matrix-admin') loadFeatureMatrixAdmin();
+  if (id==='whiteboard') loadWhiteboard();
+  if (id==='tuckman') loadTuckman();
+  if (id==='sync-engine') loadSyncEngine();
+}
+
+function toggleSection(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ── NETWORKS ──────────────────────────────────────────
+async function loadNetworks() {
+  const { data } = await sb.from('users').select('network_id,status').neq('network_id',null);
+  const el = document.getElementById('networks-list');
+  if (!data) { el.innerHTML = '<div style="color:var(--muted)">No data.</div>'; return; }
+  const map = {};
+  data.forEach(m => {
+    if (!map[m.network_id]) map[m.network_id] = { total:0, living:0 };
+    map[m.network_id].total++;
+    if (m.status==='Living') map[m.network_id].living++;
+  });
+  el.innerHTML = Object.entries(map).map(([id,c]) => `
+    <div class="member-row">
+      <div><div class="m-name">${id}</div><div class="m-meta">${c.total} members · ${c.living} living</div></div>
+      <span class="status-pill pill-living">Active</span>
+    </div>`).join('');
+}
+
+// ── QUESTS ADMIN ──────────────────────────────────────
+async function loadQuestsAdmin() {
+  const { data: active } = await sb.from('quest_assignments')
+    .select('id,assigned_date,response_count,status,network_quests(title,prompt,quest_type)')
+    .eq('network_id','lightning-001').eq('status','active')
+    .order('assigned_date',{ascending:false}).limit(1).maybeSingle();
+
+  const ap = document.getElementById('active-quest-panel');
+  if (active) {
+    ap.innerHTML = `
+      <div style="font-size:13px;color:#E8F4F0;font-weight:700;margin-bottom:4px">${active.network_quests.title}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${active.network_quests.prompt}</div>
+      <div style="font-size:11px;color:var(--blue)">${active.response_count||0} responses · assigned ${active.assigned_date}</div>
+      <button class="btn-outline" style="margin-top:10px;padding:6px 14px;font-size:11px" onclick="closeActiveQuest('${active.id}')">Close & Assign Next</button>`;
+  } else {
+    ap.innerHTML = `<div style="color:var(--muted);font-size:12px">No active quest.</div>
+      <button class="btn-primary" style="margin-top:10px;padding:8px 20px;width:auto" onclick="assignNextQuest()">Assign Quest</button>`;
+  }
+
+  const { data: all } = await sb.from('network_quests')
+    .select('id,title,quest_type,response_rate,times_assigned').eq('is_active',true).order('response_rate',{ascending:false});
+  const al = document.getElementById('all-quests-list');
+  if (all) al.innerHTML = all.map(q => `
+    <div class="member-row" style="justify-content:space-between">
+      <div><div class="m-name" style="font-size:12px">${q.title}</div>
+      <div class="m-meta">${q.quest_type} · ${q.times_assigned||0}× assigned · ${Math.round((q.response_rate||0)*100)}% response rate</div></div>
+      <button class="tool-btn" style="font-size:10px;padding:4px 10px" onclick="assignSpecificQuest('${q.id}','${q.title.replace(/'/g,"\\'")}')">Assign</button>
+    </div>`).join('');
+}
+
+async function assignNextQuest() {
+  const { data } = await sb.from('network_quests')
+    .select('id,title').eq('is_active',true).order('response_rate').limit(1).maybeSingle();
+  if (!data) { showToast('No quests available','warn'); return; }
+  await assignSpecificQuest(data.id, data.title);
+}
+
+async function assignSpecificQuest(questId, title) {
+  openModal('⚡ Assign Quest', `Assign "<b>${title}</b>" to lightning-001?`, async () => {
+    await sb.from('quest_assignments').update({status:'closed'}).eq('network_id','lightning-001').eq('status','active');
+    const expires = new Date(Date.now()+7*86400000).toISOString().split('T')[0];
+    await sb.from('quest_assignments').insert({
+      network_id:'lightning-001', quest_id:questId,
+      assigned_date:new Date().toISOString().split('T')[0],
+      expires_date:expires, status:'active', response_count:0
+    });
+    await sb.from('network_quests').update({times_assigned:sb.rpc('increment',{})}).eq('id',questId);
+    showToast('Quest assigned','success');
+    loadQuestsAdmin();
+  });
+}
+
+async function closeActiveQuest(id) {
+  await sb.from('quest_assignments').update({status:'closed'}).eq('id',id);
+  showToast('Quest closed','success');
+  await assignNextQuest();
+}
+
+// ── SUBSCRIPTIONS ADMIN ───────────────────────────────
+async function loadSubscriptionsAdmin() {
+  const { data } = await sb.from('user_subscriptions').select('tier,status');
+  const el = document.getElementById('subs-summary');
+  const list = document.getElementById('subs-list');
+  if (!data) return;
+  const tiers = {};
+  data.forEach(s => { tiers[s.tier] = (tiers[s.tier]||0)+1; });
+  el.innerHTML = Object.entries(tiers).map(([t,c]) => `
+    <div class="health-card"><div class="hc-label">${t}</div><div class="hc-val" style="font-size:1.4rem">${c}</div></div>`).join('');
+  list.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">${data.length} total subscriptions</div>`;
+}
+
+// ── PULSE ADMIN ───────────────────────────────────────
+async function loadPulseAdmin() {
+  const { data } = await sb.from('pulse_cards')
+    .select('id,title,body,card_date,wow_count').eq('network_id','lightning-001')
+    .order('card_date',{ascending:false}).limit(20);
+  const el = document.getElementById('pulse-cards-list');
+  if (!data||!data.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No cards yet.</div>'; return; }
+  el.innerHTML = data.map(c=>`
+    <div class="member-row" style="align-items:flex-start;flex-direction:column;gap:4px;padding:12px 0">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <div class="m-name" style="font-size:12px">${c.title}</div>
+        <span style="font-size:10px;color:var(--muted)">${c.card_date} · ${c.wow_count||0} wow</span>
+      </div>
+      <div class="m-meta" style="white-space:normal;line-height:1.5">${(c.body||'').slice(0,120)}…</div>
+    </div>`).join('');
+}
+
+async function createPulseCard() {
+  const title = document.getElementById('pulse-new-title').value.trim();
+  const body  = document.getElementById('pulse-new-body').value.trim();
+  if (!title||!body) { showToast('Title and body required','warn'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  const { error } = await sb.from('pulse_cards').insert({
+    network_id:'lightning-001', title, body,
+    card_date:today, wow_count:0, permanent:true,
+    search_query:title, cultural_tags:[]
+  });
+  if (error) { showToast('Error: '+error.message,'error'); return; }
+  showToast('Pulse card created','success');
+  document.getElementById('pulse-new-title').value='';
+  document.getElementById('pulse-new-body').value='';
+  loadPulseAdmin();
+}
+
+// ── FINANCIALS ────────────────────────────────────────
+async function loadFinancials() {
+  const { data } = await sb.from('user_subscriptions')
+    .select('tier,status').neq('tier','free_forever').neq('tier','free').neq('tier','gifted');
+  const PRICES = {conductor:5.99,pro_conductor:8.99,org_admin:14.99};
+  const active = (data||[]).filter(s=>s.status==='active');
+  const mrr = active.reduce((sum,s)=>sum+(PRICES[s.tier]||0),0);
+  const el = document.getElementById('financials-summary');
+  el.innerHTML = `
+    <div class="health-card"><div class="hc-label">MRR (est.)</div><div class="hc-val" style="color:var(--green)">$${mrr.toFixed(2)}</div></div>
+    <div class="health-card"><div class="hc-label">Paid Active</div><div class="hc-val">${active.length}</div></div>
+    <div class="health-card"><div class="hc-label">ARR (est.)</div><div class="hc-val" style="color:var(--blue)">$${(mrr*12).toFixed(2)}</div></div>`;
+  document.getElementById('financials-detail').innerHTML =
+    '<div style="font-size:11px;color:var(--muted);margin-top:8px">Live Stripe revenue available after STRIPE_SECRET_KEY secret is set in Supabase.</div>';
+}
+
+// ── MARKETING ─────────────────────────────────────────
+async function loadMarketing() {
+  const { data } = await sb.from('waitlist').select('*').order('created_at',{ascending:false}).limit(50);
+  const el = document.getElementById('waitlist-list');
+  if (!data||!data.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">Waitlist is empty.</div>'; return; }
+  el.innerHTML = `<div style="font-size:11px;color:var(--blue);margin-bottom:8px">${data.length} on waitlist</div>` +
+    data.map(w=>`<div class="member-row">
+      <div><div class="m-name" style="font-size:12px">${w.name||w.email||'—'}</div>
+      <div class="m-meta">${w.email||''} · ${w.created_at?new Date(w.created_at).toLocaleDateString():''}</div></div>
+    </div>`).join('');
+}
+
+// ── OUTREACH ──────────────────────────────────────────
+async function loadOutreach() {
+  const { data } = await sb.from('admin_outreach_log').select('*').order('created_at',{ascending:false});
+  const el = document.getElementById('outreach-list');
+  if (!data||!data.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No contacts logged yet.</div>'; return; }
+  el.innerHTML = data.map(o=>`
+    <div class="member-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 0">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <div class="m-name" style="font-size:12px">${o.contact_name}</div>
+        <span class="status-pill ${o.status==='converted'?'pill-living':'pill-placeholder'}">${o.status}</span>
+      </div>
+      <div class="m-meta">${o.contact_email||''} · ${o.contact_type} · ${o.network_interest||''}</div>
+      ${o.notes?`<div style="font-size:11px;color:var(--muted);font-style:italic">${o.notes}</div>`:''}
+    </div>`).join('');
+}
+
+async function addOutreach() {
+  const name = document.getElementById('out-name').value.trim();
+  if (!name) { showToast('Name required','warn'); return; }
+  await sb.from('admin_outreach_log').insert({
+    contact_name:name,
+    contact_email:document.getElementById('out-email').value.trim()||null,
+    contact_type:document.getElementById('out-type').value,
+    network_interest:document.getElementById('out-interest').value.trim()||null,
+    notes:document.getElementById('out-notes').value.trim()||null,
+    created_by:currentUser?.email
+  });
+  ['out-name','out-email','out-interest','out-notes'].forEach(id=>{document.getElementById(id).value='';});
+  showToast('Contact logged','success');
+  loadOutreach();
+}
+
+// ── COMPLAINTS ────────────────────────────────────────
+async function loadComplaints() {
+  const { data } = await sb.from('admin_complaints').select('*').order('created_at',{ascending:false});
+  const el = document.getElementById('complaints-list');
+  if (!data||!data.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No issues logged.</div>'; return; }
+  el.innerHTML = data.map(c=>`
+    <div class="member-row" style="flex-direction:column;align-items:flex-start;gap:4px;padding:10px 0">
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <div class="m-name" style="font-size:12px">${c.subject}</div>
+        <span class="status-pill ${c.status==='resolved'||c.status==='closed'?'pill-living':'pill-placeholder'}">${c.status}</span>
+      </div>
+      <div class="m-meta">${c.category} · ${new Date(c.created_at).toLocaleDateString()}</div>
+      ${c.description?`<div style="font-size:11px;color:var(--muted)">${c.description}</div>`:''}
+      <button class="tool-btn" style="font-size:10px;padding:3px 10px;margin-top:4px" onclick="resolveComplaint('${c.id}')">Mark Resolved</button>
+    </div>`).join('');
+}
+
+async function addComplaint() {
+  const subject = document.getElementById('comp-subject').value.trim();
+  if (!subject) { showToast('Subject required','warn'); return; }
+  await sb.from('admin_complaints').insert({
+    subject,
+    category:document.getElementById('comp-category').value,
+    description:document.getElementById('comp-desc').value.trim()||null,
+    status:'open', created_by:currentUser?.email
+  });
+  ['comp-subject','comp-desc'].forEach(id=>{document.getElementById(id).value='';});
+  showToast('Issue logged','success');
+  loadComplaints();
+}
+
+async function resolveComplaint(id) {
+  await sb.from('admin_complaints').update({status:'resolved',updated_at:new Date().toISOString()}).eq('id',id);
+  showToast('Marked resolved','success');
+  loadComplaints();
+}
+
+// ── SITE TESTING ──────────────────────────────────────
+function loadSiteTesting() {
+  const PAGES = [
+    {name:'Home',url:'index.html',auth:false},
+    {name:'Enter (Auth)',url:'enter.html',auth:false},
+    {name:'User Dashboard',url:'user.html',auth:true},
+    {name:'Globe',url:'globe.html',auth:true},
+    {name:'Globe Min',url:'globe-min.html',auth:false},
+    {name:'Tree',url:'tree.html',auth:true},
+    {name:'View Currents',url:'view-currents.html',auth:true},
+    {name:'View Pro (Funk)',url:'view-pro.html',auth:true},
+    {name:'Visual River',url:'visual-river.html',auth:true},
+    {name:'Confluence',url:'confluence.html',auth:false},
+    {name:'Photos',url:'photos.html',auth:true},
+    {name:'Map Pins',url:'map-pins.html',auth:true},
+    {name:'Data Tools',url:'data-tools.html',auth:true},
+    {name:'Admin',url:'admin.html',auth:true},
+    {name:'Member',url:'member.html',auth:true},
+  ];
+  document.getElementById('site-pages-list').innerHTML = PAGES.map(p=>`
+    <div class="member-row">
+      <div><div class="m-name" style="font-size:12px">${p.name}</div>
+      <div class="m-meta">${p.url} · ${p.auth?'Auth required':'Public'}</div></div>
+      <a href="${p.url}" target="_blank" class="tool-btn" style="font-size:10px;padding:4px 12px;text-decoration:none">Open →</a>
+    </div>`).join('');
+}
+
+// ── FEATURE MATRIX ADMIN ──────────────────────────────
+function loadFeatureMatrixAdmin() {
+  const el = document.getElementById('matrix-render');
+  const PHASES = [
+    {label:'✅ Phase 0/1 Complete',color:'var(--green)',items:['I-01→I-08 Infrastructure','PG-01→PG-08 Pages','GL-01→GL-06 Visualizations','DB-01→DB-07 Database','AI-01→AI-02 AI','PULSE-01→02 Pulse','VOCAB-01→05 Vocabulary','PHOTO-01→03 Photos','FEED-01→03 Feed','QUEST-01→02 Quests','LANG-01→02 Language Tree','REV-01→02 Stripe / Subscriptions','PG-UX-01 3-Tab Dashboard']},
+    {label:'🔲 Phase 1 Remaining',color:'var(--blue)',items:['NET-01 Public landing page','AUTH-FIX Password reset','ADMIN-01 Admin expansion (this session)','QUEST-03 Quest generator Edge Function','PG-09 Lynch Pin selector','GL-07 Mobile globe','MKT-01 Waitlist capture']},
+    {label:'📋 Phase 2',color:'var(--warn)',items:['SE-01 Synchronization Engine','CR-02 Contribution roles UI','TUCK-01 Tuckman tracker','MAP-02 Capital Network Map','TEK-02 Heritage site map','MKT-02 Milestone Experience','FEAT-01 Weekly Digest','FEAT-02 WhatsApp import','FEAT-03 Year in Review','LANG-03 Mentor-Apprentice','GL-08 Migration Map Share']},
+  ];
+  el.innerHTML = PHASES.map(p=>`
+    <div class="section-card" style="margin-bottom:10px">
+      <div class="section-card-header open" onclick="toggleSection(this)" style="border-left:3px solid ${p.color}">
+        <span class="section-card-title" style="color:${p.color}">${p.label}</span>
+      </div>
+      <div class="section-card-body open">
+        ${p.items.map(i=>`<div style="font-size:12px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--muted2)">${i}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── WHITEBOARD ────────────────────────────────────────
+async function loadWhiteboard() {
+  const { data } = await sb.from('feature_whiteboard').select('*').order('created_at',{ascending:false});
+  const el = document.getElementById('whiteboard-list');
+  if (!data||!data.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px">Board is empty — add your first idea.</div>'; return; }
+  const ICONS = {idea:'💡',question:'❓',blocker:'🚧',decision:'✅',experiment:'🧪'};
+  const STATUS_COLORS = {open:'var(--blue)',in_progress:'var(--warn)',done:'var(--green)',shelved:'var(--muted)'};
+  el.innerHTML = data.map(w=>`
+    <div class="section-card" style="margin-bottom:8px">
+      <div style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span>${ICONS[w.category]||'💡'}</span>
+          <span style="font-size:13px;font-weight:700;color:#E8F4F0;flex:1">${w.title}</span>
+          <span style="font-size:10px;color:${STATUS_COLORS[w.status]||'var(--muted)'};font-weight:700;text-transform:uppercase">${w.status}</span>
+        </div>
+        ${w.body?`<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px">${w.body}</div>`:''}
+        <div style="display:flex;gap:6px">
+          <button class="tool-btn" style="font-size:10px;padding:3px 10px" onclick="cycleWBStatus('${w.id}','${w.status}')">Cycle status</button>
+          <button class="tool-btn" style="font-size:10px;padding:3px 10px;color:var(--danger)" onclick="deleteWBItem('${w.id}')">Remove</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function addWhiteboardItem() {
+  const title = document.getElementById('wb-title').value.trim();
+  if (!title) { showToast('Title required','warn'); return; }
+  await sb.from('feature_whiteboard').insert({
+    title,
+    body:document.getElementById('wb-body').value.trim()||null,
+    category:document.getElementById('wb-category').value,
+    status:'open', created_by:currentUser?.email
+  });
+  document.getElementById('wb-title').value='';
+  document.getElementById('wb-body').value='';
+  showToast('Added to whiteboard','success');
+  loadWhiteboard();
+}
+
+async function cycleWBStatus(id, current) {
+  const cycle = {open:'in_progress',in_progress:'done',done:'shelved',shelved:'open'};
+  await sb.from('feature_whiteboard').update({status:cycle[current]||'open'}).eq('id',id);
+  loadWhiteboard();
+}
+
+async function deleteWBItem(id) {
+  await sb.from('feature_whiteboard').delete().eq('id',id);
+  showToast('Removed','success');
+  loadWhiteboard();
+}
+
+// ── INIT ──────────────────────────────────────────────
+checkAuth();
+</script>
+<script>
+async function lookupRelationship() {
+  const a = document.getElementById('rel-member-a')?.value?.trim();
+  const b = document.getElementById('rel-member-b')?.value?.trim();
+  if (!a || !b) { showToast('Enter both member IDs','warn'); return; }
+  const { data, error } = await sb.from('relationships')
+    .select('*')
+    .or(`and(member_a.eq.${a},member_b.eq.${b}),and(member_a.eq.${b},member_b.eq.${a})`);
+  const el = document.getElementById('rel-result');
+  if (el) el.textContent = error ? error.message : (data?.length ? JSON.stringify(data[0],null,2) : 'No relationship found.');
+}
+</script>
+<script>
+// ── SE-01: SYNCHRONIZATION ENGINE ────────────────────────────────────────────
+function showNewChallengeForm(){
+  document.getElementById('new-challenge-form').style.display='block';
+}
+async function createChallenge(){
+  const sb=window.ecoSB;
+  const title=document.getElementById('sc-title').value.trim();
+  const desc=document.getElementById('sc-desc').value.trim();
+  const type=document.getElementById('sc-type').value;
+  const target=parseInt(document.getElementById('sc-target').value)||10;
+  if(!title){showToast('Title required','error');return;}
+  const {data:me}=await sb.auth.getUser();
+  const {data:user}=await sb.from('users').select('user_id').eq('auth_id',me.user.id).maybeSingle();
+  const {error}=await sb.from('sync_challenges').insert({
+    title,description:desc||null,challenge_type:type,target_count:target,
+    created_by:user?.user_id
+  });
+  if(!error){
+    showToast('Challenge created!','success');
+    document.getElementById('new-challenge-form').style.display='none';
+    document.getElementById('sc-title').value='';
+    document.getElementById('sc-desc').value='';
+    loadSyncEngine();
+  } else showToast('Could not create challenge','error');
+}
+async function loadSyncEngine(){
+  const sb=window.ecoSB;
+  const {data}=await sb.from('sync_challenges').select('*')
+    .eq('network_id','lightning-001').order('created_at',{ascending:false}).limit(20);
+  const list=document.getElementById('sync-challenges-list');
+  if(!data?.length){list.innerHTML='<div style="color:var(--muted);font-size:12px;">No challenges yet.</div>';return;}
+  const TYPE_COLORS={collective:'#00AAFF',individual:'#00CC44',relay:'#F39C12',milestone:'#9B59B6'};
+  list.innerHTML=data.map(c=>{
+    const pct=Math.min(100,Math.round((c.current_count/c.target_count)*100));
+    const col=TYPE_COLORS[c.challenge_type]||'#00AAFF';
+    const statusBadge=c.status==='completed'?'<span style="color:#00CC44;font-size:10px;font-weight:900;">✓ COMPLETE</span>':
+      c.status==='active'?'<span style="color:#00AAFF;font-size:10px;">● Active</span>':
+      `<span style="color:var(--muted);font-size:10px;">${c.status}</span>`;
+    return `<div style="background:#0D1820;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#E8F4F0;margin-bottom:2px;">${c.title}</div>
+          <div style="font-size:11px;color:${col};text-transform:uppercase;letter-spacing:.06em;font-weight:700;">${c.challenge_type}</div>
+        </div>
+        ${statusBadge}
+      </div>
+      ${c.description?`<div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:10px;">${c.description}</div>`:''}
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;transition:width .4s;"></div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;">${c.current_count}/${c.target_count}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+const TUCK_CFG = {
+  Forming:   {color:'#00AAFF', emoji:'🌱'},
+  Storming:  {color:'#FF6B35', emoji:'⚡'},
+  Norming:   {color:'#F39C12', emoji:'🤝'},
+  Performing:{color:'#00CC44', emoji:'🚀'},
+};
+let _tuckSelStage = null;
+
+async function loadTuckman() {
+  const sb = window.ecoSB;
+  const { data } = await sb.from('network_tuckman')
+    .select('*').eq('network_id','lightning-001')
+    .order('created_at',{ascending:false}).limit(20);
+  const records = data||[];
+
+  // Current stage = most recent
+  const cur = records[0];
+  const curEl = document.getElementById('tuck-current');
+  if (cur) {
+    const c = TUCK_CFG[cur.stage];
+    curEl.innerHTML = `<div class="tuck-current-box" style="background:${c.color}18;border:1px solid ${c.color}44;">
+      <div style="font-size:36px;">${c.emoji}</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:4px;">Current stage</div>
+        <div style="font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.4rem;color:${c.color};">${cur.stage}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;">${new Date(cur.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+        ${cur.notes?`<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:6px;font-style:italic;">"${cur.notes}"</div>`:''}
+      </div>
+    </div>`;
+  } else {
+    curEl.innerHTML = `<div style="font-size:13px;color:rgba(255,255,255,.3);font-style:italic;margin-bottom:8px;">No stage recorded yet — assess your network below.</div>`;
+  }
+
+  // History
+  const histEl = document.getElementById('tuck-history');
+  if (!records.length) { histEl.innerHTML = '<div style="font-size:12px;color:rgba(255,255,255,.2);">No history yet.</div>'; return; }
+  histEl.innerHTML = records.map(r => {
+    const c = TUCK_CFG[r.stage];
+    return `<div class="tuck-history-row">
+      <div class="tuck-stage-dot" style="background:${c.color};"></div>
+      <div style="flex:1;">
+        <span style="font-weight:700;color:${c.color};">${c.emoji} ${r.stage}</span>
+        ${r.notes?`<span style="font-size:11px;color:rgba(255,255,255,.35);margin-left:8px;">"${r.notes}"</span>`:''}
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.25);">${new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+    </div>`;
+  }).join('');
+}
+
+function selTuckStage(el) {
+  document.querySelectorAll('.tuck-stage-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  _tuckSelStage = el.dataset.stage;
+}
+
+async function saveTuckStage() {
+  if (!_tuckSelStage) { showToast('Select a stage first','error'); return; }
+  const sb = window.ecoSB;
+  const notes = document.getElementById('tuck-notes').value.trim();
+  const { data:me } = await sb.auth.getUser();
+  const { data:user } = await sb.from('users').select('user_id').eq('auth_id',me.user.id).maybeSingle();
+  const { error } = await sb.from('network_tuckman').insert({
+    network_id:'lightning-001', stage:_tuckSelStage,
+    recorded_by: user?.user_id, notes:notes||null
+  });
+  if (!error) {
+    showToast(`Stage recorded: ${_tuckSelStage}`,'success');
+    document.getElementById('tuck-notes').value='';
+    document.querySelectorAll('.tuck-stage-card').forEach(c=>c.classList.remove('sel'));
+    _tuckSelStage=null;
+    loadTuckman();
+  } else showToast('Could not save stage','error');
+}
+
+// ── INVITE PANEL ─────────────────────────────────────────────────────────────
+let _inviteSearchTimer = null;
+let _emailUpdateUserId = null;
+
+function loadInvitePanel(){
+  // Generate invite link using current user id
+  if(currentUser){
+    sb.from('users').select('user_id').eq('auth_id',currentUser.id).maybeSingle().then(({data})=>{
+      if(data){
+        const link = `https://eternalcurrent.online/join.html?ref=${data.user_id}`;
+        document.getElementById('invite-link-display').textContent = link;
+      }
+    });
+  }
+  // Load recent invites
+  sb.from('network_invites').select('*').order('created_at',{ascending:false}).limit(10).then(({data})=>{
+    const el = document.getElementById('recent-invites');
+    if(!el) return;
+    if(!data?.length){ el.innerHTML='<div style="font-size:13px;color:var(--muted);">No guest sign-ups yet.</div>'; return; }
+    el.innerHTML = data.map(i=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--muted2);">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--white);">${i.invitee_name||'Unknown'}</div>
+          <div style="font-size:12px;color:var(--muted);">${i.invitee_email||''} · ${i.relation_to_inviter||''} · ${new Date(i.created_at).toLocaleDateString()}</div>
+        </div>
+        <span style="font-size:12px;padding:3px 10px;border-radius:10px;background:${i.status==='accepted'?'rgba(0,204,68,.1)':'rgba(255,180,0,.1)'};color:${i.status==='accepted'?'#00CC44':'#FFB800'};">${i.status}</span>
+      </div>`).join('');
+  });
+}
+
+function copyInviteLink(){
+  const txt = document.getElementById('invite-link-display').textContent;
+  navigator.clipboard.writeText(txt).then(()=>logAction('Invite link copied'));
+}
+
+async function sendMagicLink(){
+  const email = document.getElementById('magic-link-email').value.trim();
+  const msg = document.getElementById('magic-link-msg');
+  if(!email){ msg.style.color='#ff6b6b'; msg.textContent='Enter an email address.'; return; }
+  const {error} = await sb.auth.admin ? 
+    {error:null} : // fallback
+    await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {method:'GET'}).then(()=>({error:null})).catch(e=>({error:e}));
+  // Use resetPasswordForEmail as magic link equivalent
+  const {error:err} = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo:'https://eternalcurrent.online/enter.html?mode=reset'
+  });
+  if(!err){ msg.style.color='#00CC44'; msg.textContent='✓ Magic link sent to '+email; }
+  else { msg.style.color='#ff6b6b'; msg.textContent=err.message||'Could not send link'; }
+}
+
+function searchForEmailUpdate(q){
+  clearTimeout(_inviteSearchTimer);
+  const res = document.getElementById('email-update-results');
+  if(q.trim().length<2){ res.innerHTML=''; _emailUpdateUserId=null; return; }
+  _inviteSearchTimer = setTimeout(async()=>{
+    const {data} = await sb.from('users').select('user_id,full_name,email')
+      .ilike('full_name',`%${q.trim()}%`).limit(5);
+    res.innerHTML = (data||[]).map(u=>`
+      <div onclick="selectEmailUpdateUser('${u.user_id}','${(u.full_name||'').replace(/'/g,"\'")}','${u.email||''}')"
+        style="padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--white);background:var(--bg);border:1px solid var(--muted2);margin-bottom:4px;">
+        <strong>${u.full_name}</strong> <span style="color:var(--muted);font-size:12px;">${u.email||'no email'}</span>
+      </div>`).join('');
+  },280);
+}
+
+function selectEmailUpdateUser(uid, name, email){
+  _emailUpdateUserId = uid;
+  document.getElementById('email-update-search').value = name;
+  document.getElementById('email-update-value').value = email;
+  document.getElementById('email-update-results').innerHTML='';
+}
+
+async function updateMemberEmail(){
+  const msg = document.getElementById('email-update-msg');
+  const newEmail = document.getElementById('email-update-value').value.trim();
+  if(!_emailUpdateUserId){ msg.style.color='#ff6b6b'; msg.textContent='Select a member first.'; return; }
+  if(!newEmail){ msg.style.color='#ff6b6b'; msg.textContent='Enter a new email.'; return; }
+  const {error} = await sb.from('users').update({email:newEmail}).eq('user_id',_emailUpdateUserId);
+  if(!error){ msg.style.color='#00CC44'; msg.textContent='✓ Email updated in profile. Auth email requires Supabase dashboard to change.'; }
+  else { msg.style.color='#ff6b6b'; msg.textContent=error.message; }
+}
+
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

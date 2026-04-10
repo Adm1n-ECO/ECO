@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EternalCurrent.Online — Star Portal</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <script>
+    (function(){
+      var k='eco_theme_v4', d='void';
+      var valid=['parchment','grove','deep-sea','void'];
+      try { var s=localStorage.getItem(k); if(valid.indexOf(s)>=0) d=s; } catch(e){}
+      document.documentElement.setAttribute('data-theme',d);
+    })();
+  </script>
+  <style>
+    /* ── Layout-only additions not in theme.css ── */
+    .page-footer {
+      margin-top:var(--space-14,3.5rem); padding-top:var(--space-5);
+      border-top:1px solid var(--color-border);
+      display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:var(--space-3);
+    }
+    .page-footer span {
+      font-family:var(--font-mono); font-size:var(--text-xs);
+      color:var(--color-text-dim); letter-spacing:var(--tracking-wider);
+    }
+    .page-footer a {
+      font-family:var(--font-mono); font-size:var(--text-sm);
+      color:var(--color-accent-c); text-decoration:none;
+      transition:color var(--transition-fast);
+    }
+    .page-footer a:hover { color:var(--color-accent-g); }
+    @media (max-width:600px) {
+      .portal-page { padding:var(--space-8) var(--space-4) var(--space-16); }
+      .form-card { padding:var(--space-5) var(--space-4); }
+      .form-grid { grid-template-columns:1fr !important; }
+      .portal-page-header { flex-direction:column; gap:var(--space-3); }
+    }
+  </style>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+</head>
+<body data-theme="void">
+<div id="eco-header"></div>
+
+<!-- NAV -->
+
+
+<div class="portal-page">
+
+  <!-- HEADER -->
+  <div class="portal-page-header">
+    <div class="portal-icon">🌊</div>
+    <div class="portal-header-text">
+      <h1>Deploy a new <em>star</em></h1>
+      <p>Add a person to the Eternal Currents network. Each entry places a new node on the globe — family, friends, or chosen connections.</p>
+    </div>
+  </div>
+
+  <!-- STATUS BANNER -->
+  <div class="status-banner" id="status-msg">
+    <div class="status-dot loading"></div>
+    <span>Synchronizing with Star Network…</span>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card">
+
+    <div class="form-section">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-name">Identity &amp; Persona</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="fname">First Name</label>
+          <input type="text" id="fname" placeholder="Given name" required>
+        </div>
+        <div class="field">
+          <label for="nickname">Nickname</label>
+          <input type="text" id="nickname" placeholder="e.g. Buddy">
+        </div>
+        <div class="field">
+          <label for="lname">Last Name</label>
+          <input type="text" id="lname" placeholder="Family name" required>
+        </div>
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other / Not specified</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-name">Branching Logic</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role">
+            <option value="son">Son / Daughter</option>
+            <option value="spouse">Spouse / Partner</option>
+            <option value="brother">Brother / Sister</option>
+            <option value="parent">Parent</option>
+            <option value="pet">Pet</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tier">Decimal Tier</label>
+          <input type="text" id="tier" placeholder="e.g. 1.1" required>
+          <span class="field-hint">1 = Sibling · 1.1 = Child · 1.1.1 = Grandchild</span>
+        </div>
+        <div class="field">
+          <label for="side">Display Side</label>
+          <select id="side">
+            <option value="left">LEFT — Family</option>
+            <option value="right">RIGHT — Social</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-name">Location &amp; Connections</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="linkTo">Connect To (Primary)</label>
+          <select id="linkTo">
+            <option value="STAR">STAR (Me)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="partnerID">Partner Link</label>
+          <select id="partnerID">
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="birth-city">Birth City</label>
+          <input type="text" id="birth-city" placeholder="e.g. Mumbai, India">
+          <span class="field-hint">Origin pin on the globe</span>
+        </div>
+        <div class="field">
+          <label for="city">Current City</label>
+          <input type="text" id="city" placeholder="e.g. Lagos, Nigeria">
+          <span class="field-hint">Live location pin on the globe</span>
+        </div>
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="optional">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn--deploy" id="deploy-btn" onclick="handleDeploy()">
+      🌊 &nbsp; Deploy to Eternal Currents
+    </button>
+
+  </div>
+
+  <!-- NETWORK LIST -->
+  <div class="network-header">
+    <div class="network-title">Current Star Network</div>
+    <div class="count-badge" id="count-badge">Loading…</div>
+  </div>
+
+  <div id="record-list">
+    <div class="empty-state">
+      <span class="empty-icon">🌿</span>
+      Connecting to the network…
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <span>ETERNALCURRENT.ONLINE · STAR PORTAL v3.0</span>
+    <a href="globe-live.html">🌍 Live Globe</a>
+    <a href="https://docs.google.com/spreadsheets/" target="_blank" rel="noopener">↗ View database</a>
+  </footer>
+
+</div>
+
+<div class="toast toast--info" id="toast"></div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTTLmITxQh9BwN87E_exKPGS5FSSdmU7MJkXd3IC2hsmXxSiHnoX1XduMGdt3cAxQi/exec";
+
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (isError ? 'toast--error' : 'toast--success');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 3800);
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function loadNetwork() {
+    fetch(SCRIPT_URL)
+      .then(r => r.json())
+      .then(data => {
+        const count = Math.max(0, data.length - 1);
+        const statusEl = document.getElementById('status-msg');
+        statusEl.innerHTML = `<div class="status-dot"></div><span>Online — <strong>${count} Star${count!==1?'s':''}</strong> in the network</span>`;
+
+        document.getElementById('count-badge').textContent = count + ' node' + (count!==1?'s':'');
+
+        const linkTo    = document.getElementById('linkTo');
+        const partnerID = document.getElementById('partnerID');
+        const list      = document.getElementById('record-list');
+        list.innerHTML  = '';
+
+        if (count === 0) {
+          list.innerHTML = '<div class="empty-state"><span class="empty-icon">🌱</span>No stars yet — be the first to add one.</div>';
+          return;
+        }
+
+        const grid = document.createElement('div');
+        grid.className = 'star-grid';
+
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row[0] || !row[4]) continue;
+
+          const opt = new Option(row[4], row[0]);
+          linkTo.add(opt.cloneNode(true));
+          partnerID.add(opt.cloneNode(true));
+
+          // Extract city — check multiple columns
+          const cityVal = (row[10] || row[11] || row[9] || '').toString().trim();
+
+          const card = document.createElement('div');
+          card.className = 'star-card';
+          card.innerHTML = `
+            <div class="star-card-name">${esc(row[4])}</div>
+            <div class="star-card-meta">${esc(row[0])}${row[5] ? ' · ' + esc(row[5]) : ''}${cityVal ? '<br>' + esc(cityVal) : ''}</div>
+            <span class="star-card-tier">Tier ${esc(String(row[13] || row[7] || '—'))}</span>`;
+          grid.appendChild(card);
+        }
+        list.appendChild(grid);
+      })
+      .catch(() => {
+        document.getElementById('status-msg').innerHTML =
+          '<div class="status-dot error"></div><span style="color:#FF6B6B;">Could not reach network</span>';
+        document.getElementById('count-badge').textContent = 'Offline';
+        document.getElementById('record-list').innerHTML =
+          '<div class="empty-state"><span class="empty-icon">⚡</span>Network unavailable — check your connection.</div>';
+      });
+  }
+
+  function handleDeploy() {
+    const fn = document.getElementById('fname').value.trim();
+    const ln = document.getElementById('lname').value.trim();
+    const ti = document.getElementById('tier').value.trim();
+    if (!fn || !ln || !ti) {
+      showToast('First Name, Last Name and Tier are required.', true);
+      return;
+    }
+
+    const btn = document.getElementById('deploy-btn');
+    btn.textContent = 'Deploying…';
+    btn.disabled = true;
+    btn.style.opacity = '.6';
+
+    const entry = {
+      userID:    (fn[0] + (ln[0]||'X')).toUpperCase() + '-' + Math.floor(Math.random()*900+100),
+      firstname: fn,
+      lastname:  ln,
+      nickname:  document.getElementById('nickname').value.trim(),
+      name:      (fn + ' ' + ln).trim(),
+      parent:    document.getElementById('linkTo').value,
+      role:      document.getElementById('role').value,
+      tier:      ti,
+      side:      document.getElementById('side').value,
+      partnerID: document.getElementById('partnerID').value,
+      gender:    document.getElementById('gender').value,
+      birthCity: document.getElementById('birth-city').value.trim(),
+      city:      document.getElementById('city').value.trim(),
+      email:     document.getElementById('email').value.trim(),
+      status:    'living',
+      origin:    'birth',
+      petName:   '',
+      petType:   '',
+      bioParent: 'none'
+    };
+
+    fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(entry) })
+      .then(() => {
+        showToast('✓ ' + entry.name + ' deployed to the network!');
+        ['fname','lname','nickname','tier','birth-city','city','email'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        setTimeout(loadNetwork, 1200);
+      })
+      .catch(() => showToast('Submission failed — check connection.', true))
+      .finally(() => {
+        btn.innerHTML = '🌊 &nbsp; Deploy to Eternal Currents';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+  }
+
+  window.addEventListener('DOMContentLoaded', loadNetwork);
+</script>
+<script src="scripts/theme-selector.js"></script>
+<script src="header.js"></script>
+</body>
+</html>

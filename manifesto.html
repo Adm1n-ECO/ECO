@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Manifesto — EternalCurrent.Online</title>
+<meta name="description" content="Eternal is the truth. Current is what you do about it.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/theme.css">
+<script>
+(function(){
+  var k='eco_theme_v4', d='void';
+  var valid=['parchment','grove','deep-sea','void'];
+  try { var s=localStorage.getItem(k); if(valid.indexOf(s)>=0) d=s; } catch(e){}
+  document.documentElement.setAttribute('data-theme',d);
+})();
+</script>
+<style>
+/* Layout structure only — all color/type tokens from theme.css */
+
+.manifesto-hero {
+  padding: var(--space-20) 0 var(--space-16);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.eco-split {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-12);
+  align-items: center;
+}
+
+.eco-words { line-height: 1; }
+
+.eco-word {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(4.5rem, 11vw, 8.5rem);
+  letter-spacing: -.03em;
+  line-height: .92;
+}
+
+.eco-word-eternal { color: var(--color-accent-c); }
+.eco-word-current { color: var(--color-accent-g); font-style: italic; }
+
+.eco-defs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-left: var(--space-8);
+  border-left: 1px solid var(--color-border);
+}
+
+.eco-def-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  margin-bottom: var(--space-1);
+}
+
+.principles-section {
+  padding: var(--space-16) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.principles-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-8) 0 0;
+  counter-reset: p;
+}
+
+.principles-list li {
+  counter-increment: p;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: baseline;
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border);
+  transition: padding-left var(--transition-base);
+  cursor: default;
+}
+
+.principles-list li:last-child { border-bottom: none; }
+.principles-list li:hover { padding-left: var(--space-3); }
+
+.principles-list li::before {
+  content: '0' counter(p);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-hint);
+  letter-spacing: var(--tracking-wide);
+}
+
+.principle-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.5vw, 1.9rem);
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  color: var(--color-text);
+}
+
+.principle-text em {
+  font-style: italic;
+  color: var(--color-accent-c);
+}
+
+.principle-text .green { color: var(--color-accent-g); font-style: italic; }
+.principle-text .amber { color: var(--color-accent-a); font-style: italic; }
+
+.prose-section {
+  padding: var(--space-16) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prose-section:last-of-type { border-bottom: none; }
+
+.prose-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--space-10);
+  align-items: start;
+}
+
+.prose-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-accent-g);
+  padding-top: var(--space-1);
+}
+
+.prose-body { }
+
+.prose-body p {
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--color-text-dim);
+  margin-bottom: var(--space-4);
+}
+
+.prose-body p:last-child { margin-bottom: 0; }
+.prose-body strong { color: var(--color-text); font-weight: var(--weight-semi); }
+.prose-body em { color: var(--color-accent-c); font-style: italic; }
+
+.climax-section {
+  padding: var(--space-20) 0;
+  text-align: center;
+}
+
+.climax-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--color-text);
+  margin-bottom: var(--space-8);
+}
+
+.climax-actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .eco-split {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+  .eco-defs {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    padding-left: 0;
+    padding-top: var(--space-6);
+  }
+  .prose-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .principles-list li {
+    grid-template-columns: 40px 1fr;
+  }
+}
+</style>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<!-- NAV -->
+
+
+<!-- HERO -->
+<div class="manifesto-hero">
+  <div class="container">
+    <p class="font-mono text-dim" style="font-size:var(--text-xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;margin-bottom:var(--space-8);">The Manifesto</p>
+    <div class="eco-split">
+      <div class="eco-words">
+        <span class="eco-word eco-word-eternal">Eternal.</span>
+        <span class="eco-word eco-word-current">Current.</span>
+      </div>
+      <div class="eco-defs">
+        <div>
+          <div class="eco-def-label text-accent-c">Eternal →</div>
+          <p class="text-dim" style="font-size:var(--text-sm);margin:0;">The truth that doesn't change. Every relationship you've formed has already shaped you — permanently.</p>
+        </div>
+        <div>
+          <div class="eco-def-label text-accent-g">Current →</div>
+          <p class="text-dim" style="font-size:var(--text-sm);margin:0;">What you do about it. The force you choose to run through those relationships. Your direction. Your responsibility.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINCIPLES -->
+<div class="principles-section">
+  <div class="container">
+    <p class="font-mono text-dim" style="font-size:var(--text-xs);letter-spacing:var(--tracking-wider);text-transform:uppercase;margin:0;">Core Principles</p>
+    <ul class="principles-list">
+      <li><span class="principle-text">Every relationship is <em>a current.</em></span></li>
+      <li><span class="principle-text">Your life is <span class="green">built,</span> not foretold.</span></li>
+      <li><span class="principle-text">Every current has <em>direction.</em></span></li>
+      <li><span class="principle-text">Choices <span class="green">compound.</span></span></li>
+      <li><span class="principle-text">The map changes <em>when you do.</em></span></li>
+      <li><span class="principle-text"><span class="amber">Action</span> is the only real force in the system.</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- THE BREAK -->
+<div class="prose-section">
+  <div class="container">
+    <div class="prose-grid">
+      <div class="prose-label">The Break From Magical Thinking</div>
+      <div class="prose-body">
+        <p><strong>Nothing moves because the universe wills it. Things move because you do.</strong></p>
+        <p>We've moved past waiting for signs, signals, or manifestations. The people in your life didn't arrive by accident — someone made a move. A call. A decision to show up when it would have been easier not to.</p>
+        <p>EternalCurrent is for people who understand that the world shifts through <strong>action, not intention.</strong> The doers. The deciders. The people who shape their lives through what they <em>choose,</em> not what they hope for.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT IT REVEALS -->
+<div class="prose-section">
+  <div class="container">
+    <div class="prose-grid">
+      <div class="prose-label" style="color:var(--color-accent-c);">What the Platform Reveals</div>
+      <div class="prose-body">
+        <p><strong>The connections you built</strong> — not the ones you were born into, the ones you chose, maintained, and chose again.</p>
+        <p><strong>The influence you carry</strong> — every person in your network was shaped by someone else in your network. See the chain.</p>
+        <p><strong>The moments that changed everything</strong> — a conversation, a move, a decision on a Tuesday that redirected the current.</p>
+        <p><em>No destiny. No cosmic plan. No invisible hand.</em> Just people, choices, and consequences — mapped clearly, honestly, in motion.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIMAX -->
+<div class="climax-section">
+  <div class="container--narrow">
+    <h2 class="climax-headline">
+      The current is <em class="text-accent-c" style="font-style:italic;">already</em> running.<br>
+      Start <span class="text-accent-g">mapping</span> it.
+    </h2>
+    <div class="climax-actions">
+      <a href="ai-portal.html" class="btn btn--solid btn--lg">Start mapping your current →</a>
+      <a href="index.html" class="btn btn--ghost btn--lg">Back to the site</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-4);">
+    <span class="font-mono" style="font-size:var(--text-sm);color:var(--color-text-dim);">EternalCurrent.Online</span>
+    <span style="font-size:var(--text-sm);color:var(--color-text-dim);">Initiated by Manoj Bakshi · Supported by Isaiah &amp; Vikas Bakshi</span>
+  </div>
+</footer>
+
+<!-- Theme selector pill (bottom-right) -->
+<script src="scripts/theme-selector.js"></script>
+<script src="header.js"></script>
+</body>
+</html>

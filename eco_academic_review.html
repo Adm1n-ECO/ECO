@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECO Academic Language Review — For Professor Gaines, CSM Ethnic Studies</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root {
+  --bg:        #080D14;
+  --bg-2:      #0D1520;
+  --bg-3:      #111C2A;
+  --bg-4:      #162030;
+  --blue:      #00AAFF;
+  --green:     #00CC44;
+  --white:     #FFFFFF;
+  --muted:     rgba(255,255,255,0.45);
+  --dim:       rgba(255,255,255,0.18);
+  --border:    rgba(255,255,255,0.08);
+  --border-2:  rgba(255,255,255,0.14);
+  --confirm:      #00CC44;
+  --confirm-bg:   rgba(0,204,68,0.08);
+  --confirm-bdr:  rgba(0,204,68,0.25);
+  --flag:         #FF4444;
+  --flag-bg:      rgba(255,68,68,0.08);
+  --flag-bdr:     rgba(255,68,68,0.25);
+  --unsure:       #FFB020;
+  --unsure-bg:    rgba(255,176,32,0.08);
+  --unsure-bdr:   rgba(255,176,32,0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ---- HEADER ---- */
+.header {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border-2);
+  padding: 40px 48px 36px;
+}
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  line-height: 1;
+}
+.wordmark .e { color: var(--blue);  font-family: Arial Black, Arial, sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -0.01em; }
+.wordmark .c { color: var(--green); font-family: Arial Black, Arial, sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -0.01em; }
+.wordmark .o { color: var(--white); font-family: Arial Black, Arial, sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -0.01em; }
+
+.badge {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--blue);
+  border: 1px solid rgba(0,170,255,0.3);
+  background: rgba(0,170,255,0.07);
+  padding: 5px 14px;
+  border-radius: 20px;
+}
+
+.header h1 {
+  font-family: Arial Black, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 1.25;
+  color: var(--white);
+  margin-bottom: 12px;
+  max-width: 640px;
+  letter-spacing: -0.02em;
+}
+
+.header .sub {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 600px;
+  line-height: 1.75;
+}
+
+.session-id {
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 20px;
+  letter-spacing: 0.06em;
+}
+
+/* ---- CONTEXT ---- */
+.context-wrap {
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 48px;
+}
+.context-wrap h2 {
+  font-family: Arial Black, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 14px;
+}
+.context-body {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.8;
+  max-width: 700px;
+}
+.context-body p + p { margin-top: 12px; }
+.context-body strong { color: var(--white); font-weight: 700; }
+
+/* ---- REVIEWER ---- */
+.reviewer-wrap {
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  padding: 28px 48px;
+}
+.reviewer-wrap h3 {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.rev-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.fg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fg label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.fg input, .fg textarea {
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: var(--white);
+  background: var(--bg-3);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.fg input:focus, .fg textarea:focus {
+  border-color: var(--blue);
+  background: var(--bg-4);
+}
+.fg input::placeholder, .fg textarea::placeholder { color: var(--dim); }
+.fg-full { grid-column: 1 / -1; }
+
+/* ---- INSTRUCTIONS ---- */
+.instruct {
+  background: rgba(0,170,255,0.05);
+  border-left: 3px solid var(--blue);
+  margin: 24px 48px 0;
+  padding: 16px 20px;
+  border-radius: 0 8px 8px 0;
+}
+.instruct p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.75;
+}
+.instruct strong { color: var(--white); }
+
+/* ---- PROGRESS ---- */
+.prog-wrap {
+  padding: 22px 48px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.prog-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  width: 0%;
+  transition: width 0.4s;
+  border-radius: 2px;
+}
+.prog-label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* ---- TERMS ---- */
+.terms {
+  padding: 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.card.confirmed { border-color: var(--confirm-bdr); }
+.card.flagged   { border-color: var(--flag-bdr); }
+.card.unsure    { border-color: var(--unsure-bdr); }
+
+.card-head {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  padding: 18px 20px;
+  gap: 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.card-head:hover { background: var(--bg-3); }
+
+.cnum {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+.card.confirmed .cnum { background: var(--confirm-bg); border-color: var(--confirm-bdr); color: var(--confirm); }
+.card.flagged   .cnum { background: var(--flag-bg);    border-color: var(--flag-bdr);    color: var(--flag); }
+.card.unsure    .cnum { background: var(--unsure-bg);  border-color: var(--unsure-bdr);  color: var(--unsure); }
+
+.term-word {
+  font-family: Arial Black, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--white);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+.term-field {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.tag {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-right: 5px;
+}
+.tag-concept  { background: rgba(0,170,255,0.12);  color: var(--blue); }
+.tag-context  { background: rgba(0,204,68,0.10);   color: var(--green); }
+
+.chevron {
+  font-size: 16px;
+  color: var(--dim);
+  transition: transform 0.2s;
+  user-select: none;
+}
+.chevron.open { transform: rotate(180deg); color: var(--blue); }
+
+.card-body {
+  padding: 20px;
+  display: none;
+  border-top: 1px solid var(--border);
+}
+.card-body.open { display: block; }
+
+.eco-use {
+  background: var(--bg-3);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--border-2);
+}
+.eco-use .lbl {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.eco-use .val {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.75;
+}
+
+.eco-concern {
+  background: rgba(0,170,255,0.06);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  border-left: 3px solid rgba(0,170,255,0.3);
+}
+.eco-concern .lbl {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.eco-concern .val {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.abtn {
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 11px 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg-3);
+  color: var(--muted);
+  transition: all 0.15s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.02em;
+}
+.abtn .ic { font-size: 18px; }
+.abtn.ca:hover, .abtn.ca.on { border-color: var(--confirm-bdr); background: var(--confirm-bg); color: var(--confirm); }
+.abtn.fa:hover, .abtn.fa.on { border-color: var(--flag-bdr);    background: var(--flag-bg);    color: var(--flag); }
+.abtn.ua:hover, .abtn.ua.on { border-color: var(--unsure-bdr);  background: var(--unsure-bg);  color: var(--unsure); }
+
+.notes-wrap { display: flex; flex-direction: column; gap: 10px; }
+.notes-wrap label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.notes-wrap input, .notes-wrap textarea {
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  color: var(--white);
+  background: var(--bg-3);
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.2s, background 0.2s;
+}
+.notes-wrap input:focus, .notes-wrap textarea:focus {
+  border-color: var(--blue);
+  background: var(--bg-4);
+}
+.notes-wrap input::placeholder, .notes-wrap textarea::placeholder { color: var(--dim); }
+
+/* ---- SUBMIT ---- */
+.submit-wrap {
+  padding: 36px 48px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border-2);
+}
+.sum-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.sc {
+  border-radius: 10px;
+  padding: 18px 16px;
+  text-align: center;
+}
+.sc.cs { background: var(--confirm-bg); border: 1px solid var(--confirm-bdr); }
+.sc.fs { background: var(--flag-bg);    border: 1px solid var(--flag-bdr); }
+.sc.us { background: var(--unsure-bg);  border: 1px solid var(--unsure-bdr); }
+.sc .sn {
+  font-family: Arial Black, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 38px;
+  line-height: 1;
+  margin-bottom: 5px;
+  letter-spacing: -0.02em;
+}
+.sc.cs .sn { color: var(--confirm); }
+.sc.fs .sn { color: var(--flag); }
+.sc.us .sn { color: var(--unsure); }
+.sc .sl {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.sub-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.65;
+}
+.sub-note a { color: var(--blue); text-decoration: none; }
+.sub-note strong { color: var(--white); }
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.btn-p {
+  background: var(--blue);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 13px 28px;
+  font-family: Arial Black, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+}
+.btn-p:hover { background: #33BBFF; transform: translateY(-1px); }
+.btn-s {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 13px 22px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-s:hover { border-color: var(--white); transform: translateY(-1px); }
+.copied {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.04em;
+}
+.copied.show { display: flex; }
+
+/* ---- FOOTER ---- */
+.footer {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 24px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer p {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.65;
+}
+.footer .tag-line {
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 640px) {
+  .header, .context-wrap, .reviewer-wrap,
+  .instruct, .prog-wrap, .terms,
+  .submit-wrap, .footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .rev-grid  { grid-template-columns: 1fr; }
+  .sum-row   { grid-template-columns: 1fr; }
+  .header h1 { font-size: 22px; }
+  .footer    { flex-direction: column; gap: 12px; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<div class="header">
+  <div class="header-top">
+    <div class="wordmark"><span class="e">E</span><span class="c">C</span><span class="o">O</span></div>
+    <div class="badge">Academic Language Review</div>
+  </div>
+  <h1>Is ECO using the right language?<br>A review for Professor Frederick Gaines</h1>
+  <p class="sub">EternalCurrent.Online is building a platform for diaspora families. Before it launches, we want to know whether we are using the vocabulary of Ethnic Studies correctly — or making the kinds of errors that signal an outsider working from surface knowledge.</p>
+  <div class="session-id" id="sid">Session ID: loading…</div>
+</div>
+
+<div class="context-wrap">
+  <h2>What this review is</h2>
+  <div class="context-body">
+    <p>ECO uses fifteen concepts drawn from Ethnic Studies, linguistics, and oral history methodology to describe what it does and why it matters. These are not kinship terms from a specific language — they are the <strong>conceptual vocabulary of the platform itself</strong>: the words we use to frame the problem we are solving and the work we are doing.</p>
+    <p>If we are using any of these terms incorrectly — too loosely, too narrowly, or in ways that would make a scholar wince — we need to know before the platform launches. A platform that misuses the vocabulary of the discipline it claims to serve would undermine its own credibility with exactly the communities it most wants to reach.</p>
+    <p>For each term: we show you how ECO currently uses or frames it, and we ask whether that usage is academically sound. You can confirm it, flag it as wrong or imprecise, or mark it as contested or variable. The notes field is where the most valuable feedback usually lives.</p>
+  </div>
+</div>
+
+<div class="reviewer-wrap">
+  <h3>About you</h3>
+  <div class="rev-grid">
+    <div class="fg"><label>Your name</label><input type="text" id="rname" placeholder="Professor Frederick Gaines"></div>
+    <div class="fg"><label>Title and department</label><input type="text" id="rtitle" placeholder="Professor / Chair, Ethnic Studies, CSM"></div>
+    <div class="fg fg-full"><label>Any context you would like us to know (optional)</label><input type="text" id="rnotes" placeholder="Regional focus, disciplinary background, areas where your expertise is strongest or weakest for this list…"></div>
+  </div>
+</div>
+
+<div class="instruct">
+  <p><strong>For each term:</strong> Expand the card, read how ECO uses it, and mark it <strong>Accurate</strong> (we have it right), <strong>Imprecise or Wrong</strong> (we are misusing it or missing something important), or <strong>Contested</strong> (the term itself is debated in the discipline). The correction and notes fields are where the most useful feedback lives. You do not need to review every term — whatever you have time for.</p>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-bar"><div class="prog-fill" id="pfill"></div></div>
+  <div class="prog-label"><span id="pcnt">0</span> / 15 reviewed</div>
+</div>
+
+<div class="terms" id="terms-wrap"></div>
+
+<div class="submit-wrap">
+  <div class="sum-row">
+    <div class="sc cs"><div class="sn" id="s-con">0</div><div class="sl">Accurate</div></div>
+    <div class="sc fs"><div class="sn" id="s-flag">0</div><div class="sl">Imprecise / Wrong</div></div>
+    <div class="sc us"><div class="sn" id="s-uns">0</div><div class="sl">Contested</div></div>
+  </div>
+  <p class="sub-note">When ready, <strong>Submit by Email</strong> opens your mail client with your review pre-filled. Or copy the raw data to paste or forward anywhere. Responses go to <a href="mailto:vocab@eternalcurrent.online">vocab@eternalcurrent.online</a>.</p>
+  <div class="btn-row">
+    <button class="btn-p" onclick="submitEmail()">✉ Submit by Email</button>
+    <button class="btn-s" onclick="copyData()">Copy Review Data</button>
+    <span class="copied" id="copied">✓ Copied</span>
+  </div>
+</div>
+
+<div class="footer">
+  <p>EternalCurrent.Online · Academic Language Review<br>For Professor Frederick Gaines, Ethnic Studies, College of San Mateo</p>
+  <p class="tag-line">Your Eternal. Your Current. Only Yours. Forever.</p>
+</div>
+
+<script>
+const TERMS = [
+  {
+    term: "Diaspora",
+    field: "Core framing concept",
+    tags: ["Conceptual", "Identity"],
+    eco_use: "ECO uses 'diaspora' to describe families dispersed across countries from a common geographic or cultural origin — for example, Punjabi families spread across India, the UK, Fiji, Canada, and the United States. The platform refers to its target users as 'diaspora families' and frames its mission as serving communities whose cultural vocabulary is at risk of loss across generations of geographic dispersal.",
+    concern: "Is this use of 'diaspora' academically standard — or is ECO applying the term too broadly, too narrowly, or in a way that elides important distinctions the discipline makes?"
+  },
+  {
+    term: "Heritage language",
+    field: "Linguistic framing",
+    tags: ["Conceptual", "Language"],
+    eco_use: "ECO uses 'heritage language' to describe the language a diaspora family speaks at home, or the language their kinship vocabulary comes from, when it differs from the dominant language of the country they live in. ECO's vocabulary library holds kinship terms from heritage languages alongside the nuance that gets lost when families shift to English.",
+    concern: "Heritage language has a fairly specific meaning in applied linguistics. Is ECO's use of it consistent with that meaning, or is it being stretched in ways that would read as imprecise to a scholar?"
+  },
+  {
+    term: "Cultural transmission",
+    field: "Core mission framing",
+    tags: ["Conceptual", "Intergenerational"],
+    eco_use: "ECO describes one of its core functions as facilitating cultural transmission — the passing of vocabulary, stories, practices, and identity markers across generations within a family network. The AI question system is specifically designed to prompt older family members to share knowledge with younger ones.",
+    concern: "Is 'cultural transmission' the right term for this, or would 'intergenerational knowledge transfer,' 'cultural continuity,' or another phrase be more precise in an academic context? Does 'transmission' imply a directionality or passivity that misrepresents what actually happens?"
+  },
+  {
+    term: "Kinship vocabulary",
+    field: "Library concept",
+    tags: ["Conceptual", "Language"],
+    eco_use: "ECO's vocabulary library is built around 'kinship vocabulary' — the specific words a culture uses to describe family relationships. ECO holds these terms alongside their register distinctions, regional variations, and the emotional weight that gets lost in translation. The library distinguishes between what a term means structurally (father's sister) and what it means in lived use (Bhua, in North Indian families).",
+    concern: "Is 'kinship vocabulary' a recognized academic phrase, or does the discipline use a more precise term — kinship terminology, kinship nomenclature, relational lexicon? Would a linguist or anthropologist read 'kinship vocabulary' as accurate or as a lay approximation?"
+  },
+  {
+    term: "Register",
+    field: "Linguistic precision",
+    tags: ["Linguistic", "Technical"],
+    eco_use: "ECO uses 'register' to describe the social context encoded in a kinship term — for example, the distinction in Japanese between 'chichi' (humble, used when referring to your own father to outsiders) and 'otōsan' (honorific, used in direct address or when referring to someone else's father). ECO's vocabulary library includes a 'RegisterType' field with values: Humble, Honorific, Neutral, Affectionate, Archaic.",
+    concern: "Is ECO using 'register' correctly in the linguistic sense? Or is there a more precise term for what ECO is describing — politeness level, honorific system, formality register? Is the humble/honorific distinction ECO is encoding a standard way of categorizing this phenomenon?"
+  },
+  {
+    term: "Oral history",
+    field: "Story capture methodology",
+    tags: ["Methodology", "Archival"],
+    eco_use: "ECO allows story captures to be formally designated as 'oral history' records, with narrator attribution, recording date, and an auto-generated academic citation in this form: 'Bakshi, V. (2026, March). Personal oral history testimony: [topic]. EternalCurrent.Online Lightning Network. Recorded [date]. Retrieved [date].' ECO treats this as conforming to oral history methodology as a discipline.",
+    concern: "Is ECO's use of 'oral history' accurate relative to the methodology as a formal discipline? Does a one-paragraph AI-prompted story capture meet any reasonable definition of oral history, or is ECO appropriating the term for something that would be better described differently — family memoir, personal testimony, narrative capture?"
+  },
+  {
+    term: "Intergenerational",
+    field: "Descriptive framing",
+    tags: ["Conceptual", "Demographic"],
+    eco_use: "ECO describes vocabulary loss as an 'intergenerational' phenomenon — the words a first-generation family uses at home are not always carried into the second generation's vocabulary, and are rarely present in the third generation's. ECO frames its mission as working against this intergenerational erosion.",
+    concern: "Is 'intergenerational' used correctly here, or does it carry a more specific meaning in Ethnic Studies that ECO might be missing? Is 'intergenerational loss' a recognized phrase in the discipline, or would 'generational language shift' or another term be more accurate?"
+  },
+  {
+    term: "Assimilation",
+    field: "Implicit framing — term ECO avoids",
+    tags: ["Contested", "Political"],
+    eco_use: "ECO does not explicitly use the word 'assimilation,' but the cultural and linguistic loss ECO is trying to address is what assimilation produces. ECO has chosen not to use the term because it carries political weight and implies a value judgment about diaspora families' choices. Instead, ECO uses phrases like 'vocabulary loss across generations' or 'the words that disappear between the first and third generation.'",
+    concern: "Is ECO right to avoid 'assimilation'? Is there a more current, more neutral, or more precise term the discipline uses for this phenomenon — acculturation, language shift, cultural dilution, Anglicization — that ECO should be using instead? Or is avoiding the term itself a meaningful choice the discipline would recognize?"
+  },
+  {
+    term: "Code-switching",
+    field: "Behavioral phenomenon",
+    tags: ["Linguistic", "Behavioral"],
+    eco_use: "ECO implicitly describes a behavior many diaspora families practice: using kinship terms from one language inside conversations conducted primarily in another. A Punjabi-American family might speak entirely in English but refer to the grandfather as 'Nana,' the maternal uncle as 'Mama,' and the older brother's wife as 'Bhabbi.' ECO's vocabulary library is designed to hold these terms as the living culture uses them.",
+    concern: "Is what ECO is describing correctly characterized as code-switching? Or is it something else — lexical borrowing, linguistic heritage retention, domain-specific code use? What is the academically precise term for this specific phenomenon of retaining kinship terms from a heritage language within otherwise English conversation?"
+  },
+  {
+    term: "First / second / third generation",
+    field: "Demographic tagging",
+    tags: ["Demographic", "Contested"],
+    eco_use: "ECO tags vocabulary terms in its library with demographic markers indicating which generation they are most relevant to: First_Gen (born outside the country of current residence), Second_Gen (parents born outside), Third_Gen_Plus (grandparents born outside). ECO uses these markers to determine which vocabulary terms are most likely to resonate with a specific user based on their network profile.",
+    concern: "Do these generational categories have standard accepted meanings in Ethnic Studies, or are they contested? Is '1.5 generation' a meaningful category ECO should be including? Are there specific communities where these generational markers work differently or carry different cultural meaning than ECO's definitions assume?"
+  },
+  {
+    term: "Living culture",
+    field: "ECO's core framing distinction",
+    tags: ["Conceptual", "ECO-coined"],
+    eco_use: "ECO distinguishes between 'dictionary definitions' and 'living culture' — the way terms are actually used by real families, which may differ significantly from formal definitions. ECO's vocabulary library prioritizes the living use over the formal definition: if your family uses 'Nana' to mean maternal grandfather (which is the Punjabi usage) but 'Nana' in English commonly means grandmother, ECO holds both usages without flattening one into the other.",
+    concern: "Is 'living culture' a recognized phrase in Ethnic Studies, linguistics, or anthropology — or is ECO coining a phrase that would read as imprecise? Is there a more established academic term for this distinction — vernacular usage, community-defined meaning, emic categorization, folk taxonomy? Would a scholar read 'living culture' as meaningful or as a vague gesture toward something more specific?"
+  },
+  {
+    term: "Community of practice",
+    field: "Role model framing",
+    tags: ["Conceptual", "Organizational"],
+    eco_use: "ECO's 'Keeper' role is a designated cultural teacher within a family network — a member nominated by the network founder who can annotate profiles, author cultural vocabulary entries, and create structured cultural education within the network. ECO considered framing this role using 'community of practice' as the theoretical backing — the idea that cultural knowledge is transmitted through participation in a defined group with shared practices.",
+    concern: "Is 'community of practice' (in the Wenger sense) the right theoretical frame for what ECO's Keeper role does? Or does ECO's use of the concept stretch or misapply it? Is there a better theoretical frame from Ethnic Studies, education, or anthropology that would more accurately describe a designated cultural knowledge keeper within a small family network?"
+  },
+  {
+    term: "Cultural loss",
+    field: "Mission framing",
+    tags: ["Conceptual", "Contested"],
+    eco_use: "ECO frames part of its mission as working against 'cultural loss' — the erosion of vocabulary, practices, and identity markers across diaspora generations. ECO uses this phrase in its public-facing mission language and in the framing of its vocabulary library.",
+    concern: "Is 'cultural loss' the right framing, or does the discipline prefer different language — cultural erasure, cultural displacement, language attrition, cultural dilution? Does 'loss' imply passivity or victimhood in ways that misrepresent what actually happens in diaspora communities? Is there a framing that acknowledges the phenomenon without pathologizing the families who experience it?"
+  },
+  {
+    term: "Sovereignty",
+    field: "Tribal vocabulary governance",
+    tags: ["Political", "Tribal"],
+    eco_use: "ECO's approach to tribal vocabulary is built on the principle that tribal communities have sovereignty over their own language and cultural terms. No tribal vocabulary term enters ECO's library without explicit confirmation from a named tribal contact. ECO uses 'sovereignty' to describe this principle in its internal documentation and in conversations with tribal organizations.",
+    concern: "Is ECO using 'sovereignty' correctly in the context of tribal language and cultural property? Is there more precise language — tribal intellectual property, linguistic sovereignty, cultural sovereignty, indigenous data sovereignty — that ECO should be using? Are there implications of the word 'sovereignty' in this context that ECO should be aware of before using it in conversations with tribal councils?"
+  },
+  {
+    term: "Diaspora community",
+    field: "Target audience description",
+    tags: ["Conceptual", "Demographic"],
+    eco_use: "ECO uses 'diaspora community' frequently in its marketing and public-facing language to describe its target users. ECO also uses 'diaspora family,' 'diaspora household,' and 'transnational family' in different contexts, without a fully consistent distinction between them.",
+    concern: "Is 'diaspora community' the right phrase, or would 'diaspora population,' 'transnational community,' 'immigrant community,' or another term be more precise in the contexts ECO uses it? Is there a meaningful academic distinction between 'diaspora community' and 'immigrant community' that ECO should be observing? Does ECO's inconsistent use of related terms (diaspora family, diaspora household, transnational family) reflect a real conceptual imprecision that should be resolved?"
+  }
+];
+
+// State
+const state = {};
+TERMS.forEach((_, i) => { state[i] = { status: null, correction: '', notes: '' }; });
+
+// Session ID
+const sid = `ECO-AR-GAINES-${Date.now().toString(36).toUpperCase()}`;
+document.getElementById('sid').textContent = `Session ID: ${sid} · Academic Language Review · College of San Mateo`;
+
+// Render cards
+const wrap = document.getElementById('terms-wrap');
+TERMS.forEach((t, i) => {
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.id = `c${i}`;
+  div.innerHTML = `
+    <div class="card-head" onclick="tog(${i})">
+      <div class="cnum" id="n${i}">${String(i+1).padStart(2,'0')}</div>
+      <div>
+        <div class="term-word">${t.term}</div>
+        <div class="term-field">
+          ${t.tags.map(tg => `<span class="tag tag-concept">${tg}</span>`).join('')}
+          <span style="font-size:11px;color:var(--muted)">${t.field}</span>
+        </div>
+      </div>
+      <div class="chevron" id="ic${i}">▾</div>
+    </div>
+    <div class="card-body" id="b${i}">
+      <div class="eco-use">
+        <div class="lbl">How ECO uses this term</div>
+        <div class="val">${t.eco_use}</div>
+      </div>
+      <div class="eco-concern">
+        <div class="lbl">The question for you</div>
+        <div class="val">${t.concern}</div>
+      </div>
+      <div class="actions">
+        <button class="abtn ca" id="ba${i}" onclick="setS(${i},'confirmed')">
+          <span class="ic">✓</span><span>Accurate</span>
+        </button>
+        <button class="abtn fa" id="bf${i}" onclick="setS(${i},'flagged')">
+          <span class="ic">✗</span><span>Imprecise / Wrong</span>
+        </button>
+        <button class="abtn ua" id="bu${i}" onclick="setS(${i},'unsure')">
+          <span class="ic">~</span><span>Contested</span>
+        </button>
+      </div>
+      <div class="notes-wrap">
+        <label>What ECO should use instead, or what we are missing</label>
+        <input type="text" id="cr${i}" placeholder="Preferred term, corrected framing, disciplinary distinction we are overlooking…" oninput="state[${i}].correction=this.value">
+        <label>Additional nuance or context</label>
+        <textarea rows="2" id="nt${i}" placeholder="Contested meanings, regional or generational variation in how the discipline uses this term, implications ECO should be aware of…" oninput="state[${i}].notes=this.value"></textarea>
+      </div>
+    </div>`;
+  wrap.appendChild(div);
+});
+
+function tog(i) {
+  const b  = document.getElementById(`b${i}`);
+  const ic = document.getElementById(`ic${i}`);
+  b.classList.toggle('open');
+  ic.classList.toggle('open');
+}
+
+function setS(i, s) {
+  state[i].status = s;
+  const card = document.getElementById(`c${i}`);
+  card.classList.remove('confirmed','flagged','unsure');
+  card.classList.add(s === 'confirmed' ? 'confirmed' : s === 'flagged' ? 'flagged' : 'unsure');
+  ['a','f','u'].forEach(x => document.getElementById(`b${x}${i}`)?.classList.remove('on'));
+  const map = { confirmed:'a', flagged:'f', unsure:'u' };
+  document.getElementById(`b${map[s]}${i}`)?.classList.add('on');
+  update();
+}
+
+function update() {
+  const rev = Object.values(state).filter(s => s.status).length;
+  document.getElementById('pcnt').textContent = rev;
+  document.getElementById('pfill').style.width = `${(rev/15)*100}%`;
+  document.getElementById('s-con').textContent  = Object.values(state).filter(s=>s.status==='confirmed').length;
+  document.getElementById('s-flag').textContent = Object.values(state).filter(s=>s.status==='flagged').length;
+  document.getElementById('s-uns').textContent  = Object.values(state).filter(s=>s.status==='unsure').length;
+}
+
+function payload() {
+  return {
+    session_id: sid,
+    type: 'academic_language_review',
+    reviewer: {
+      name:  document.getElementById('rname').value  || '(not provided)',
+      title: document.getElementById('rtitle').value || '(not provided)',
+      notes: document.getElementById('rnotes').value || ''
+    },
+    submitted_at: new Date().toISOString(),
+    reviews: Object.entries(state)
+      .filter(([,s]) => s.status)
+      .map(([i, s]) => ({
+        term:       TERMS[i].term,
+        status:     s.status,
+        correction: document.getElementById(`cr${i}`)?.value || '',
+        notes:      document.getElementById(`nt${i}`)?.value || ''
+      }))
+  };
+}
+
+function submitEmail() {
+  const p    = payload();
+  const name = p.reviewer.name;
+  const con  = p.reviews.filter(r=>r.status==='confirmed').length;
+  const flag = p.reviews.filter(r=>r.status==='flagged').length;
+  const uns  = p.reviews.filter(r=>r.status==='unsure').length;
+  const subj = encodeURIComponent(`ECO Academic Language Review — ${name} — ${sid}`);
+  const body = encodeURIComponent(
+    `ECO Academic Language Review\n` +
+    `Reviewer: ${name}\nTitle: ${p.reviewer.title}\nSession: ${sid}\n\n` +
+    `Summary: ${con} accurate, ${flag} imprecise/wrong, ${uns} contested\n\n--- REVIEWS ---\n\n` +
+    p.reviews.map(r =>
+      `Term: ${r.term}\nVerdict: ${r.status.toUpperCase()}\n` +
+      (r.correction ? `Correction: ${r.correction}\n` : '') +
+      (r.notes ? `Notes: ${r.notes}\n` : '') + `---`
+    ).join('\n') +
+    `\n\n--- RAW DATA ---\n` + JSON.stringify(p, null, 2)
+  );
+  window.location.href = `mailto:vocab@eternalcurrent.online?subject=${subj}&body=${body}`;
+}
+
+function copyData() {
+  navigator.clipboard.writeText(JSON.stringify(payload(), null, 2)).then(() => {
+    const el = document.getElementById('copied');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2200);
+  });
+}
+</script>
+<script src="header.js"></script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ECO Globe</title>
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<style>
+:root{
+  --blue:var(--color-accent-c);--green:var(--color-accent-g);
+  --bg:var(--color-bg);--bg2:var(--color-surface);
+  --white:var(--color-text);--dim:var(--color-text-dim);--border:var(--color-border);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:var(--color-bg);overflow:hidden;}
+canvas{display:block;width:100%;height:100%;cursor:grab;}
+canvas:active{cursor:grabbing;}
+#loading{
+  position:fixed;inset:0;background:#080D14;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:100;transition:opacity .6s;
+}
+#loading.out{opacity:0;pointer-events:none;}
+.lwm{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;letter-spacing:-.01em;}
+.lwm .e{color:#00AAFF}.lwm .c{color:#00CC44}.lwm .o{color:#fff}
+.lbar{width:120px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
+.lfill{height:100%;background:linear-gradient(90deg,#00AAFF,#00CC44);width:0%;border-radius:2px;transition:width .3s;}
+/* Full-screen link — bottom right */
+#fs-btn{
+  position:fixed;bottom:10px;right:10px;z-index:50;
+  background:rgba(8,13,20,.75);border:1px solid rgba(0,170,255,.25);
+  color:#3A5A54;font-size: 12px;font-weight:700;letter-spacing:.06em;
+  padding:5px 10px;border-radius:6px;text-decoration:none;
+  transition:all .15s;backdrop-filter:blur(8px);
+}
+#fs-btn:hover{color:#00AAFF;border-color:rgba(0,170,255,.5);}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="lwm"><span class="e">E</span><span class="c">C</span><span class="o">O</span></div>
+  <div class="lbar"><div class="lfill" id="lfill"></div></div>
+</div>
+
+<canvas id="gc"></canvas>
+<a id="fs-btn" href="globe.html" target="_blank">Full screen ↗</a>
+
+<script>
+const ACOL = { India:0xFFB347, Fiji:0x00CED1, Pakistan:0x9B59B6, USA:0x44DD88, def:0x888888 };
+const DB   = { users:[], clusters:{}, arcs:[] };
+let isDrag=false, dragDelta=0, dragSt={x:0,y:0}, rotSt={x:0,y:0};
+let autoRot=true, GLOBE={};
+
+function prog(p){ document.getElementById('lfill').style.width = p+'%'; }
+
+function ll2v(lat,lon,r=1){
+  const p=(90-lat)*Math.PI/180, t=(lon+180)*Math.PI/180;
+  return new THREE.Vector3(-r*Math.sin(p)*Math.cos(t),r*Math.cos(p),r*Math.sin(p)*Math.sin(t));
+}
+
+function mkArc(la1,lo1,la2,lo2,col,passed){
+  try{
+    const v1=ll2v(la1,lo1,1.005),v2=ll2v(la2,lo2,1.005);
+    const d=v1.clone().normalize().dot(v2.clone().normalize());
+    const dist=Math.acos(Math.min(1,Math.max(-1,d)));
+    const h=1.0+dist*.6;
+    const mid=v1.clone().add(v2).multiplyScalar(.5).normalize().multiplyScalar(h);
+    const tg=new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(v1,mid,v2),48,.0028,6,false);
+    return new THREE.Mesh(tg,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:passed?.3:.72}));
+  }catch(e){return null;}
+}
+
+async function loadData(){
+  prog(15);
+  const eco = window.ecoSB || supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const {data:u} = await eco.from('users_public')
+    .select('user_id,full_name,status,cultural_origin,current_lat,current_lon,birth_lat,birth_lon,current_location')
+    .eq('network_id','lightning-001');
+  DB.users = u||[];
+  prog(50);
+
+  // Clusters
+  DB.clusters={};
+  DB.users.forEach(u=>{
+    if(!u.current_lat||!u.current_lon)return;
+    const k=`${Math.round(u.current_lat*10)/10},${Math.round(u.current_lon*10)/10}`;
+    if(!DB.clusters[k])DB.clusters[k]={lat:u.current_lat,lon:u.current_lon,users:[]};
+    DB.clusters[k].users.push(u);
+  });
+
+  // Arcs
+  DB.arcs=DB.users.filter(u=>u.birth_lat&&u.birth_lon&&u.current_lat&&u.current_lon&&
+    !(Math.abs(u.birth_lat-u.current_lat)<0.15&&Math.abs(u.birth_lon-u.current_lon)<0.15));
+
+  prog(70);
+  initGlobe();
+}
+
+function initGlobe(){
+  prog(80);
+  const canvas=document.getElementById('gc');
+  const W=canvas.clientWidth=window.innerWidth;
+  const H=canvas.clientHeight=window.innerHeight;
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(45,W/H,0.1,100);
+  cam.position.z=2.8;
+  const ren=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  ren.setSize(W,H); ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  ren.setClearColor(0x080D14,1);
+
+  // Stars
+  const sg=new THREE.BufferGeometry();
+  const sa=[];
+  for(let i=0;i<2000;i++)sa.push((Math.random()-.5)*60,(Math.random()-.5)*60,(Math.random()-.5)*60);
+  sg.setAttribute('position',new THREE.Float32BufferAttribute(sa,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:.05,transparent:true,opacity:.5})));
+
+  // Globe group
+  const gg=new THREE.Group();
+  scene.add(gg);
+
+  // Earth
+  const eg=new THREE.SphereGeometry(1,64,64);
+  const em=new THREE.MeshPhongMaterial({shininess:8,color:0x335577});
+  const tl=new THREE.TextureLoader();
+  tl.load('/textures/earth_daymap.jpg',t=>{
+    t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    em.map=t; em.color.set(0xffffff); em.needsUpdate=true;
+  });
+  tl.load('/textures/earth_normalmap.jpg',t=>{
+    em.normalMap=t; em.normalScale.set(.7,.7); em.needsUpdate=true;
+  });
+  gg.add(new THREE.Mesh(eg,em));
+
+  // Atmosphere
+  gg.add(new THREE.Mesh(new THREE.SphereGeometry(1.08,32,32),new THREE.ShaderMaterial({
+    vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`varying vec3 vN;void main(){float i=pow(.55-dot(vN,vec3(0,0,1)),3.);gl_FragColor=vec4(0.,.65,1.,1.)*i;}`,
+    side:THREE.BackSide,blending:THREE.AdditiveBlending,transparent:true
+  })));
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff,.5));
+  const sun=new THREE.DirectionalLight(0xffffff,1.0); sun.position.set(5,3,5); scene.add(sun);
+
+  // Default orientation
+  gg.rotation.y = 0.146; gg.rotation.x = 0.18;
+
+  // Arcs
+  const ag=new THREE.Group(); gg.add(ag);
+  DB.arcs.forEach(u=>{
+    const col=ACOL[u.cultural_origin]||ACOL.def;
+    const arc=mkArc(u.birth_lat,u.birth_lon,u.current_lat,u.current_lon,col,u.status==='Passed');
+    if(arc)ag.add(arc);
+  });
+
+  // Dots
+  const dg=new THREE.Group(); gg.add(dg);
+  Object.values(DB.clusters).forEach(cl=>{
+    const passed=cl.users.every(u=>u.status==='Passed');
+    const origin=cl.users.find(u=>u.cultural_origin)?.cultural_origin;
+    const col=ACOL[origin]||ACOL.def;
+    const r=0.009+Math.sqrt(cl.users.length)*0.003;
+    const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:passed?.5:.92});
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(r,10,10),mat);
+    const pos=ll2v(cl.lat,cl.lon,1.012); dot.position.copy(pos);
+    if(!passed){
+      const gd=new THREE.Mesh(new THREE.SphereGeometry(r*2,10,10),
+        new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.12}));
+      gd.position.copy(pos); dg.add(gd);
+    }
+    dg.add(dot);
+  });
+
+  // Drag rotate
+  canvas.addEventListener('mousedown',e=>{
+    isDrag=true; dragDelta=0;
+    dragSt={x:e.clientX,y:e.clientY};
+    rotSt={x:gg.rotation.y,y:gg.rotation.x};
+    autoRot=false;
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!isDrag)return;
+    dragDelta=Math.max(dragDelta,Math.abs(e.clientX-dragSt.x)+Math.abs(e.clientY-dragSt.y));
+    gg.rotation.y=rotSt.x+(e.clientX-dragSt.x)*.006;
+    gg.rotation.x=Math.max(-1.2,Math.min(1.2,rotSt.y+(e.clientY-dragSt.y)*.006));
+  });
+  window.addEventListener('mouseup',()=>{
+    isDrag=false;
+    setTimeout(()=>{ autoRot=true; },6000);
+  });
+
+  // Touch
+  let lt=null;
+  canvas.addEventListener('touchstart',e=>{
+    lt={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    rotSt={x:gg.rotation.y,y:gg.rotation.x}; autoRot=false;
+  },{passive:true});
+  canvas.addEventListener('touchmove',e=>{
+    if(!lt)return;
+    const dx=e.touches[0].clientX-lt.x,dy=e.touches[0].clientY-lt.y;
+    gg.rotation.y+=dx*.006;
+    gg.rotation.x=Math.max(-1.2,Math.min(1.2,gg.rotation.x+dy*.006));
+    lt={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  },{passive:true});
+  canvas.addEventListener('touchend',()=>{
+    lt=null; setTimeout(()=>{ autoRot=true; },6000);
+  },{passive:true});
+
+  // Scroll zoom
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    cam.position.z=Math.max(1.6,Math.min(5.0,cam.position.z+e.deltaY*.001));
+  },{passive:false});
+
+  // Resize
+  window.addEventListener('resize',()=>{
+    cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix();
+    ren.setSize(innerWidth,innerHeight);
+  });
+
+  // Animate
+  prog(100);
+  setTimeout(()=>{
+    document.getElementById('loading').classList.add('out');
+    setTimeout(()=>document.getElementById('loading').remove(),700);
+  },300);
+
+  (function loop(){
+    requestAnimationFrame(loop);
+    if(autoRot&&!isDrag)gg.rotation.y+=.0008;
+    ren.render(scene,cam);
+  })();
+
+  GLOBE={scene,cam,ren,gg};
+}
+
+// Start
+(function wait(){
+  if(window.THREE && window.supabase){ loadData(); }
+  else { setTimeout(wait,50); }
+})();
+</script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

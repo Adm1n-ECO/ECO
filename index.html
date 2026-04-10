@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EternalCurrent — Your family's world, finally visible</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════════════════════
+   BACKDROP — index.html in iframe
+   sits at z-index 0, fully behind glass
+══════════════════════════════════════ */
+#backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+/* ══════════════════════════════════════
+   GLASS DOOR
+══════════════════════════════════════ */
+#glass {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(8, 13, 20, 0.58);
+  backdrop-filter: blur(14px) saturate(0.8) brightness(0.9);
+  -webkit-backdrop-filter: blur(14px) saturate(0.8) brightness(0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  will-change: opacity, backdrop-filter, transform;
+  transition:
+    opacity 1s cubic-bezier(0.4, 0, 0.15, 1),
+    backdrop-filter 1s cubic-bezier(0.4, 0, 0.15, 1),
+    -webkit-backdrop-filter 1s cubic-bezier(0.4, 0, 0.15, 1),
+    transform 1s cubic-bezier(0.4, 0, 0.15, 1);
+}
+
+/* Film grain overlay for depth */
+#glass::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%; height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  pointer-events: none;
+  opacity: 0.028;
+  z-index: 1;
+  animation: grainShift 0.15s steps(1) infinite;
+}
+
+@keyframes grainShift {
+  0%  { transform: translate(0, 0); }
+  25% { transform: translate(-10px, 5px); }
+  50% { transform: translate(5px, -8px); }
+  75% { transform: translate(-7px, -3px); }
+}
+
+/* Vignette */
+#glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    transparent 40%,
+    rgba(4, 8, 14, 0.55) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reveal state */
+#glass.revealing {
+  opacity: 0;
+  backdrop-filter: blur(0px) saturate(1) brightness(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+  transform: scale(1.012);
+}
+
+/* ══════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════ */
+#layout {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1180px;
+  padding: 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+/* ══════════════════════════════════════
+   CONTENT
+══════════════════════════════════════ */
+#content {
+  flex: 0 0 460px;
+  max-width: 460px;
+}
+
+.wordmark {
+  font-family: "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin-bottom: 52px;
+  opacity: 0;
+  animation: riseIn 0.7s 0.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.wordmark .e { color: var(--blue); }
+.wordmark .c { color: var(--green); }
+.wordmark .o { color: var(--white); }
+
+.hero {
+  font-family: "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  font-size: clamp(30px, 3.8vw, 50px);
+  line-height: 1.07;
+  color: var(--white);
+  letter-spacing: -0.025em;
+  margin-bottom: 18px;
+  opacity: 0;
+  animation: riseIn 0.75s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-q {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(16px, 1.8vw, 20px);
+  color: var(--color-text-dim);
+  line-height: 1.55;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: riseIn 0.75s 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.tagline {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: riseIn 0.75s 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cta-row {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  opacity: 0;
+  animation: riseIn 0.75s 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#open-btn {
+  background: var(--blue);
+  border: none;
+  border-radius: 10px;
+  color: var(--bg);
+  font-family: "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  padding: 13px 26px;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+  white-space: nowrap;
+}
+#open-btn:hover {
+  background: #22BBFF;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0,170,255,0.28);
+}
+#open-btn:active { transform: translateY(0); }
+
+.learn-link {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  color: var(--color-text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  padding-bottom: 2px;
+  transition: color 0.18s, border-color 0.18s;
+}
+.learn-link:hover {
+  color: var(--color-text-mid,var(--color-text-dim));
+  border-color: var(--color-text-dim);
+}
+
+/* ══════════════════════════════════════
+   GLOBE
+══════════════════════════════════════ */
+#globe-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  opacity: 0;
+  animation: fadeGlobe 1.4s 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+canvas#gc {
+  display: block;
+  border-radius: 50%;
+}
+
+/* Arc labels */
+.arc-label {
+  position: absolute;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* ══════════════════════════════════════
+   SCROLL HINT
+══════════════════════════════════════ */
+#hint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeIn 1s 1.8s ease forwards;
+}
+
+#hint span {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.hint-arrow {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+  animation: hintBounce 2s ease infinite;
+}
+
+@keyframes hintBounce {
+  0%, 100% { transform: scaleY(1) translateY(0); opacity: 0.5; }
+  50% { transform: scaleY(1.4) translateY(3px); opacity: 1; }
+}
+
+/* ══════════════════════════════════════
+   KEYFRAMES
+══════════════════════════════════════ */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeGlobe {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* ══════════════════════════════════════
+   MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  #layout {
+    flex-direction: column-reverse;
+    padding: 24px 28px 40px;
+    justify-content: flex-end;
+    height: 100dvh;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  #content {
+    flex: none;
+    max-width: 100%;
+  }
+
+  #globe-wrap {
+    flex: none;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .wordmark { margin-bottom: 24px; font-size: 17px; }
+  .hero { font-size: clamp(26px, 8vw, 36px); margin-bottom: 12px; }
+  .hero-q { font-size: 15px; margin-bottom: 20px; }
+  .tagline { margin-bottom: 28px; }
+
+  #hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- BACKDROP: index.html sits here, visible through the glass -->
+<iframe id="backdrop" src="home.html" title="EternalCurrent" tabindex="-1" aria-hidden="true"></iframe>
+
+<!-- GLASS DOOR -->
+<div id="glass" role="main">
+  <div id="layout">
+
+    <!-- Globe -->
+    <div id="globe-wrap">
+      <canvas id="gc"></canvas>
+      <!-- Arc labels injected by JS -->
+    </div>
+
+    <!-- Content -->
+    <div id="content">
+      <div class="wordmark" aria-label="EternalCurrent Online">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <img src="images/eco-logo.png" alt="" style="height:52px;width:auto;display:block;">
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;line-height:1;letter-spacing:-0.02em;">
+              <span style="color:#00AAFF;">E</span><span style="color:#00CC44;">C</span><span style="color:#FFFFFF;">O</span>
+            </div>
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:400;letter-spacing:0.04em;line-height:1;">
+              <span style="color:#00AAFF;">Eternal</span><span style="color:#00CC44;">Current</span><span style="color:#FFFFFF;">.Online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h1 class="hero">Every family<br>crossed something<br>to get here.</h1>
+      <p class="hero-q">Do you know what yours crossed?</p>
+      <p class="tagline">Every family has a network. Most of it is invisible.</p>
+      <div class="cta-row">
+        <button id="open-btn" onclick="reveal()">Open yours →</button>
+        <a href="home.html" class="learn-link">Learn More</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scroll hint desktop only -->
+  <div id="hint" aria-hidden="true">
+    <span>scroll to enter</span>
+    <div class="hint-arrow"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  GLOBE — lightweight canvas, no textures, ~40kb total
+// ═══════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('globe-wrap');
+
+let rotDeg   = -20;  // initial view angle
+let animTime = 0;
+let rafId    = null;
+let isRevealing = false;
+
+// Size canvas to container
+function sizeCanvas() {
+  const mob  = window.innerWidth <= 768;
+  const size = mob
+    ? Math.min(window.innerWidth - 56, 220)
+    : Math.min(wrap.clientWidth - 32, Math.min(window.innerHeight * 0.72, 500));
+  canvas.width  = size;
+  canvas.height = size;
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas, { passive: true });
+
+// ── LAND CHECK ──────────────────────────────────────────────
+function isLand(lat, lon) {
+  // North America (mainland)
+  if (lat>=25&&lat<=72&&lon>=-140&&lon<=-52) return true;
+  // Central America
+  if (lat>=8&&lat<=25&&lon>=-92&&lon<=-77) return true;
+  // Greenland
+  if (lat>=60&&lat<=84&&lon>=-58&&lon<=-18) return true;
+  // South America
+  if (lat>=-56&&lat<=12&&lon>=-82&&lon<=-34) return true;
+  // Western Europe
+  if (lat>=36&&lat<=60&&lon>=-10&&lon<=20) return true;
+  // Scandinavia
+  if (lat>=55&&lat<=71&&lon>=5&&lon<=32) return true;
+  // Eastern Europe / W Russia
+  if (lat>=45&&lat<=70&&lon>=20&&lon<=60) return true;
+  // Africa north + central
+  if (lat>=-5&&lat<=37&&lon>=-18&&lon<=52) return true;
+  // Africa south
+  if (lat>=-35&&lat<=-5&&lon>=12&&lon<=42) return true;
+  // Arabian Peninsula / Middle East
+  if (lat>=12&&lat<=42&&lon>=36&&lon<=62) return true;
+  // South Asia (India / Pakistan)
+  if (lat>=8&&lat<=37&&lon>=60&&lon<=90) return true;
+  // Russia / Central Asia
+  if (lat>=45&&lat<=77&&lon>=55&&lon<=140) return true;
+  // East Asia
+  if (lat>=20&&lat<=53&&lon>=100&&lon<=145) return true;
+  // SE Asia mainland
+  if (lat>=5&&lat<=22&&lon>=95&&lon<=110) return true;
+  // SE Asia islands
+  if (lat>=-8&&lat<=8&&lon>=95&&lon<=141) return true;
+  // Australia
+  if (lat>=-44&&lat<=-11&&lon>=114&&lon<=154) return true;
+  // Madagascar
+  if (lat>=-26&&lat<=-12&&lon>=43&&lon<=51) return true;
+  // British Isles
+  if (lat>=50&&lat<=59&&lon>=-8&&lon<=2) return true;
+  // Iceland
+  if (lat>=63&&lat<=67&&lon>=-25&&lon<=-13) return true;
+  // Japan
+  if (lat>=31&&lat<=45&&lon>=130&&lon<=145) return true;
+  // New Zealand
+  if (lat>=-47&&lat<=-34&&lon>=166&&lon<=178) return true;
+  return false;
+}
+
+// Precompute land dot positions (run once)
+const LAND_DOTS = [];
+for (let lat = -80; lat <= 80; lat += 4.5) {
+  for (let lon = -180; lon <= 176; lon += 4.5) {
+    if (isLand(lat, lon)) LAND_DOTS.push([lat, lon]);
+  }
+}
+
+// ── ARCS (simulated, non-real data) ─────────────────────────
+const ARCS = [
+  {
+    from:[20.6,78.0], to:[40.7,-74.0],
+    label:'a grandmother\'s journey',
+    progress: 0,    speed: 0.0022, col:'#00AAFF'
+  },
+  {
+    from:[51.5,-0.1], to:[37.8,-122.4],
+    label:'where two families met',
+    progress: 0.38, speed: 0.0017, col:'#00CC44'
+  },
+  {
+    from:[18.0,-77.0], to:[43.7,-79.4],
+    label:'the crossing that started everything',
+    progress: 0.62, speed: 0.0020, col:'#00AAFF'
+  },
+  {
+    from:[30.3,71.5], to:[51.5,-0.1],
+    label:'where home still is',
+    progress: 0.18, speed: 0.0014, col:'#00CC44'
+  },
+];
+
+// Create label elements for arcs
+const arcLabels = ARCS.map(arc => {
+  const el = document.createElement('div');
+  el.className = 'arc-label';
+  el.textContent = arc.label;
+  el.style.opacity = '0';
+  wrap.appendChild(el);
+  return el;
+});
+
+// ── ORTHOGRAPHIC PROJECTION ──────────────────────────────────
+function project(lat, lon) {
+  const W   = canvas.width;
+  const H   = canvas.height;
+  const R   = W * 0.42;
+  const cx  = W / 2;
+  const cy  = H / 2;
+  const phi = lat * Math.PI / 180;
+  const lam = (lon + rotDeg) * Math.PI / 180;
+
+  const x =  Math.cos(phi) * Math.sin(lam);
+  const y = -Math.sin(phi);
+  const z =  Math.cos(phi) * Math.cos(lam);
+
+  if (z <= 0.02) return null;
+
+  return { x: cx + x * R, y: cy + y * R, z, R, cx, cy };
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function render() {
+  const W  = canvas.width;
+  const H  = canvas.height;
+  const cx = W / 2;
+  const cy = H / 2;
+  const R  = W * 0.42;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Sphere fill
+  const bgGrad = ctx.createRadialGradient(cx - R*0.15, cy - R*0.2, R*0.04, cx, cy, R);
+  bgGrad.addColorStop(0,   'rgba(18, 30, 50, 1)');
+  bgGrad.addColorStop(0.65,'rgba(8, 13, 22, 1)');
+  bgGrad.addColorStop(1,   'rgba(3, 6, 11, 1)');
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = bgGrad;
+  ctx.fill();
+
+  // ── Atmospheric halo (outside sphere)
+  const halo = ctx.createRadialGradient(cx, cy, R*0.9, cx, cy, R*1.22);
+  halo.addColorStop(0,   'rgba(0, 80, 180, 0)');
+  halo.addColorStop(0.4, 'rgba(0, 120, 255, 0.07)');
+  halo.addColorStop(1,   'rgba(0, 60, 150, 0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 1.22, 0, Math.PI * 2);
+  ctx.fillStyle = halo;
+  ctx.fill();
+
+  // ── Clip to sphere for land dots + arcs
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Subtle latitude lines
+  for (let lat = -60; lat <= 60; lat += 30) {
+    const phi = lat * Math.PI / 180;
+    const yr  = -Math.sin(phi) * R;
+    const xr  = Math.cos(phi) * R;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + yr, xr, xr * 0.08, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Land dots
+  for (const [lat, lon] of LAND_DOTS) {
+    const p = project(lat, lon);
+    if (!p) continue;
+    const alpha = (p.z - 0.02) * 0.85 + 0.08;
+    const sz    = p.z * 1.3 + 0.5;
+    ctx.fillStyle = `rgba(210, 228, 255, ${alpha * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Arcs
+  for (let i = 0; i < ARCS.length; i++) {
+    renderArc(ARCS[i], arcLabels[i]);
+  }
+
+  ctx.restore();
+
+  // ── Sphere rim glow (inside edge)
+  const rim = ctx.createRadialGradient(cx, cy, R*0.72, cx, cy, R);
+  rim.addColorStop(0,   'rgba(0, 90, 200, 0)');
+  rim.addColorStop(0.82,'rgba(0, 90, 200, 0)');
+  rim.addColorStop(1,   'rgba(0, 140, 255, 0.11)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = rim;
+  ctx.fill();
+
+  // Sphere border
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 80, 180, 0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ── Specular highlight
+  const spec = ctx.createRadialGradient(cx - R*0.28, cy - R*0.32, 0, cx - R*0.28, cy - R*0.32, R*0.55);
+  spec.addColorStop(0,   'rgba(255,255,255,0.04)');
+  spec.addColorStop(0.5, 'rgba(255,255,255,0.01)');
+  spec.addColorStop(1,   'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = spec;
+  ctx.fill();
+}
+
+function renderArc(arc, labelEl) {
+  const [lat1, lon1] = arc.from;
+  const [lat2, lon2] = arc.to;
+  const steps  = 80;
+  const drawTo = Math.floor(steps * arc.progress);
+
+  if (drawTo < 2) { labelEl.style.opacity = '0'; return; }
+
+  ctx.beginPath();
+  let started = false;
+  let lastVis = null;
+
+  for (let i = 0; i <= drawTo; i++) {
+    const t   = i / steps;
+    const lat = lat1 + (lat2 - lat1) * t;
+    const lon = lon1 + (lon2 - lon1) * t;
+    const p   = project(lat, lon);
+
+    if (!p) { started = false; continue; }
+    if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+    else ctx.lineTo(p.x, p.y);
+    if (i === drawTo) lastVis = p;
+  }
+
+  const pulse = 0.55 + Math.sin(animTime * 2.8 + arc.progress * 8) * 0.2;
+  const isBlue = arc.col === '#00AAFF';
+
+  ctx.strokeStyle = isBlue
+    ? `rgba(0, 170, 255, ${pulse * 0.85})`
+    : `rgba(0, 204, 68,  ${pulse * 0.75})`;
+  ctx.lineWidth   = 1.5;
+  ctx.shadowColor = arc.col;
+  ctx.shadowBlur  = 5;
+  ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  // Tip dot
+  if (lastVis && arc.progress > 0.04 && arc.progress < 0.97) {
+    ctx.beginPath();
+    ctx.arc(lastVis.x, lastVis.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle   = arc.col;
+    ctx.shadowColor = arc.col;
+    ctx.shadowBlur  = 10;
+    ctx.fill();
+    ctx.shadowBlur  = 0;
+
+    // Position HTML label near tip
+    const canvasRect = canvas.getBoundingClientRect();
+    const wrapRect   = wrap.getBoundingClientRect();
+    const lx = canvasRect.left - wrapRect.left + lastVis.x + 10;
+    const ly = canvasRect.top  - wrapRect.top  + lastVis.y - 8;
+
+    labelEl.style.left    = lx + 'px';
+    labelEl.style.top     = ly + 'px';
+    labelEl.style.color   = arc.col === '#00AAFF'
+      ? 'rgba(0,170,255,0.65)' : 'rgba(0,204,68,0.65)';
+    labelEl.style.opacity = arc.progress > 0.1 ? '1' : '0';
+  } else {
+    labelEl.style.opacity = '0';
+  }
+}
+
+// ── ANIMATION LOOP ────────────────────────────────────────────
+function tick(ts) {
+  if (isRevealing) return;
+  animTime  = ts * 0.001;
+  rotDeg   += 0.055;
+
+  for (const arc of ARCS) {
+    arc.progress += arc.speed;
+    if (arc.progress > 1) arc.progress = 0;
+  }
+
+  render();
+  rafId = requestAnimationFrame(tick);
+}
+
+// Start after a short delay so the page load is smooth
+setTimeout(() => requestAnimationFrame(tick), 300);
+
+// ═══════════════════════════════════════════════════════════
+//  REVEAL
+// ═══════════════════════════════════════════════════════════
+
+function reveal() {
+  if (isRevealing) return;
+  isRevealing = true;
+
+  const glass = document.getElementById('glass');
+  glass.classList.add('revealing');
+
+  // Hide arc labels immediately
+  arcLabels.forEach(el => el.style.opacity = '0');
+
+  // Navigate ~halfway through the dissolve animation
+  // User sees the glass open, then lands on the real page
+  setTimeout(() => {
+    window.location.href = 'home.html';
+  }, 480);
+
+  if (rafId) cancelAnimationFrame(rafId);
+}
+
+// ── SCROLL TRIGGER (desktop) ──────────────────────────────────
+window.addEventListener('wheel', (e) => {
+  if (e.deltaY > 18) reveal();
+}, { passive: true, once: true });
+
+// ── SWIPE UP TRIGGER (mobile) ─────────────────────────────────
+let touchStartY = null;
+document.addEventListener('touchstart', e => {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (touchStartY === null) return;
+  const dy = touchStartY - e.changedTouches[0].clientY;
+  if (dy > 38) reveal();
+  touchStartY = null;
+}, { passive: true });
+
+// ── KEYBOARD (accessibility) ──────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') reveal();
+});
+</script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

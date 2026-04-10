@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EternalCurrent — Currents</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+<script>
+// ── AUTH GUARD ───────────────────────────────────────
+// Auth guard — patient 2s wait before redirecting (ecoAuthGuard in eco-client.js)
+</script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:#04060d;color:#e8eaf0;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+#nav{display:flex;align-items:center;gap:10px;padding:10px 18px;background:#090d18;border-bottom:1px solid #1a2030;flex-shrink:0;flex-wrap:wrap;}
+.nav-wordmark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1rem;letter-spacing:.06em;text-decoration:none;flex-shrink:0;}
+.nav-e{color:#00AAFF;}.nav-c{color:#00CC44;}.nav-o{color:#FFF;}
+.nav-sep{width:1px;height:20px;background:rgba(255,255,255,.10);margin:0 3px;flex-shrink:0;}
+.nav-back{font-size: 12px;color:#5A8A80;text-decoration:none;padding:3px 8px;border-radius:5px;}
+.nav-back:hover{color:#00AAFF;}
+#style_btns{display:flex;gap:6px;}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 7px var(--bc)}50%{box-shadow:0 0 20px var(--bc)}}
+.sty-btn{padding:5px 12px;border:1px solid var(--bc,#666);background:rgba(255,255,255,.05);color:var(--bc,#ccc);border-radius:5px;cursor:pointer;font-family:'Arial Black',Arial,sans-serif;font-size: 12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;}
+.sty-btn.active{background:color-mix(in srgb,var(--bc) 20%,transparent);color:#fff;animation:pulse-glow 2.5s ease-in-out infinite;}
+#s-energetic{--bc:#ff5500;}#s-minimal{--bc:#8899aa;}#s-current{--bc:#00AAFF;}#s-organic{--bc:#ccff66;}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+#style-lbl{font-size: 12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;}
+#layout{display:flex;flex:1;overflow:hidden;min-height:0;}
+#viz-wrap{flex:3;position:relative;overflow:hidden;}
+#viz-canvas{display:block;position:absolute;top:0;left:0;cursor:default;}
+#side-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size: 12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-dim);pointer-events:none;white-space:nowrap;}
+#panel{flex:0 0 220px;background:#090d18;padding:14px;overflow-y:auto;border-left:1px solid #1a2030;display:flex;flex-direction:column;gap:12px;}
+.ph2{font-family:'Arial Black',Arial,sans-serif;font-size: 12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#3A5A54;margin-bottom:7px;}
+.pval{font-size:12px;line-height:1.7;color:#e8eaf0;}
+.pb{border-bottom:1px solid #1a2030;padding-bottom:12px;}
+.leg{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size: 12px;color:#6b7280;}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#tip{position:fixed;background:#0a0e1a;border:1px solid #2a3550;border-radius:6px;padding:6px 10px;font-size: 12px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:999;color:#e0e8ff;font-family:'Arial Black',Arial,sans-serif;}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04060d;z-index:9999;font-size:13px;color:#3A5A54;font-family:Arial,Helvetica,sans-serif;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div id="nav">
+  <div id="style_btns">
+    <button id="s-energetic" class="sty-btn active" onclick="setStyle('energetic')">⚡ Energetic</button>
+    <button id="s-minimal"   class="sty-btn"        onclick="setStyle('minimal')">◻ Minimal</button>
+    <button id="s-current"   class="sty-btn"        onclick="setStyle('current')">〰 Current</button>
+    <button id="s-organic"   class="sty-btn"        onclick="setStyle('organic')">🌿 Organic</button>
+    <button id="s-capital"   class="sty-btn"        onclick="toggleCapital()" style="--bc:#FFD700;">⬡ Capital Map</button>
+  </div>
+<div class="nav-r">
+    <span id="style-lbl" style="font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;">Energetic & Colorful</span>
+  </div>
+</div>
+<div id="loading">Loading Currents…</div>
+
+<div id="layout">
+  <div id="viz-wrap">
+    <canvas id="viz-canvas"></canvas>
+    <div id="side-hint">← Family · Direct &nbsp;&nbsp;&nbsp; Extended · Network →</div>
+  </div>
+  <aside id="panel">
+    <div class="pb">
+      <div class="ph2">Center</div>
+      <div class="pval" id="p-center" style="font-weight:700;color:#ffd86f;">Loading…</div>
+    </div>
+    <div class="pb">
+      <div class="ph2">Selected</div>
+      <div class="pval" id="p-name">Click a node</div>
+      <div class="pval" id="p-role" style="color:#6b7280;font-size:11px;"></div>
+      <div class="pval" id="p-loc"  style="color:#6b7280;font-size:11px;"></div>
+      <div class="pval" id="p-conn" style="color:#6b7280;font-size:11px;"></div>
+    </div>
+    <div class="pb">
+      <div class="ph2">Legend</div>
+      <div class="leg"><span class="ldot" style="background:#ffd86f"></span>Center (you)</div>
+      <div class="leg"><span class="ldot" style="background:#ff88cc"></span>Spouse / Partner</div>
+      <div class="leg"><span class="ldot" style="background:#55aaff"></span>Parent</div>
+      <div class="leg"><span class="ldot" style="background:#44ffcc"></span>Child</div>
+      <div class="leg"><span class="ldot" style="background:#ff8833"></span>Sibling</div>
+      <div class="leg"><span class="ldot" style="background:#cc88ff"></span>Grandparent</div>
+      <div class="leg"><span class="ldot" style="background:#ffcc44"></span>In-law</div>
+      <div class="leg"><span class="ldot" style="background:#8899aa"></span>Extended</div>
+      <div style="margin-top:8px;font-size:10px;color:#3A5A54;line-height:1.6;">Thick stream = flows INTO center.<br>Thin stream = flows OUT.<br>Click any node to recenter.</div>
+    </div>
+    <div id="capital-legend" style="display:none;margin-top:12px;">
+      <div class="ph2">Capital Map</div>
+      <div class="leg"><span class="ldot" style="background:#FFD700"></span>Bonding tie (same cluster)</div>
+      <div class="leg"><span class="ldot" style="background:#00DDFF"></span>Bridging tie (cross-cluster)</div>
+      <div class="leg"><span class="ldot" style="background:#555"></span>Weak / unmapped</div>
+      <div style="margin-top:6px;font-size:10px;color:#3A5A54;line-height:1.5;">Gold = strong within-group bonds.<br>Teal = bridges between groups.<br>Network capital = balance of both.</div>
+    </div>
+    <div>
+      <div class="ph2">Network</div>
+      <div class="pval" id="p-stats" style="font-size:11px;color:#6b7280;"></div>
+    </div>
+  </aside>
+</div>
+<div id="tip"></div>
+
+<script>
+// ── Colour palettes per style ─────────────────────────────────
+const PALETTES = {
+  energetic: {
+    self:'#ffffff', spouse:'#ff88cc', parent:'#ff5500', grandparent:'#ff2200',
+    sibling:'#ffaa00', child:'#44ffcc', niece:'#88ffaa', inlaw:'#ffcc44',
+    cousin:'#ff7733', extended:'#ff4400', other:'#aabbcc',
+  },
+  minimal: {
+    self:'#333333', spouse:'#1a9e75', parent:'#378add', grandparent:'#9c6fde',
+    sibling:'#e07020', child:'#20a060', niece:'#40b870', inlaw:'#b08010',
+    cousin:'#c06030', extended:'#707880', other:'#9aA0a8',
+  },
+  current: {
+    self:'#ffffff', spouse:'#00CC44', parent:'#00AAFF', grandparent:'#0077CC',
+    sibling:'#00DDFF', child:'#00FF88', niece:'#44FFAA', inlaw:'#88CCFF',
+    cousin:'#00BBEE', extended:'#3A7A8A', other:'#5A8A90',
+  },
+  organic: {
+    self:'#ffd86f', spouse:'#ffccaa', parent:'#ffaa44', grandparent:'#ff8833',
+    sibling:'#ccff66', child:'#aaffcc', niece:'#88ffaa', inlaw:'#ffee88',
+    cousin:'#aadd44', extended:'#88aa44', other:'#88aa66',
+  },
+};
+const STYLE_LABELS = {energetic:'Energetic & Colorful',minimal:'Minimal & Modern',current:'ECO Current',organic:'Organic & Living'};
+let currentStyle='energetic';
+function getCol(role){ return (PALETTES[currentStyle]||PALETTES.energetic)[role]||(PALETTES[currentStyle]||PALETTES.energetic).other; }
+
+// ── Data ──────────────────────────────────────────────────────
+let ALL_MEMBERS=[], ALL_RELS=[], NODES=[], CENTER_ID=null;
+const _imgCache = {}; // user_id → HTMLImageElement
+let nebCanvas=null, starField=[];
+
+// ── Helpers ───────────────────────────────────────────────────
+function rgba(hex,a){
+  if(!hex||hex[0]!=='#') return `rgba(120,120,140,${a.toFixed(4)})`;
+  const r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;
+  return `rgba(${r},${g},${b},${a.toFixed(4)})`;
+}
+
+function getSide(rel){
+  const L=['parent','grandparent','sibling','aunt','uncle','cousin','niece','nephew','brother','sister','mother','father','grandfather','grandmother'];
+  return L.some(t=>rel.includes(t))?'left':'right';
+}
+function getTier(rel){
+  if(['parent','child','spouse','partner','husband','wife','son','daughter','mother','father'].some(t=>rel.includes(t))) return 1;
+  if(['grandparent','sibling','inlaw','in-law','brother','sister','grandfather','grandmother'].some(t=>rel.includes(t))) return 2;
+  if(['cousin','aunt','uncle','niece','nephew'].some(t=>rel.includes(t))) return 3;
+  return 4;
+}
+function getInW(tier){return [0,.90,.60,.28,.12][Math.min(tier,4)];}
+function getOutW(tier){return [0,.45,.32,.20,.08][Math.min(tier,4)];}
+
+// ── Load from Supabase ────────────────────────────────────────
+const sb = window.ecoSB;  // shared client from eco-client.js
+
+async function load(){
+  const[mR,rR]=await Promise.all([
+    sb.from('users').select('user_id,full_name,current_location,platform_role,status,photo_id').limit(200),
+    sb.from('relationships').select('subject_id,target_id,relation_type,tie_strength').limit(1000)
+  ]);
+  ALL_MEMBERS=mR.data||[];
+  ALL_RELS=rR.data||[];
+
+  // Load profile photos
+  const photoIds = ALL_MEMBERS.map(m=>m.photo_id).filter(Boolean);
+  if (photoIds.length) {
+    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
+    const photoMap = {};
+    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
+    ALL_MEMBERS.forEach(m => {
+      if (m.photo_id) m._photoUrl = photoMap[m.photo_id] || null;
+      if (m._photoUrl) {
+        const img = new Image(); img.src = m._photoUrl;
+        _imgCache[m.user_id] = img;
+      }
+    });
+  }
+
+  document.getElementById('p-stats').textContent=
+    `${ALL_MEMBERS.length} members · ${ALL_RELS.length} connections`;
+
+  // Find center: NetworkOwner > SuperUser > most connections
+  const roleCenter=ALL_MEMBERS.find(m=>(m.platform_role||'').toLowerCase().includes('networkowner'))
+    || ALL_MEMBERS.find(m=>(m.platform_role||'').toLowerCase().includes('superuser'));
+  if(roleCenter){ CENTER_ID=roleCenter.user_id; }
+  else {
+    const deg={};
+    ALL_RELS.forEach(r=>{deg[r.subject_id]=(deg[r.subject_id]||0)+1;deg[r.target_id]=(deg[r.target_id]||0)+1;});
+    CENTER_ID=Object.entries(deg).sort((a,b)=>b[1]-a[1])[0]?.[0]||ALL_MEMBERS[0]?.user_id;
+  }
+
+  buildNodes(CENTER_ID);
+  document.getElementById('loading').style.display='none';
+  resizeCanvas();
+  startLoop();
+}
+
+function buildNodes(centerId){
+  CENTER_ID=centerId;
+  const memberMap={};
+  ALL_MEMBERS.forEach(m=>memberMap[m.user_id]=m);
+  const center=memberMap[centerId];
+  if(!center) return;
+
+  document.getElementById('p-center').textContent=center.full_name||'Center';
+
+  NODES=[{
+    id:centerId, label:(center.full_name||'?').split(' ').slice(0,2).join(' '),
+    role:'self', side:'center', tier:0, angle:0, inW:0, outW:0,
+    full_name:center.full_name, location:center.current_location
+  }];
+
+  const processed=new Set([centerId]);
+  const directRels=ALL_RELS.filter(r=>(r.subject_id===centerId||r.target_id===centerId)&&!getHiddenRels().has(r.relation_type));
+  const tier1Ids=new Set();
+
+  directRels.forEach(r=>{
+    const otherId=r.subject_id===centerId?r.target_id:r.subject_id;
+    if(!memberMap[otherId]||processed.has(otherId)) return;
+    processed.add(otherId);
+    tier1Ids.add(otherId);
+    const rel=(r.relation_type||'other').toLowerCase();
+    const tier=getTier(rel);
+    NODES.push({
+      id:otherId, label:(memberMap[otherId].full_name||'?').split(' ')[0],
+      role:canonRole(rel), side:getSide(rel), tier,
+      inW:getInW(tier), outW:getOutW(tier),
+      tie_strength: r.tie_strength||0,
+      full_name:memberMap[otherId].full_name, location:memberMap[otherId].current_location
+    });
+  });
+
+  // Tier 2+ (connections of connections)
+  tier1Ids.forEach(t1Id=>{
+    const t1Node=NODES.find(n=>n.id===t1Id);
+    if(!t1Node) return;
+    const t2Rels=ALL_RELS.filter(r=>(r.subject_id===t1Id||r.target_id===t1Id)&&r.subject_id!==centerId&&r.target_id!==centerId);
+    t2Rels.forEach(r=>{
+      const otherId=r.subject_id===t1Id?r.target_id:r.subject_id;
+      if(!memberMap[otherId]||processed.has(otherId)) return;
+      processed.add(otherId);
+      const rel=(r.relation_type||'other').toLowerCase();
+      const tier=Math.min(4,t1Node.tier+1);
+      NODES.push({
+        id:otherId, label:(memberMap[otherId].full_name||'?').split(' ')[0],
+        role:canonRole(rel), side:t1Node.side, tier,
+        inW:getInW(tier)*0.55, outW:getOutW(tier)*0.55,
+        full_name:memberMap[otherId].full_name, location:memberMap[otherId].current_location
+      });
+    });
+  });
+
+  // Assign angles within each tier/side group
+  const groups={};
+  NODES.forEach(n=>{if(n.side==='center') return; const k=`${n.side}-${n.tier}`; (groups[k]=groups[k]||[]).push(n);});
+  Object.entries(groups).forEach(([k,arr])=>{
+    const maxA=arr[0].tier===1?50:arr[0].tier===2?76:arr[0].tier===3?88:93;
+    arr.forEach((n,i)=>{const f=arr.length>1?i/(arr.length-1):.5; n.angle=(f*2-1)*maxA;});
+  });
+}
+
+function canonRole(rel){
+  if(['parent','mother','father'].some(t=>rel.includes(t))) return 'parent';
+  if(['grandparent','grandfather','grandmother'].some(t=>rel.includes(t))) return 'grandparent';
+  if(['sibling','brother','sister'].some(t=>rel.includes(t))) return 'sibling';
+  if(['spouse','partner','husband','wife'].some(t=>rel.includes(t))) return 'spouse';
+  if(['child','son','daughter'].some(t=>rel.includes(t))) return 'child';
+  if(['niece','nephew'].some(t=>rel.includes(t))) return 'niece';
+  if(['inlaw','in-law'].some(t=>rel.includes(t))) return 'inlaw';
+  if(['cousin'].some(t=>rel.includes(t))) return 'cousin';
+  return 'extended';
+}
+
+// ── Layout ────────────────────────────────────────────────────
+function buildLayout(W,H){
+  const cx=W/2,cy=H/2;
+  const b=Math.min(W,H);
+  const tierR=[0,b*.22,b*.40,b*.56,b*.70];
+  const pos={};
+  NODES.forEach(n=>{
+    if(n.side==='center'){pos[n.id]={x:cx,y:cy};return;}
+    const r=tierR[Math.min(n.tier,4)];
+    const rad=n.angle*Math.PI/180;
+    const x=n.side==='left'? cx-r*Math.cos(rad) : cx+r*Math.cos(rad);
+    const y=cy-r*Math.sin(rad);
+    pos[n.id]={x:Math.max(60,Math.min(W-60,x)),y:Math.max(50,Math.min(H-50,y))};
+  });
+  return pos;
+}
+
+// ── Nebula ────────────────────────────────────────────────────
+function buildNebula(W,H){
+  const nc=document.createElement('canvas');nc.width=W;nc.height=H;
+  const ctx=nc.getContext('2d');const cx=W/2,cy=H/2;
+  if(currentStyle==='minimal'){
+    ctx.fillStyle='#f5f3ee';ctx.fillRect(0,0,W,H);
+    const v=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.7);
+    v.addColorStop(0,'rgba(238,236,230,0)');v.addColorStop(1,'rgba(200,198,192,.40)');
+    ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+    nebCanvas=nc;starField=[];return;
+  }
+  const bgC={energetic:['#1c0610','#0a0308','#020108'],current:['#010812','#01050e','#010309'],organic:['#050a02','#030602','#010301']};
+  const bc=bgC[currentStyle]||bgC.energetic;
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.85);
+  bg.addColorStop(0,bc[0]);bg.addColorStop(.6,bc[1]);bg.addColorStop(1,bc[2]);
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const coreC=currentStyle==='organic'?'rgba(255,200,80,.65)':currentStyle==='current'?'rgba(0,170,255,.60)':'rgba(255,240,220,.68)';
+  const core=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.13);
+  core.addColorStop(0,coreC);core.addColorStop(.5,'rgba(80,160,255,.15)');core.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=core;ctx.fillRect(0,0,W,H);
+  const bodyC=currentStyle==='organic'?'rgba(40,80,10,.18)':currentStyle==='current'?'rgba(0,80,180,.18)':'rgba(180,40,10,.14)';
+  const body=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.55);
+  body.addColorStop(0,bodyC);body.addColorStop(.5,'rgba(20,10,60,.10)');body.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=body;ctx.fillRect(0,0,W,H);
+  // Outer blobs
+  [.4,1.2,2.1,2.9,4.1,5.2].forEach((a,i)=>{
+    const r2=Math.min(W,H)*(.26+i%2*.11);
+    const ex=cx+Math.cos(a)*r2,ey=cy+Math.sin(a)*r2;
+    const wc=currentStyle==='organic'?'rgba(180,120,10,.09)':currentStyle==='current'?'rgba(0,140,200,.09)':'rgba(200,60,10,.10)';
+    const wg=ctx.createRadialGradient(ex,ey,0,ex,ey,Math.min(W,H)*.20);
+    wg.addColorStop(0,wc);wg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=wg;ctx.fillRect(0,0,W,H);
+  });
+  nebCanvas=nc;
+  // Stars
+  const sc=currentStyle==='organic'?180:currentStyle==='current'?300:340;
+  starField=[];
+  for(let i=0;i<sc;i++){
+    const col=currentStyle==='current'?(Math.random()<.6?'rgba(0,200,255,1)':'rgba(0,255,140,1)'):
+              currentStyle==='organic'?(Math.random()<.5?'rgba(200,240,100,1)':'rgba(255,200,80,1)'):'rgba(255,220,180,1)';
+    starField.push({x:Math.random()*W,y:Math.random()*H,r:.1+Math.random()*1.5,baseA:.1+Math.random()*.8,speed:.3+Math.random()*3,phase:Math.random()*Math.PI*2,col});
+  }
+}
+
+function drawBg(ctx,W,H,t){
+  if(nebCanvas)ctx.drawImage(nebCanvas,0,0);
+  else{ctx.fillStyle=currentStyle==='minimal'?'#f5f3ee':'#000';ctx.fillRect(0,0,W,H);}
+  if(currentStyle!=='minimal'){
+    ctx.save();
+    starField.forEach(s=>{const a=s.baseA*(.38+.62*Math.sin(t*s.speed+s.phase));ctx.globalAlpha=Math.max(0,Math.min(1,a));ctx.fillStyle=s.col;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});
+    ctx.globalAlpha=1;ctx.restore();
+  }
+}
+
+// ── Stream renderer ───────────────────────────────────────────
+function drawStream(ctx,x0,y0,x1,y1,col,alpha,maxW,t,phase){
+  const Dx=x1-x0,Dy=y1-y0,len=Math.sqrt(Dx*Dx+Dy*Dy)||1;
+  const nx=-Dy/len,ny=Dx/len;
+  const wA=currentStyle==='organic'?.24:currentStyle==='minimal'?.06:.18;
+  const w1=Math.sin(t*.48+phase)*len*wA;
+  const w2=Math.cos(t*.34+phase+1.1)*len*(wA*.45);
+  const cp1x=x0+Dx*.35+nx*w1,cp1y=y0+Dy*.35+ny*w1;
+  const cp2x=x0+Dx*.68+nx*w2,cp2y=y0+Dy*.68+ny*w2;
+  const N=60;const pts=[];
+  for(let i=0;i<=N;i++){
+    const u=i/N,mu=1-u;
+    const bx=mu*mu*mu*x0+3*mu*mu*u*cp1x+3*mu*u*u*cp2x+u*u*u*x1;
+    const by=mu*mu*mu*y0+3*mu*mu*u*cp1y+3*mu*u*u*cp2y+u*u*u*y1;
+    const u2=Math.min(u+.001,1),mu2=1-u2;
+    const tx2=(mu2*mu2*mu2*x0+3*mu2*mu2*u2*cp1x+3*mu2*u2*u2*cp2x+u2*u2*u2*x1)-bx;
+    const ty2=(mu2*mu2*mu2*y0+3*mu2*mu2*u2*cp1y+3*mu2*u2*u2*cp2y+u2*u2*u2*y1)-by;
+    const tl=Math.sqrt(tx2*tx2+ty2*ty2)||1;
+    const pnx=-ty2/tl,pny=tx2/tl;
+    const w=maxW*Math.pow(1-u,.60)*(.87+.13*Math.sin(t*2.6+phase+u*8));
+    pts.push({bx,by,pnx,pny,w});
+  }
+  const left=pts.map(p=>({x:p.bx+p.pnx*p.w,y:p.by+p.pny*p.w}));
+  const right=[...pts].reverse().map(p=>({x:p.bx-p.pnx*p.w,y:p.by-p.pny*p.w}));
+  ctx.save();ctx.lineCap='round';
+  if(currentStyle==='minimal'){
+    const spine=()=>{ctx.beginPath();ctx.moveTo(pts[0].bx,pts[0].by);pts.forEach(p=>ctx.lineTo(p.bx,p.by));};
+    spine();ctx.strokeStyle=rgba(col,alpha*.18);ctx.lineWidth=maxW*2.5;ctx.stroke();
+    spine();ctx.strokeStyle=rgba(col,alpha*.70);ctx.lineWidth=maxW*.50;ctx.stroke();
+    if(alpha>.55){
+      spine();ctx.strokeStyle=rgba(col,alpha*.25);ctx.lineWidth=maxW*5;ctx.stroke();
+      const sp=((t*.30+phase)%1+1)%1;const si=Math.floor(sp*(pts.length-1));const sp2=pts[Math.min(si,pts.length-1)];
+      ctx.beginPath();ctx.arc(sp2.bx,sp2.by,maxW*.8,0,Math.PI*2);ctx.fillStyle=rgba(col,alpha*.85);ctx.fill();
+    }
+    ctx.restore();return;
+  }
+  const lg=ctx.createLinearGradient(x0,y0,x1,y1);
+  lg.addColorStop(0,rgba(col,alpha*.85));lg.addColorStop(.3,rgba(col,alpha*.60));lg.addColorStop(.65,rgba(col,alpha*.28));lg.addColorStop(1,rgba(col,0));
+  ctx.beginPath();ctx.moveTo(left[0].x,left[0].y);left.forEach(p=>ctx.lineTo(p.x,p.y));right.forEach(p=>ctx.lineTo(p.x,p.y));ctx.closePath();ctx.fillStyle=lg;ctx.fill();
+  const spine=()=>{ctx.beginPath();ctx.moveTo(pts[0].bx,pts[0].by);pts.forEach(p=>ctx.lineTo(p.bx,p.by));};
+  spine();ctx.strokeStyle=rgba(col,alpha*(currentStyle==='organic'?.055:.048));ctx.lineWidth=maxW*(currentStyle==='organic'?7.5:5.5);ctx.stroke();
+  spine();ctx.strokeStyle=rgba(col,alpha*.18);ctx.lineWidth=maxW*2.2;ctx.stroke();
+  spine();ctx.strokeStyle=rgba(col,alpha*(currentStyle==='current'?.88:.82));ctx.lineWidth=maxW*.28;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pts[0].bx,pts[0].by);for(let i=1;i<=Math.floor(N*.22);i++)ctx.lineTo(pts[i].bx,pts[i].by);
+  ctx.strokeStyle=rgba('#ffffff',alpha*.50);ctx.lineWidth=maxW*.13;ctx.stroke();
+  const spd=currentStyle==='organic'?.20:currentStyle==='current'?.30:.34;
+  const sp=((t*spd+phase)%1+1)%1;const si=Math.floor(sp*(pts.length-1));const sp2=pts[Math.min(si,pts.length-1)];
+  const sA=alpha*(.50+.50*Math.sin(t*6+phase));const sR=maxW*(.18+.82*(1-sp));
+  const sg=ctx.createRadialGradient(sp2.bx,sp2.by,0,sp2.bx,sp2.by,sR*3.5);
+  sg.addColorStop(0,rgba('#ffffff',sA*.92));sg.addColorStop(.4,rgba(col,sA*.72));sg.addColorStop(1,rgba(col,0));
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sp2.bx,sp2.by,sR*3.5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+// ── Sun (center node) ─────────────────────────────────────────
+function drawSun(ctx,cx,cy,t){
+  const c1=getCol('self'),c2=getCol('parent');
+  if(currentStyle==='minimal'){
+    for(let i=3;i>=1;i--){ctx.beginPath();ctx.arc(cx,cy,i*22,0,Math.PI*2);ctx.strokeStyle=rgba('#888888',.08);ctx.lineWidth=1;ctx.stroke();}
+    ctx.beginPath();ctx.arc(cx,cy,9,0,Math.PI*2);ctx.fillStyle='#333';ctx.fill();return;
+  }
+  for(let i=6;i>=0;i--){
+    const r=10+i*26+10*Math.sin(t*1.55+i*.55);
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,rgba('#ffffff',.96-i*.13));g.addColorStop(.35,rgba(c1,.65-i*.09));g.addColorStop(.75,rgba(c2,.22-i*.028));g.addColorStop(1,rgba(c2,0));
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  }
+  for(let i=0;i<32;i++){
+    const a=(i/32)*Math.PI*2+t*.07;const len=13+30*Math.abs(Math.sin(t*1.9+i*.58));
+    const w=.4+1.9*Math.abs(Math.sin(t*1.3+i*.72));
+    const c=i%4===0?'#ffffff':i%4===1?c1:i%4===2?c2:'#ffaa44';
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(a);ctx.strokeStyle=rgba(c,.20+.34*Math.abs(Math.sin(t+i)));ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-len);ctx.stroke();ctx.restore();
+  }
+}
+
+// ── Node star ─────────────────────────────────────────────────
+function drawPhotoCircle(ctx,x,y,r,userId){
+  const img=_imgCache[userId];
+  if(!img||!img.complete||img.naturalWidth===0) return;
+  ctx.save();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();
+  ctx.drawImage(img,x-r,y-r,r*2,r*2);
+  ctx.restore();
+  // ring
+  ctx.save();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+}
+
+function drawNode(ctx,x,y,label,col,tier,hov,sel,onRight,t,userId){
+  const pulse=.92+.08*Math.sin(t*2+(x+y)*.011);
+  const br=sel?5.5:hov?4.5:tier===1?4.0:tier===2?3.0:2.2;
+  const r=br*pulse;
+  if(currentStyle==='minimal'){
+    ctx.beginPath();ctx.arc(x,y,sel||hov?r*1.8:r*1.2,0,Math.PI*2);ctx.fillStyle=sel?col:rgba(col,.85);ctx.fill();
+    const pr=sel||hov?r*1.8:r*1.2;
+    if(userId) drawPhotoCircle(ctx,x,y,pr,userId);
+    ctx.font=`${sel?'700':'400'} ${tier===1?13:11}px Arial,Helvetica,sans-serif`;
+    ctx.textBaseline='middle';ctx.fillStyle=sel?col:'#444444';
+    const pad=pr+5;
+    onRight?(ctx.textAlign='left',ctx.fillText(label,x+pad,y)):(ctx.textAlign='right',ctx.fillText(label,x-pad,y));
+    return;
+  }
+  const cg=ctx.createRadialGradient(x,y,0,x,y,r*7.5);
+  cg.addColorStop(0,rgba(col,sel?.55:hov?.42:.20));cg.addColorStop(.5,rgba(col,.06));cg.addColorStop(1,rgba(col,0));
+  ctx.fillStyle=cg;ctx.beginPath();ctx.arc(x,y,r*7.5,0,Math.PI*2);ctx.fill();
+  if(tier<=2){
+    [0,Math.PI/2].forEach(base=>{
+      const slen=r*(sel?7:5);
+      ctx.save();ctx.translate(x,y);ctx.rotate(base+t*.04);ctx.strokeStyle=rgba('#ffffff',.28+.14*Math.sin(t+tier));ctx.lineWidth=.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-slen);ctx.lineTo(0,slen);ctx.stroke();ctx.restore();
+    });
+  }
+  const sg=ctx.createRadialGradient(x,y,0,x,y,r*2.5);
+  sg.addColorStop(0,rgba('#ffffff',.98));sg.addColorStop(.38,rgba(col,.92));sg.addColorStop(1,rgba(col,0));
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(x,y,r*2.5,0,Math.PI*2);ctx.fill();
+  // photo overlays glow dot
+  if(userId) drawPhotoCircle(ctx,x,y,r*2.5,userId);
+  const fs=tier===1?14:tier===2?12:11;const pad=r*2.5+6;
+  ctx.save();ctx.font=`${sel?700:hov?600:500} ${sel?fs+2:fs}px Arial Black,Arial,sans-serif`;ctx.textBaseline='middle';
+  ctx.shadowColor=col;ctx.shadowBlur=sel?20:hov?12:6;ctx.fillStyle=rgba('#ffffff',sel?1:hov?.96:.88);
+  onRight?(ctx.textAlign='left',ctx.fillText(label,x+pad,y)):(ctx.textAlign='right',ctx.fillText(label,x-pad,y));
+  ctx.shadowBlur=0;ctx.restore();
+}
+
+// ── Main render ───────────────────────────────────────────────
+function renderScene(ctx,pos,selId,hovId,W,H,t){
+  const vb=pos[CENTER_ID];if(!vb) return;
+  const b=Math.min(W,H);
+  const tierW=[0,b*.052,b*.027,b*.013,b*.007];
+
+  [4,3,2,1].forEach(tier=>{
+    NODES.forEach(n=>{
+      if(n.side==='center'||n.tier!==tier) return;
+      const p=pos[n.id];if(!p) return;
+      const isSel=selId===n.id,isHov=hovId===n.id,dimmed=!!(selId&&!isSel);
+      const phase=n.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)*.19;
+      const col=capitalMode ? getCapitalColor(n) : getCol(n.role);
+      const bw=tierW[Math.min(n.tier,4)];
+      const flicker=.88+.12*Math.sin(t*1.8+phase);
+      const inA =dimmed?.08:isSel?.98:isHov?.86:n.inW*flicker;
+      const outA=dimmed?.04:isSel?.50:isHov?.38:n.outW*.42*flicker;
+      drawStream(ctx,p.x,p.y,vb.x,vb.y,col,inA,bw*(isSel?1.7:1),t,phase);
+      drawStream(ctx,vb.x,vb.y,p.x,p.y,col,outA,bw*(isSel?.60:.38),t,phase+1.9);
+    });
+  });
+
+  drawSun(ctx,vb.x,vb.y,t);
+  const centerNode=NODES.find(n=>n.side==='center');
+  const lc=currentStyle==='minimal'?'#222222':'#ffffff';
+  ctx.save();ctx.font="700 13px Arial Black,Arial,sans-serif";ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.shadowColor=currentStyle==='minimal'?'transparent':'#ffd86f';ctx.shadowBlur=14;
+  ctx.fillStyle=lc;ctx.fillText((centerNode?.label||'VB').split(' ')[0],vb.x,vb.y+38);ctx.shadowBlur=0;ctx.restore();
+
+  NODES.forEach(n=>{
+    if(n.side==='center') return;
+    const p=pos[n.id];if(!p) return;
+    drawNode(ctx,p.x,p.y,n.label,getCol(n.role),n.tier,hovId===n.id,selId===n.id,n.side==='right',t,n.id);
+  });
+}
+
+// ── Engine ────────────────────────────────────────────────────
+let gCtx=null,gPos=null,animT=0,selId=null,hovId=null,running=false;
+const canvas=document.getElementById('viz-canvas');
+
+function resizeCanvas(){
+  const wrap=document.getElementById('viz-wrap');if(!wrap) return;
+  const rc=wrap.getBoundingClientRect();
+  canvas.width=Math.floor(rc.width);canvas.height=Math.floor(rc.height);
+  gCtx=canvas.getContext('2d');
+  gPos=buildLayout(canvas.width,canvas.height);
+  buildNebula(canvas.width,canvas.height);
+}
+
+function startLoop(){
+  if(running) return;running=true;
+  (function loop(){requestAnimationFrame(loop);if(!gCtx||!gPos) return;animT+=.016;gCtx.clearRect(0,0,canvas.width,canvas.height);drawBg(gCtx,canvas.width,canvas.height,animT);renderScene(gCtx,gPos,selId,hovId,canvas.width,canvas.height,animT);})();
+}
+
+function nodeAt(mx,my){
+  if(!gPos) return null;let best=null,bestD=32*32;
+  NODES.forEach(n=>{const p=gPos[n.id];if(!p) return;const dx=p.x-mx,dy=p.y-my,d=dx*dx+dy*dy;if(d<bestD){bestD=d;best=n;}});
+  return best;
+}
+
+
+// ── Relationship filter ───────────────────────────────
+let hiddenRels = new Set();
+function toggleRel(btn) {
+  const types = btn.dataset.rel.split(',');
+  const isActive = btn.classList.toggle('active');
+  types.forEach(t => isActive ? hiddenRels.delete(t) : hiddenRels.add(t));
+  if(NODES.length) { buildNodes(CENTER_ID); }
+}
+
+function setStyle(s){
+  currentStyle=s;
+  document.querySelectorAll('.sty-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('s-'+s).classList.add('active');
+  document.getElementById('style-lbl').textContent=STYLE_LABELS[s]||s;
+  nebCanvas=null;
+  if(canvas.width) buildNebula(canvas.width,canvas.height);
+  if(NODES.length) draw();
+}
+
+let capitalMode=false;
+function toggleCapital(){
+  capitalMode=!capitalMode;
+  const btn=document.getElementById('s-capital');
+  const leg=document.getElementById('capital-legend');
+  if(capitalMode){
+    document.querySelectorAll('.sty-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('style-lbl').textContent='Capital Network Map';
+    leg.style.display='block';
+  } else {
+    btn.classList.remove('active');
+    leg.style.display='none';
+    setStyle(currentStyle);
+    return;
+  }
+  if(NODES.length) draw();
+}
+
+// Capital map: colour by tie_strength
+// bonding = tie_strength >= 7 → gold; bridging = 3–6 → teal; weak/null → dim
+function getCapitalColor(rel){
+  const ts = rel.tie_strength || 0;
+  if(ts >= 7) return '#FFD700';
+  if(ts >= 3) return '#00DDFF';
+  return '#444455';
+}
+
+// Wrap getCol to respect capitalMode
+const _origGetCol = getCol;
+function getColForRel(role, rel){
+  if(capitalMode && rel) return getCapitalColor(rel);
+  return _origGetCol(role);
+}
+
+// ── Events ────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{resizeCanvas();});
+canvas.addEventListener('click',e=>{
+  const rc=canvas.getBoundingClientRect();const n=nodeAt(e.clientX-rc.left,e.clientY-rc.top);
+  if(n&&n.side!=='center'){
+    selId=selId===n.id?null:n.id;
+    if(selId){
+      document.getElementById('p-name').textContent=n.full_name||n.label;
+      document.getElementById('p-role').textContent=`Relationship: ${n.role}`;
+      document.getElementById('p-loc').textContent=n.location||'';
+      document.getElementById('p-conn').textContent=`Inbound ${Math.round(n.inW*100)}% · Outbound ${Math.round(n.outW*100)}%`;
+    } else {
+      document.getElementById('p-name').textContent='Click a node';
+      document.getElementById('p-role').textContent='';document.getElementById('p-loc').textContent='';document.getElementById('p-conn').textContent='';
+    }
+  } else if(n&&n.side==='center'||!n){
+    selId=null;
+  }
+});
+canvas.addEventListener('dblclick',e=>{
+  // Double-click to recenter
+  const rc=canvas.getBoundingClientRect();const n=nodeAt(e.clientX-rc.left,e.clientY-rc.top);
+  if(n&&n.side!=='center'){buildNodes(n.id);gPos=buildLayout(canvas.width,canvas.height);selId=null;}
+});
+canvas.addEventListener('mousemove',e=>{
+  const rc=canvas.getBoundingClientRect();const n=nodeAt(e.clientX-rc.left,e.clientY-rc.top);
+  hovId=n?n.id:null;canvas.style.cursor=hovId?'pointer':'default';
+  const tip=document.getElementById('tip');
+  if(n&&n.side!=='center'){tip.style.opacity='1';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';tip.textContent=`${n.full_name||n.label} · ${n.role} · ${n.location||''}`;}
+  else tip.style.opacity='0';
+});
+canvas.addEventListener('mouseleave',()=>{hovId=null;document.getElementById('tip').style.opacity='0';});
+
+// Wait for ecoSB to be ready before loading
+(function waitAndLoad() {
+  if (window.ecoSB) { load().catch(console.error).finally(()=>initFilterPanel(()=>{ if(typeof CENTER_ID!=="undefined"&&CENTER_ID) buildNodes(CENTER_ID); })); }
+  else { setTimeout(waitAndLoad, 50); }
+})();
+</script>
+<script>
+// ── ECO Relationship Filter Panel ─────────────────────────────
+// Shared by view-currents.html and view-pro.html
+// Call initFilterPanel(onChangeCallback) once after DOM ready.
+// onChangeCallback receives the current Set of HIDDEN relation types.
+
+const FILTER_GROUPS = {
+  'IMMEDIATE': ['Spouse','Partner','Parent','Child','BioParent','BioChild','StepParent','StepChild'],
+  'EXTENDED':  ['Sibling','HalfSibling','Grandparent','Grandchild','AuntUncle','NieceNephew','Cousin'],
+  'IN-LAWS':   ['FatherInLaw','MotherInLaw','BrotherInLaw','SisterInLaw','InLaw'],
+  'SOCIAL':    ['Friend']
+};
+
+const FILTER_LABELS = {
+  Spouse:'Spouse', Partner:'Partner', Parent:'Parent', Child:'Child',
+  BioParent:'Bio Parent', BioChild:'Bio Child',
+  StepParent:'Step Parent', StepChild:'Step Child',
+  Sibling:'Sibling', HalfSibling:'Half Sibling',
+  Grandparent:'Grandparent', Grandchild:'Grandchild',
+  AuntUncle:'Aunt / Uncle', NieceNephew:'Niece / Nephew', Cousin:'Cousin',
+  FatherInLaw:'Father-in-Law', MotherInLaw:'Mother-in-Law',
+  BrotherInLaw:'Brother-in-Law', SisterInLaw:'Sister-in-Law', InLaw:'In-Law',
+  Friend:'Friend'
+};
+
+const PRESETS = {
+  ALL:       null, // null = show everything
+  IMMEDIATE: ['Spouse','Partner','Parent','Child','BioParent','BioChild','StepParent','StepChild'],
+  EXTENDED:  ['Spouse','Partner','Parent','Child','BioParent','BioChild','StepParent','StepChild',
+               'Sibling','HalfSibling','Grandparent','Grandchild','AuntUncle','NieceNephew','Cousin'],
+  'IN-LAWS': ['FatherInLaw','MotherInLaw','BrotherInLaw','SisterInLaw','InLaw'],
+  FRIENDS:   ['Friend'],
+};
+
+let _hiddenRels = new Set();
+let _onFilterChange = null;
+let _activePreset = 'ALL';
+
+function initFilterPanel(onChangeCb) {
+  _onFilterChange = onChangeCb;
+  _injectStyles();
+  _buildPanel();
+  _bindNavButton();
+}
+
+function getHiddenRels() { return new Set(_hiddenRels); }
+
+function _applyPreset(name) {
+  _activePreset = name;
+  document.querySelectorAll('.fp-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+  const show = PRESETS[name];
+  _hiddenRels = new Set();
+  if (show !== null) {
+    // Hide everything NOT in the preset
+    Object.values(FILTER_GROUPS).flat().forEach(t => { if (!show.includes(t)) _hiddenRels.add(t); });
+  }
+  // Sync checkboxes
+  document.querySelectorAll('.fp-chk').forEach(cb => {
+    cb.checked = !_hiddenRels.has(cb.dataset.rel);
+  });
+  _updateBadge();
+  if (_onFilterChange) _onFilterChange(new Set(_hiddenRels));
+}
+
+function _toggleRel(type, checked) {
+  if (checked) _hiddenRels.delete(type); else _hiddenRels.add(type);
+  _activePreset = 'CUSTOM';
+  document.querySelectorAll('.fp-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === 'CUSTOM'));
+  _updateBadge();
+  if (_onFilterChange) _onFilterChange(new Set(_hiddenRels));
+}
+
+function _toggleGroup(groupName, checked) {
+  FILTER_GROUPS[groupName].forEach(t => {
+    if (checked) _hiddenRels.delete(t); else _hiddenRels.add(t);
+    const cb = document.querySelector(`.fp-chk[data-rel="${t}"]`);
+    if (cb) cb.checked = checked;
+  });
+  _activePreset = 'CUSTOM';
+  document.querySelectorAll('.fp-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === 'CUSTOM'));
+  _updateBadge();
+  if (_onFilterChange) _onFilterChange(new Set(_hiddenRels));
+}
+
+function _updateBadge() {
+  const all = Object.values(FILTER_GROUPS).flat().length;
+  const hidden = _hiddenRels.size;
+  const visible = all - hidden;
+  const btn = document.getElementById('fp-toggle-btn');
+  if (btn) btn.textContent = `Filter [${visible}/${all}]`;
+}
+
+function _buildPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'fp-panel';
+
+  let html = `<div class="fp-header"><span>FILTER RELATIONSHIPS</span><button class="fp-close" onclick="document.getElementById('fp-panel').classList.remove('open')">✕</button></div>`;
+
+  // Presets
+  html += `<div class="fp-section-title">PRESETS</div><div class="fp-presets">`;
+  ['ALL','IMMEDIATE','EXTENDED','IN-LAWS','FRIENDS','CUSTOM'].forEach(p => {
+    html += `<button class="fp-preset${p==='ALL'?' active':''}" data-preset="${p}" onclick="_applyPreset('${p}')">${p}</button>`;
+  });
+  html += `</div>`;
+
+  // Groups
+  Object.entries(FILTER_GROUPS).forEach(([group, types]) => {
+    html += `<div class="fp-group-header">
+      <span>${group}</span>
+      <label class="fp-group-toggle">
+        <input type="checkbox" checked onchange="_toggleGroup('${group}',this.checked)"> All
+      </label>
+    </div>`;
+    types.forEach(t => {
+      html += `<label class="fp-row">
+        <input type="checkbox" class="fp-chk" data-rel="${t}" checked onchange="_toggleRel('${t}',this.checked)">
+        <span>${FILTER_LABELS[t]||t}</span>
+      </label>`;
+    });
+  });
+
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
+}
+
+function _bindNavButton() {
+  // Wait for nav to exist
+  function tryBind() {
+    const nav = document.getElementById('nav') || document.getElementById('ui-nav');
+    if (!nav) { setTimeout(tryBind, 100); return; }
+    const btn = document.createElement('button');
+    btn.id = 'fp-toggle-btn';
+    btn.className = 'fp-nav-btn';
+    btn.textContent = 'Filter [21/21]';
+    btn.onclick = () => document.getElementById('fp-panel').classList.toggle('open');
+    // Insert before nav-r if exists, else append
+    const navR = nav.querySelector('.nav-r');
+    if (navR) nav.insertBefore(btn, navR); else nav.appendChild(btn);
+  }
+  tryBind();
+}
+
+function _injectStyles() {
+  const s = document.createElement('style');
+  s.textContent = `
+    #fp-panel {
+      position:fixed; top:60px; right:-300px; width:280px;
+      height:calc(100vh - 60px); background:#0a0f1a;
+      border-left:1px solid rgba(0,170,255,0.15);
+      z-index:8000; transition:right .25s ease;
+      display:flex; flex-direction:column;
+      font-family:Arial,Helvetica,sans-serif;
+      overflow-y:auto;
+    }
+    #fp-panel.open { right:0; }
+    .fp-header { display:flex; justify-content:space-between; align-items:center;
+      padding:12px 14px; border-bottom:1px solid rgba(0,170,255,0.1);
+      font-size:9px; font-weight:900; letter-spacing:.12em; color:#3A5A54;
+      font-family:'Arial Black',Arial,sans-serif; flex-shrink:0; }
+    .fp-close { background:none; border:none; color:#3A5A54; cursor:pointer;
+      font-size:14px; padding:0 4px; }
+    .fp-close:hover { color:#00AAFF; }
+    .fp-section-title { padding:10px 14px 4px;
+      font-size:8px; font-weight:900; letter-spacing:.14em;
+      color:#3A5A54; font-family:'Arial Black',Arial,sans-serif; flex-shrink:0; }
+    .fp-presets { display:flex; flex-wrap:wrap; gap:5px; padding:4px 14px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+    .fp-preset { padding:4px 10px; border:1px solid #2a3550;
+      background:rgba(255,255,255,.04); color:#6b7280; border-radius:4px;
+      cursor:pointer; font-size:9px; font-weight:700;
+      letter-spacing:.08em; font-family:'Arial Black',Arial,sans-serif;
+      transition:all .15s; }
+    .fp-preset.active { background:rgba(0,170,255,.18); border-color:#00AAFF; color:#00AAFF; }
+    .fp-group-header { display:flex; justify-content:space-between; align-items:center;
+      padding:10px 14px 4px;
+      font-size:8px; font-weight:900; letter-spacing:.14em;
+      color:#00CC44; font-family:'Arial Black',Arial,sans-serif; }
+    .fp-group-toggle { display:flex; align-items:center; gap:5px;
+      font-size:9px; color:#4a5568; cursor:pointer; font-weight:400; font-family:Arial,sans-serif; }
+    .fp-row { display:flex; align-items:center; gap:8px;
+      padding:5px 14px 5px 20px; cursor:pointer;
+      font-size:11px; color:#8899aa; transition:color .1s; }
+    .fp-row:hover { color:#e0e8ff; }
+    .fp-row input[type=checkbox] { accent-color:#00AAFF; width:13px; height:13px; flex-shrink:0; }
+    .fp-group-toggle input[type=checkbox] { accent-color:#00CC44; width:12px; height:12px; }
+    .fp-nav-btn { padding:4px 10px; border:1px solid #2a3550;
+      background:rgba(255,255,255,.04); color:#6b7280; border-radius:4px;
+      cursor:pointer; font-size:9px; font-weight:700;
+      letter-spacing:.08em; font-family:'Arial Black',Arial,sans-serif;
+      transition:all .15s; white-space:nowrap; }
+    .fp-nav-btn:hover { border-color:#00AAFF; color:#00AAFF; }
+  `;
+  document.head.appendChild(s);
+}
+
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

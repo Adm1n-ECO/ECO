@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EternalCurrent — River View</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="eco-client.js"></script>
+<script>
+// ── AUTH GUARD ───────────────────────────────────────
+// Auth guard — patient 2s wait before redirecting (ecoAuthGuard in eco-client.js)
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+
+.nav{background:#0D1820;border-bottom:1px solid rgba(0,170,255,.10);height:52px;display:flex;align-items:center;padding:0 16px;gap:10px;position:sticky;top:0;z-index:300;}
+.nav-wordmark{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1rem;letter-spacing:.06em;text-decoration:none;}
+.nav-e{color:#00AAFF;}.nav-c{color:#00CC44;}.nav-o{color:#FFF;}
+.nav-sep{width:1px;height:20px;background:rgba(0,170,255,.10);margin:0 4px;}
+.nav-link{font-size:12px;color:#7ABDB5;text-decoration:none;padding:4px 8px;border-radius:6px;}
+.nav-link:hover{color:#00AAFF;}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.nav-badge{background:rgba(0,170,255,.10);border:1px solid rgba(0,170,255,.18);color:#7ABDB5;font-size: 12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:999px;}
+
+/* River wrapper */
+.river-outer{overflow-y:auto;overflow-x:hidden;}
+.river-wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px;position:relative;}
+
+/* Flow animation */
+@keyframes flow{0%{stroke-dashoffset:100}100%{stroke-dashoffset:0}}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+
+/* SVG river */
+#riverSVG{width:100%;height:auto;display:block;}
+
+.flow-line{stroke-dasharray:12 6;animation:flow 4s linear infinite;}
+.flow-slow{stroke-dasharray:10 8;animation:flow 6s linear infinite;}
+.source-glow{animation:pulse 2.5s ease-in-out infinite;}
+
+/* Node islands */
+.node-island{fill:rgba(0,170,255,.12);stroke:rgba(0,170,255,.60);stroke-width:1;}
+.node-island:hover{fill:rgba(0,170,255,.22);cursor:pointer;}
+.node-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;fill:#E8F4F0;text-anchor:middle;pointer-events:none;}
+.node-years{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#8ECEC8;text-anchor:middle;pointer-events:none;}
+.gen-label{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;fill:#7ABDB5;letter-spacing:.10em;text-transform:uppercase;}
+.confluence-ring{fill:none;stroke:rgba(0,204,68,.70);stroke-width:1.2;stroke-dasharray:3 2;}
+
+/* Tooltip */
+.tip{position:fixed;background:#0D1820;border:1px solid rgba(0,170,255,.20);border-radius:8px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:500;min-width:160px;}
+.tip.show{opacity:1;}
+.tip-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;color:#E8F4F0;margin-bottom:2px;}
+.tip-info{font-size: 12px;color:#8ECEC8;}
+
+/* Info bar */
+.info-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;background:rgba(0,170,255,.05);border-top:1px solid rgba(0,170,255,.12);border-bottom:1px solid rgba(0,170,255,.12);margin-top:8px;}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(0,170,255,.55);align-self:center;margin-right:4px;}
+.filter-chip{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid rgba(0,170,255,.25);background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;font-family:Arial,sans-serif;}
+.filter-chip.active{background:rgba(0,170,255,.18);border-color:#00AAFF;color:#fff;}
+.filter-sep{width:1px;background:rgba(255,255,255,.08);margin:0 4px;}
+.ic{background:#0D1820;border:1px solid rgba(0,170,255,.10);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;}
+.ic-label{font-size: 12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#7ABDB5;margin-bottom:6px;}
+.ic-value{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:1.3rem;color:#00AAFF;}
+.ic-sub{font-size: 12px;color:#7ABDB5;margin-top:3px;}
+
+.footer-tag{text-align:center;padding:32px 0 16px;font-size: 12px;color:#7ABDB5;font-style:italic;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+
+
+<div class="river-outer">
+<div class="river-wrap">
+
+  <svg id="riverSVG" viewBox="0 0 900 1200" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- River banks -->
+    <path d="M0,0 L90,0 Q75,80 88,160 Q70,280 82,400 Q65,540 78,660 Q60,780 75,900 Q58,1020 72,1100 L0,1100 Z" fill="rgba(0,170,255,.08)" opacity=".7"/>
+    <path d="M900,0 L810,0 Q828,80 815,160 Q832,280 817,400 Q835,540 820,660 Q838,780 822,900 Q840,1020 824,1100 L900,1100 Z" fill="rgba(0,170,255,.08)" opacity=".7"/>
+
+    <!-- Main current lines (animated) -->
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.30)" stroke-width="3" d="M390,60 Q400,200 395,380 Q390,560 400,740 Q405,880 395,1020"/>
+    <path class="flow-slow" fill="none" stroke="rgba(0,170,255,.20)" stroke-width="2" d="M450,60 Q462,200 456,380 Q451,560 461,740 Q466,880 456,1020"/>
+    <path class="flow-slow" fill="none" stroke="rgba(0,204,68,.40)" stroke-width="2" d="M340,60 Q350,200 346,380 Q342,560 350,740 Q354,880 346,1020" style="animation-delay:-2s"/>
+
+    <!-- ── GEN I: SOURCES ── -->
+    <text class="gen-label" x="130" y="60">Gen I · Sources</text>
+
+    <!-- Left source (paternal) -->
+    <circle cx="280" cy="90" r="26" fill="rgba(0,170,255,.15)" stroke="rgba(0,170,255,.60)" stroke-width="1.5"/>
+    <circle cx="280" cy="90" r="18" class="source-glow" fill="rgba(0,170,255,.22)" stroke="rgba(0,170,255,.45)" stroke-width="1" style="animation-delay:0s"/>
+    <circle cx="280" cy="90" r="6" fill="rgba(0,170,255,.90)"/>
+    <text x="280" y="130" class="gen-label" text-anchor="middle" style="font-size:9px;fill:rgba(0,170,255,.75);" id="src-left-label">paternal</text>
+
+    <!-- Right source (maternal) -->
+    <circle cx="620" cy="90" r="26" fill="rgba(0,204,68,.15)" stroke="rgba(0,204,68,.60)" stroke-width="1.5"/>
+    <circle cx="620" cy="90" r="18" class="source-glow" fill="rgba(0,204,68,.22)" stroke="rgba(0,204,68,.45)" stroke-width="1" style="animation-delay:1.25s"/>
+    <circle cx="620" cy="90" r="6" fill="rgba(0,204,68,.90)"/>
+    <text x="620" y="130" class="gen-label" text-anchor="middle" style="font-size:9px;fill:rgba(0,204,68,.75);" id="src-right-label">maternal</text>
+
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.45)" stroke-width="5" d="M280,102 Q310,160 340,200"/>
+    <path class="flow-line" fill="none" stroke="rgba(0,204,68,.45)" stroke-width="5" d="M620,102 Q590,160 560,200" style="animation-delay:-.8s"/>
+
+    <!-- ── GEN II ── -->
+    <text class="gen-label" x="130" y="200">Gen II</text>
+    <g id="gen2-nodes"></g>
+
+    <!-- ── GEN III ── -->
+    <text class="gen-label" x="130" y="430">Gen III</text>
+    <g id="gen3-nodes"></g>
+    <!-- Confluence marker at centre -->
+    <circle cx="450" cy="480" r="28" fill="rgba(0,204,68,.12)" stroke="rgba(0,204,68,.55)" stroke-width="1" stroke-dasharray="4 2"/>
+    <text x="450" y="484" text-anchor="middle" dominant-baseline="central" style="font-size:8px;fill:rgba(0,204,68,.80);font-style:italic;">confluence</text>
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.40)" stroke-width="8" d="M340,222 Q370,330 410,460" style="animation-delay:-1s"/>
+    <path class="flow-line" fill="none" stroke="rgba(0,204,68,.40)" stroke-width="8" d="M560,222 Q530,330 490,460" style="animation-delay:-2s"/>
+
+    <!-- ── GEN IV ── -->
+    <text class="gen-label" x="130" y="640">Gen IV</text>
+    <g id="gen4-nodes"></g>
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.35)" stroke-width="6" d="M450,508 Q430,570 390,650" style="animation-delay:-.5s"/>
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.35)" stroke-width="6" d="M450,508 Q468,570 510,650" style="animation-delay:-1.5s"/>
+
+    <!-- ── GEN V: LIVING DELTA ── -->
+    <text class="gen-label" x="130" y="860">Gen V · Living delta</text>
+    <g id="gen5-nodes"></g>
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.28)" stroke-width="5" d="M390,680 Q360,750 300,850" style="animation-delay:-2.2s"/>
+    <path class="flow-line" fill="none" stroke="rgba(0,170,255,.28)" stroke-width="5" d="M510,680 Q540,750 600,850" style="animation-delay:-.3s"/>
+    <path class="flow-line" fill="none" stroke="rgba(0,204,68,.25)" stroke-width="4" d="M450,680 Q455,760 450,855" style="animation-delay:-1.1s"/>
+
+    <!-- Delta mouth -->
+    <path fill="none" stroke="rgba(0,170,255,.25)" stroke-width="16" d="M380,920 Q390,980 400,1040"/>
+    <path fill="none" stroke="rgba(0,170,255,.20)" stroke-width="10" d="M380,920 Q340,980 290,1060"/>
+    <path fill="none" stroke="rgba(0,204,68,.18)" stroke-width="10" d="M400,920 Q440,980 510,1060"/>
+    <text x="450" y="1100" text-anchor="middle" class="gen-label" style="font-size:10px;fill:rgba(0,170,255,.50);">every current carries what came before</text>
+
+  </svg>
+
+  <!-- Info bar (populated by JS) -->
+  <!-- Filter bar (populated by JS) -->
+  <div class="filter-bar" id="filter-bar" style="display:none;">
+    <span class="filter-label">Filter</span>
+    <div id="filter-gen-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    <div class="filter-sep"></div>
+    <div id="filter-origin-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+
+  <div class="info-bar" id="info-bar">
+    <div class="ic"><div class="ic-label">Members</div><div class="ic-value" id="ic-members">–</div><div class="ic-sub">across the network</div></div>
+    <div class="ic"><div class="ic-label">Generations</div><div class="ic-value" id="ic-gens">–</div><div class="ic-sub">visible layers</div></div>
+    <div class="ic"><div class="ic-label">Locations</div><div class="ic-value" id="ic-locs">–</div><div class="ic-sub">countries</div></div>
+    <div class="ic"><div class="ic-label">Languages</div><div class="ic-value">13</div><div class="ic-sub">cultural roots</div></div>
+  </div>
+
+  <div class="footer-tag">"Only energy — Compounding, Communicating, Conjoining." — EternalCurrent.Online</div>
+
+</div>
+</div>
+
+<div class="tip" id="tip">
+  <div class="tip-name" id="tip-name">–</div>
+  <div class="tip-info" id="tip-info">–</div>
+</div>
+
+<script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
+  return el;
+}
+
+function nodeIsland(cx, cy, name, years, color, onHover, onLeave, imgEl) {
+  const g = svgEl('g', {class:'node-group', style:'cursor:pointer'});
+  const ell = svgEl('ellipse', {cx, cy, rx:62, ry:20, class:'node-island', style:`stroke:${color};`});
+  ell.addEventListener('mouseenter', onHover);
+  ell.addEventListener('mouseleave', onLeave);
+  const t1 = svgEl('text', {x:cx, y:cy-4, class:'node-name'}); t1.textContent = name;
+  const t2 = svgEl('text', {x:cx, y:cy+9, class:'node-years'}); t2.textContent = years;
+  const dot = svgEl('circle', {cx, cy, r:3, fill:color, opacity:.7});
+  g.append(ell, t1, t2, dot);
+
+  // Photo avatar — circular clip to left of ellipse
+  if (imgEl) {
+    const clipId = 'clip-' + Math.random().toString(36).slice(2,7);
+    const defs = svgEl('defs', {});
+    const cp   = svgEl('clipPath', {id: clipId});
+    cp.appendChild(svgEl('circle', {cx: cx-52, cy, r:13}));
+    defs.appendChild(cp);
+    g.insertBefore(defs, g.firstChild);
+
+    const imgSvg = svgEl('image', {
+      href: imgEl.src,
+      x: cx-65, y: cy-13,
+      width: 26, height: 26,
+      preserveAspectRatio: 'xMidYMid slice',
+      'clip-path': `url(#${clipId})`
+    });
+    const ring = svgEl('circle', {cx: cx-52, cy, r:13, fill:'none', stroke:'rgba(255,255,255,.45)', 'stroke-width':'1'});
+    g.append(imgSvg, ring);
+  }
+  return g;
+}
+
+const sb = window.ecoSB;  // shared client from eco-client.js
+
+async function load() {
+  const { data: members } = await sb.from('users')
+    .select('user_id,full_name,current_location,birth_mm_yyyy,status,photo_id,cultural_origin')
+    .limit(200);
+
+  if (!members || !members.length) return;
+
+  // Load profile photos
+  const photoIds = members.map(m=>m.photo_id).filter(Boolean);
+  const riverImgCache = {};
+  if (photoIds.length) {
+    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
+    const photoMap = {};
+    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
+    members.forEach(m => {
+      if (m.photo_id && photoMap[m.photo_id]) {
+        m._photoUrl = photoMap[m.photo_id];
+        const img = new Image(); img.src = m._photoUrl;
+        riverImgCache[m.user_id] = img;
+      }
+    });
+  }
+
+  // Parse year from "MM/YYYY" string
+  const getYear = mmyyyy => {
+    if (!mmyyyy) return null;
+    const parts = String(mmyyyy).split('/');
+    return parts.length === 2 ? parseInt(parts[1]) : parseInt(mmyyyy) || null;
+  };
+
+  // Group into generations by birth year
+  const withYear = members.filter(m => getYear(m.birth_mm_yyyy));
+  const noYear   = members.filter(m => !getYear(m.birth_mm_yyyy));
+
+  // Find year range and split into 5 buckets
+  const years = withYear.map(m => getYear(m.birth_mm_yyyy));
+  const minY = Math.min(...years);
+  const maxY = Math.max(...years);
+  const range = maxY - minY || 1;
+  const bucketSize = Math.ceil(range / 4);
+
+  const gens = [[], [], [], [], []];
+  withYear.forEach(m => {
+    const y = getYear(m.birth_mm_yyyy);
+    const idx = Math.min(4, Math.floor((y - minY) / bucketSize));
+    gens[idx].push(m);
+  });
+  // Put no-year members in middle gen
+  noYear.forEach(m => gens[2].push(m));
+
+  // Y positions for each gen
+  const genY = [210, 440, 650, 850, 1000];
+  const colors = ['rgba(0,170,255,.35)','rgba(0,204,68,.35)','rgba(0,170,255,.35)','rgba(0,204,68,.35)','rgba(144,96,224,.35)'];
+  const genIds = ['gen2-nodes','gen3-nodes','gen4-nodes','gen5-nodes','gen5-nodes'];
+
+  // Update source labels
+  const leftSrc  = gens[0][0];
+  const rightSrc = gens[0][Math.floor((gens[0].length-1)/2)] || gens[0][0];
+  if (leftSrc)  document.getElementById('src-left-label').textContent  = (leftSrc.full_name||'').split(' ').pop() || 'paternal';
+  if (rightSrc) document.getElementById('src-right-label').textContent = (rightSrc.full_name||'').split(' ').pop() || 'maternal';
+
+  // Render gen II (positions around y=210)
+  const gen2Container = document.getElementById('gen2-nodes');
+  // Store members + gen assignments for filter re-render
+  const memberGenMap = {};
+  gens.forEach((g,i) => g.forEach(m => { memberGenMap[m.user_id] = i; }));
+  const allMembers = members; // keep ref
+
+  const positionRow = (container, memberList, baseY, color) => {
+    const total = memberList.length;
+    const xStart = 160, xEnd = 740;
+    const step = total > 1 ? (xEnd - xStart) / (total - 1) : 0;
+    memberList.slice(0, 10).forEach((m, i) => {
+      const cx = total === 1 ? 450 : xStart + i * step;
+      const cy = baseY + (i % 2 === 0 ? 0 : 18);
+      const name = (m.full_name||'Unknown').split(' ').slice(0,2).join(' ');
+      const years = m.birth_mm_yyyy ? 'b.' + m.birth_mm_yyyy : '';
+      const loc = m.current_location;
+      const g = nodeIsland(cx, cy, name, years, color,
+        (e) => showTip(e, m.full_name||'Unknown', years + (loc ? ' · ' + loc : '')),
+        hideTip,
+        riverImgCache[m.user_id] || null
+      );
+      g.setAttribute('data-uid', m.user_id);
+      container.appendChild(g);
+    });
+  };
+
+  const genContainers = [gen2Container, document.getElementById('gen3-nodes'), document.getElementById('gen4-nodes'), document.getElementById('gen5-nodes')];
+  genContainers.forEach((el, i) => {
+    if (gens[i] && gens[i].length) positionRow(el, gens[i], genY[i], colors[i]);
+  });
+
+  // Stats
+  const locs = new Set(members.map(m => m.current_location).filter(Boolean));
+  const genCount = gens.filter(g=>g.length>0).length;
+  document.getElementById('ic-members').textContent = members.length;
+  document.getElementById('ic-gens').textContent    = genCount;
+  document.getElementById('ic-locs').textContent    = locs.size;
+
+  // ── Filter bar ─────────────────────────────────────────────
+  const genLabels = ['Eldest', 'Second', 'Third', 'Fourth', 'Youngest'];
+  const activeGens    = new Set();
+  const activeOrigins = new Set();
+
+  function applyFilters() {
+    const noGenFilter    = activeGens.size === 0;
+    const noOriginFilter = activeOrigins.size === 0;
+    document.querySelectorAll('[data-uid]').forEach(node => {
+      const uid = node.getAttribute('data-uid');
+      const m   = allMembers.find(x => x.user_id === uid);
+      if (!m) return;
+      const genMatch    = noGenFilter    || activeGens.has(memberGenMap[uid]);
+      const originMatch = noOriginFilter || activeOrigins.has(m.cultural_origin);
+      node.style.opacity = (genMatch && originMatch) ? '1' : '0.08';
+    });
+  }
+
+  function buildChip(label, onClick, isActive) {
+    const c = document.createElement('button');
+    c.className = 'filter-chip' + (isActive ? ' active' : '');
+    c.textContent = label;
+    c.addEventListener('click', onClick);
+    return c;
+  }
+
+  const genWrap    = document.getElementById('filter-gen-chips');
+  const originWrap = document.getElementById('filter-origin-chips');
+
+  gens.forEach((g, i) => {
+    if (!g.length) return;
+    genWrap.appendChild(buildChip(genLabels[i] || `Gen ${i+1}`, function() {
+      if (activeGens.has(i)) { activeGens.delete(i); this.classList.remove('active'); }
+      else                    { activeGens.add(i);    this.classList.add('active'); }
+      applyFilters();
+    }, false));
+  });
+
+  const origins = [...new Set(members.map(m=>m.cultural_origin).filter(Boolean))].sort();
+  origins.forEach(o => {
+    originWrap.appendChild(buildChip(o, function() {
+      if (activeOrigins.has(o)) { activeOrigins.delete(o); this.classList.remove('active'); }
+      else                       { activeOrigins.add(o);   this.classList.add('active'); }
+      applyFilters();
+    }, false));
+  });
+
+  if (gens.some(g=>g.length) || origins.length) {
+    document.getElementById('filter-bar').style.display = 'flex';
+  }
+}
+
+let tipTimeout;
+function showTip(e, name, info) {
+  clearTimeout(tipTimeout);
+  const tip = document.getElementById('tip');
+  document.getElementById('tip-name').textContent = name;
+  document.getElementById('tip-info').textContent = info;
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY - 10) + 'px';
+  tip.classList.add('show');
+}
+function hideTip() {
+  tipTimeout = setTimeout(() => document.getElementById('tip').classList.remove('show'), 120);
+}
+
+(function waitAndLoad() {
+  if (typeof ecoAuthGuard === 'function') {
+    ecoAuthGuard(() => load().catch(console.error));
+    return;
+  }
+  if (!window.ecoSB) { setTimeout(waitAndLoad, 50); return; }
+  window.ecoSB.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      load().catch(console.error);
+    } else {
+      window.ecoSB.auth.onAuthStateChange((_event, s) => {
+        if (s) load().catch(console.error);
+      });
+      // Redirect after 2s if still no session
+      setTimeout(async () => {
+        const { data: { session: s } } = await window.ecoSB.auth.getSession();
+        if (!s) window.location.href = 'enter.html?next=visual-river.html';
+      }, 2000);
+    }
+  }).catch(() => load().catch(console.error));
+})();
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>
