@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+  <meta charset="UTF-8">
+<link rel="stylesheet" href="theme.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECO · Member Profile</title>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="eco-client.js"></script>
+  <script>
+  (function waitForGuard() {
+    if (typeof ecoAuthGuard === 'function') {
+      ecoAuthGuard(function() {}); // session confirmed — page continues
+      return;
+    }
+    // ecoAuthGuard not loaded yet — wait for it
+    if (!window.ecoSB) { setTimeout(waitForGuard, 50); return; }
+    let a = 0;
+    (function check() {
+      window.ecoSB.auth.getSession().then(({ data: { session } }) => {
+        if (session) return; // good
+        if (a++ < 40) setTimeout(check, 50);
+        else window.location.href = 'enter.html?next=member.html' + window.location.search;
+      });
+    })();
+  })();
+  </script>
+  <style>
+    :root{
+  --blue:   var(--color-accent-c);
+  --green:  var(--color-accent-g);
+  --bg:     var(--color-bg);
+  --bg2:    var(--color-surface);
+  --white:  var(--color-text);
+  --dim:    var(--color-text-dim);
+  --border: var(--color-border);
+}
+body{background:var(--color-bg);color:var(--color-text);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+    .shell{max-width:860px;margin:0 auto;padding:80px 24px 60px;}
+
+    /* HERO */
+    .hero-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px;display:flex;gap:28px;align-items:flex-start;margin-bottom:20px;position:relative;overflow:hidden;}
+    .hero-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--green));}
+    .avatar-ring{flex-shrink:0;width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;color:var(--bg);}
+    .hero-info{flex:1;min-width:0;}
+    .hero-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;line-height:1.1;margin-bottom:6px;}
+    .hero-role{font-size:13px;color:var(--blue);margin-bottom:12px;font-weight:600;}
+    .hero-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+    .tag{background:rgba(0,170,255,0.08);border:1px solid rgba(0,170,255,0.2);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--blue);}
+    .tag.green{background:rgba(0,204,68,0.08);border-color:rgba(0,204,68,0.2);color:var(--green);}
+    .tag.dim{background:rgba(255,255,255,0.04);border-color:var(--dim2);color:var(--dim);}
+    .hero-bio{font-size:14px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.6;}
+    .nudge{font-size:12px;color:rgba(0,170,255,0.5);font-style:italic;padding:4px 0;}
+    .passed-note{margin-top:12px;font-size:12px;color:var(--color-text-dim);font-style:italic;}
+    .me-inp{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;margin-bottom:8px;box-sizing:border-box;}
+    .me-inp:focus{border-color:rgba(0,170,255,.5);}
+    textarea.me-inp{resize:vertical;min-height:72px;}
+
+    /* SECTIONS */
+    .section{margin-bottom:20px;}
+    .sec-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;}
+
+    /* YOUR CONNECTION */
+    .conn-section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+    .conn-section-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+    .rel-existing{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .rel-existing-text{font-size:15px;color:var(--white);font-weight:600;}
+    .rel-existing-text span{color:var(--blue);}
+    .rel-edit-btn{background:rgba(0,170,255,0.08);border:1px solid rgba(0,170,255,0.2);color:var(--blue);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;transition:background .15s;white-space:nowrap;flex-shrink:0;}
+    .rel-edit-btn:hover{background:rgba(0,170,255,0.18);}
+    .rel-prompt{font-size:14px;color:var(--color-text-dim);margin-bottom:16px;}
+    .rel-group{margin-bottom:14px;}
+    .rel-group-label{font-size: 12px;font-weight:700;letter-spacing:.1em;color:var(--color-text-dim);text-transform:uppercase;margin-bottom:8px;}
+    .rel-pills{display:flex;flex-wrap:wrap;gap:8px;}
+    .rel-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--color-text-mid,var(--color-text-dim));font-size:13px;padding:7px 16px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;}
+    .rel-pill:hover{border-color:rgba(0,170,255,0.35);color:var(--white);background:rgba(0,170,255,0.06);}
+    .rel-pill.selected{background:rgba(0,170,255,0.15);border-color:var(--blue);color:var(--blue);font-weight:600;}
+    .rel-edit-actions{display:flex;gap:10px;margin-top:16px;align-items:center;}
+    .rel-save-btn{background:var(--blue);color:var(--bg);font-size:13px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;transition:background .15s;opacity:0.4;pointer-events:none;}
+    .rel-save-btn.ready{opacity:1;pointer-events:auto;}
+    .rel-save-btn.ready:hover{background:#33BBFF;}
+    .rel-cancel-btn{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:9px 4px;}
+    .rel-cancel-btn:hover{color:var(--white);}
+    .rel-delete-btn{margin-left:auto;background:none;border:none;color:rgba(255,80,80,0.6);font-size:12px;cursor:pointer;padding:9px 4px;}
+    .rel-delete-btn:hover{color:#ff5050;}
+
+    /* AI SUMMARY */
+    .ai-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+    .ai-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .ai-card-icon{font-size:18px;}
+    .ai-card-title{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;}
+    .ai-placeholder{font-size:13px;color:var(--color-text-dim);font-style:italic;line-height:1.6;}
+    .ai-placeholder span{color:rgba(0,170,255,0.4);font-style:normal;font-size: 12px;}
+
+    /* DETAILS */
+    .info-grid{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .info-row{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);}
+    .info-row:last-child{border-bottom:none;}
+    .info-key{font-size:12px;color:var(--dim);width:130px;flex-shrink:0;}
+    .info-val{font-size:14px;color:var(--color-text);flex:1;}
+    .info-val.empty{color:var(--dim2);font-style:italic;}
+
+    /* CONTENT PLACEHOLDER */
+    .content-ph{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;opacity:0.6;}
+    .content-ph-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .content-ph-title{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;}
+    .content-ph-text{font-size:13px;color:var(--color-text-dim);font-style:italic;line-height:1.6;}
+
+    /* FAMILY NOTES */
+    .notes-section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+    .notes-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+    .note-input-row{display:flex;gap:8px;margin-bottom:16px;align-items:flex-end;}
+    .note-input{flex:1;background:#080D14;border:1px solid rgba(0,170,255,.18);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--white);outline:none;resize:none;min-height:60px;font-family:Arial,sans-serif;transition:border-color .15s;}
+    .note-input:focus{border-color:rgba(0,170,255,.4);}
+    .note-post-btn{background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);color:var(--blue);font-size:12px;font-weight:700;padding:10px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s;}
+    .note-post-btn:hover{background:rgba(0,170,255,.22);}
+    .note-card{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+    .note-card:last-child{border-bottom:none;}
+    .note-meta{font-size: 12px;color:var(--color-text-dim);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;}
+    .note-author{color:rgba(0,170,255,.6);}
+    .note-text{font-size:13px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.65;}
+    .note-delete{background:none;border:none;color:rgba(255,80,80,.4);font-size: 12px;cursor:pointer;padding:0 4px;}
+    .note-delete:hover{color:#ff5050;}
+    .notes-empty{font-size:12px;color:var(--color-text-dim);font-style:italic;padding:8px 0;}
+
+    /* CONNECTIONS GRID */
+    .connections-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+    .conn-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .2s,background .2s;}
+    .conn-card:hover{border-color:rgba(0,170,255,0.35);background:var(--bg3);}
+    .conn-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--green));display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Arial,sans-serif;font-size:12px;font-weight:900;color:var(--bg);flex-shrink:0;}
+    .conn-info{min-width:0;}
+    .conn-name{font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .conn-rel{font-size: 12px;color:var(--blue);margin-top:2px;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,0.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
+    .toast.show{opacity:1;}
+    .toast.green{border-color:rgba(0,204,68,0.4);color:var(--green);}
+    .toast.red{border-color:rgba(255,80,80,0.4);color:#ff7070;}
+
+    /* STATE */
+    .state-msg{text-align:center;padding:80px 20px;color:var(--dim);font-size:14px;}
+    .state-msg .big{font-size:32px;margin-bottom:12px;}
+
+    /* CONTRIBUTION ROLES */
+    .contrib-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:20px;}
+    .contrib-label{font-size: 12px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+    .contrib-existing{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+    .contrib-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;letter-spacing:.05em;}
+    .contrib-nom-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+    .contrib-nom-row:last-child{border-bottom:none;}
+    .contrib-nom-role{font-size:13px;color:var(--white);font-weight:600;}
+    .contrib-nom-by{font-size: 12px;color:var(--dim);}
+    .contrib-nom-bar{height:4px;background:rgba(255,255,255,.06);border-radius:4px;flex:1;margin:0 12px;overflow:hidden;}
+    .contrib-nom-fill{height:100%;background:#00AAFF;border-radius:4px;transition:width .4s;}
+    .contrib-validate-btn{padding:5px 12px;border-radius:16px;border:1px solid rgba(0,204,68,.3);background:rgba(0,204,68,.07);color:#00CC44;font-size: 12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .contrib-validate-btn:hover{background:rgba(0,204,68,.18);}
+    .contrib-validate-btn:disabled{opacity:.35;cursor:not-allowed;}
+    .contrib-nominate-row{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
+    .contrib-nom-pill{padding:6px 14px;border-radius:20px;border:1px solid rgba(0,170,255,.2);background:rgba(0,170,255,.05);color:rgba(0,170,255,.7);font-size: 12px;cursor:pointer;transition:all .15s;}
+    .contrib-nom-pill:hover{border-color:var(--blue);color:var(--blue);background:rgba(0,170,255,.12);}
+  </style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="shell" id="shell">
+  <div class="state-msg" id="loading-msg"><div class="big">⚡</div>Loading profile…</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.ecoSB;
+const params = new URLSearchParams(window.location.search);
+const TARGET_ID = params.get('id');
+
+let _me = null, _myRel = null, _targetFirst = '';
+let _selectedType = null;
+
+if (!TARGET_ID) {
+  document.getElementById('loading-msg').innerHTML =
+    '<div class="big">🔍</div>No member specified. <a href="user.html" style="color:var(--blue);">Go back.</a>';
+} else {
+  (function waitForAuth() {
+    if (!window.ecoSB) { setTimeout(waitForAuth, 50); return; }
+    window.ecoSB.auth.getSession().then(({ data: { session } }) => {
+      if (session) loadAll(session);
+      else window.ecoSB.auth.onAuthStateChange((_e, s) => { if (s) loadAll(s); });
+    }).catch(() => {});
+  })();
+}
+
+// ── RELATION TYPE CONFIG ─────────────────────────────────────────────────────
+const REL_GROUPS = [
+  { label:'Direct Family',    types:['Parent','Child','Sibling','Spouse','Partner'] },
+  { label:'Extended',         types:['Grandparent','Grandchild','AuntUncle','NieceNephew','Cousin','HalfSibling'] },
+  { label:'In-Law',           types:['FatherInLaw','MotherInLaw','BrotherInLaw','SisterInLaw','SonInLaw','DaughterInLaw','InLaw'] },
+  { label:'Biological / Step',types:['BioParent','BioChild','StepParent','StepChild'] },
+  { label:'Other',            types:['Friend'] },
+];
+const REL_LABELS = {
+  Parent:'Parent', Child:'Child', Sibling:'Sibling', Spouse:'Spouse', Partner:'Partner',
+  Grandparent:'Grandparent', Grandchild:'Grandchild',
+  AuntUncle:'Aunt / Uncle', NieceNephew:'Niece / Nephew', Cousin:'Cousin', HalfSibling:'Half Sibling',
+  FatherInLaw:'Father-in-Law', MotherInLaw:'Mother-in-Law',
+  BrotherInLaw:'Brother-in-Law', SisterInLaw:'Sister-in-Law',
+  SonInLaw:'Son-in-Law', DaughterInLaw:'Daughter-in-Law', InLaw:'In-Law',
+  BioParent:'Bio Parent', BioChild:'Bio Child', StepParent:'Step Parent', StepChild:'Step Child',
+  Friend:'Friend',
+};
+
+// ── LOAD ALL DATA ────────────────────────────────────────────────────────────
+async function loadAll(session) {
+  const { data: me } = await sb.from('users')
+    .select('user_id,full_name,platform_role,household_id').eq('auth_id', session.user.id).maybeSingle();
+  _me = me;
+
+  const { data: m, error } = await sb.from('users')
+    .select('user_id,full_name,status,family_role,birth_mm_yyyy,birth_location,current_location,cultural_origin,languages_spoken,household_id,visible_to,created_at,photo_id,bio').eq('user_id', TARGET_ID).maybeSingle();
+  if (error || !m) {
+    document.getElementById('loading-msg').innerHTML =
+      '<div class="big">👤</div>Member not found. <a href="user.html" style="color:var(--blue);">Go back.</a>';
+    return;
+  }
+  _targetFirst = (m.full_name || '').split(' ')[0] || 'them';
+
+  const { data: rels } = await sb.from('relationships')
+    .select('subject_id,target_id,relation_type')
+    .or(`subject_id.eq.${TARGET_ID},target_id.eq.${TARGET_ID}`).limit(40);
+
+  if (_me && _me.user_id !== TARGET_ID) {
+    const { data: myRel } = await sb.from('relationships').select('*')
+      .or(`and(subject_id.eq.${_me.user_id},target_id.eq.${TARGET_ID}),and(subject_id.eq.${TARGET_ID},target_id.eq.${_me.user_id})`)
+        .select('subject_id,target_id,relation_type,source,tie_strength,cultural_tag')
+      .eq('source','manual').maybeSingle();
+    _myRel = myRel || null;
+  }
+
+  const relatedIds = [...new Set((rels||[]).map(r =>
+    r.subject_id === TARGET_ID ? r.target_id : r.subject_id
+  ))].filter(id => id !== TARGET_ID);
+
+  let related = [];
+  if (relatedIds.length) {
+    const { data: rm } = await sb.from('users')
+      .select('user_id,full_name,status,family_role').in('user_id', relatedIds.slice(0,20));
+    related = rm || [];
+  }
+
+  const relMap = {};
+  (rels||[]).forEach(r => {
+    const oid = r.subject_id === TARGET_ID ? r.target_id : r.subject_id;
+    if (!relMap[oid]) relMap[oid] = [];
+    let lbl = r.relation_type;
+    if (r.target_id === TARGET_ID) {
+      if (lbl === 'Parent') lbl = 'Child';
+      else if (lbl === 'Child') lbl = 'Parent';
+    }
+    relMap[oid].push(lbl);
+  });
+
+  renderPage(m, related, relMap);
+  loadNotes();
+  if (_me) loadContribRoles(TARGET_ID, _me.user_id);
+  loadPets(TARGET_ID);
+}
+
+// ── FAMILY NOTES ─────────────────────────────────────────────────────────────
+async function loadNotes() {
+  const { data: notes } = await sb.from('family_notes')
+    .select('*').eq('about_member_id', TARGET_ID)
+    .order('created_at', { ascending: false }).limit(30);
+  renderNotes(notes || []);
+}
+
+function renderNotes(notes) {
+  const el = document.getElementById('notes-list');
+  if (!el) return;
+  if (!notes.length) {
+    el.innerHTML = `<div class="notes-empty">No notes yet — be the first to add something about ${_targetFirst}.</div>`;
+    return;
+  }
+  const ago = d => { const n=Math.floor((Date.now()-new Date(d))/86400000); return n===0?'Today':n===1?'Yesterday':n+'d ago'; };
+  el.innerHTML = notes.map(n => `
+    <div class="note-card" id="note-${n.id}">
+      <div class="note-meta">
+        <span><span class="note-author">${n.added_by_name||'Network member'}</span> · ${ago(n.created_at)}</span>
+        ${_me && _me.user_id === n.added_by
+          ? `<button class="note-delete" onclick="window.ecoDeleteNote('${n.id}')">Remove</button>`
+          : ''}
+      </div>
+      <div class="note-text">${n.note_text}</div>
+    </div>`).join('');
+}
+
+window.ecoPostNote = async function() {
+  const input = document.getElementById('note-input');
+  const text = (input?.value || '').trim();
+  if (!text || !_me) return;
+  const btn = document.querySelector('.note-post-btn');
+  if (btn) { btn.textContent = 'Saving…'; btn.style.opacity = '.5'; }
+  const { error } = await sb.from('family_notes').insert({
+    network_id: 'lightning-001',
+    about_member_id: TARGET_ID,
+    added_by: _me.user_id,
+    added_by_name: _me.full_name || 'Network member',
+    note_text: text,
+    is_public: true,
+  });
+  if (!error) {
+    if (input) input.value = '';
+    showToast('Note saved', 'green');
+    await loadNotes();
+  } else {
+    showToast('Could not save — please try again', 'red');
+  }
+  if (btn) { btn.textContent = 'Save →'; btn.style.opacity = '1'; }
+};
+
+window.ecoDeleteNote = async function(noteId) {
+  const { error } = await sb.from('family_notes').delete().eq('id', noteId);
+  if (!error) {
+    document.getElementById('note-' + noteId)?.remove();
+    showToast('Note removed');
+  } else {
+    showToast('Could not remove', 'red');
+  }
+};
+
+// ── RENDER PAGE ──────────────────────────────────────────────────────────────
+function ini(name) {
+  return (name||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+}
+function fmt(val, fb='—') {
+  return val || `<span class="info-val empty">${fb}</span>`;
+}
+
+function renderPage(m, related, relMap) {
+  document.title = `${m.full_name||'Member'} · ECO`;
+  const isPassed      = m.status === 'Passed';
+  const isSelf        = _me && _me.user_id === TARGET_ID;
+  const isAdmin       = _me && (_me.platform_role === 'SystemAdmin' || _me.platform_role === 'SuperUser');
+  const sameHousehold = _me && _me.household_id && m.household_id && _me.household_id === m.household_id;
+  const canEdit       = isSelf || sameHousehold || isAdmin;
+  const langs    = Array.isArray(m.languages_spoken) ? m.languages_spoken.join(', ') : (m.languages_spoken||null);
+  const bdate    = m.birth_mm_yyyy ? (() => {
+    const [mm,yy] = String(m.birth_mm_yyyy).split('/');
+    return (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mm,10)-1]||'') + ' ' + yy;
+  })() : null;
+
+  const connCards = related.map(r =>
+    `<div class="conn-card" onclick="window.location='member.html?id=${r.user_id}'">
+      <div class="conn-av">${ini(r.full_name)}</div>
+      <div class="conn-info">
+        <div class="conn-name">${r.full_name||'Unknown'}</div>
+        <div class="conn-rel">${(relMap[r.user_id]||['Connected']).join(', ')}</div>
+      </div>
+    </div>`
+  ).join('');
+
+  const avatarEl = m.photo_id
+    ? `<img src="${m.photo_id}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--blue);">`
+    : `<div class="avatar-ring">${ini(m.full_name)}</div>`;
+
+  const adminEditPanel = canEdit ? `
+    <div id="member-edit-panel" style="display:none;background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.18);border-radius:14px;padding:20px 22px;margin-bottom:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;margin-bottom:14px;">Edit ${isSelf ? 'your' : sameHousehold ? 'household member' : 'this'} profile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input class="me-inp" id="me-first"    placeholder="First name"      value="${m.first_name||''}">
+        <input class="me-inp" id="me-last"     placeholder="Last name"       value="${m.last_name||''}">
+        <input class="me-inp" id="me-birth"    placeholder="Birth MM/YYYY"   value="${m.birth_mm_yyyy||''}">
+        <input class="me-inp" id="me-birth-loc" placeholder="Birth location" value="${m.birth_location||''}">
+        <input class="me-inp" id="me-location" placeholder="Current location" value="${m.current_location||''}">
+        <input class="me-inp" id="me-origin"   placeholder="Cultural origin" value="${m.cultural_origin||''}">
+      </div>
+      <input class="me-inp" id="me-langs"    placeholder="Languages (comma separated)" value="${(Array.isArray(m.languages_spoken)?m.languages_spoken:m.languages_spoken?[m.languages_spoken]:[]).join(', ')}" style="width:100%;margin-bottom:8px;">
+      <input class="me-inp" id="me-role"     placeholder="Family role (e.g. mother, son)" value="${m.family_role||''}" style="width:100%;margin-bottom:8px;">
+      <textarea class="me-inp" id="me-bio" placeholder="Bio / story…" rows="3" style="width:100%;resize:vertical;">${m.bio||''}</textarea>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+        <button onclick="saveMemberEdit('${m.user_id}')" style="background:#00AAFF;color:#080D14;border:none;border-radius:8px;padding:9px 22px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;cursor:pointer;" id="me-save-btn">Save →</button>
+        <button onclick="document.getElementById('member-edit-panel').style.display='none'" style="background:none;border:none;color:#3A5A54;font-size:12px;cursor:pointer;">Cancel</button>
+        <div id="me-err" style="font-size:11px;color:#ff6b6b;margin-left:auto;"></div>
+      </div>
+    </div>` : '';
+
+  document.getElementById('shell').innerHTML = `
+    <div class="hero-card">
+      ${avatarEl}
+      <div class="hero-info">
+        <div class="hero-name">${m.full_name||'Unknown'}</div>
+        <div class="hero-role">${m.family_role||m.platform_role||'Network member'}</div>
+        <div class="hero-tags">
+          ${m.status?`<span class="tag ${m.status==='Living'?'green':'dim'}">${m.status}</span>`:''}
+          ${m.cultural_origin?`<span class="tag">${m.cultural_origin}</span>`:''}
+          ${m.current_location?`<span class="tag dim">📍 ${m.current_location}</span>`:''}
+        </div>
+        ${m.bio?`<div class="hero-bio">${m.bio}</div>`:`<div class="nudge">No bio yet — their story is waiting to be told.</div>`}
+        ${isPassed?`<div class="passed-note">Their current lives on in everyone they touched.</div>`:''}
+      </div>
+      ${canEdit ? `<button onclick="document.getElementById('member-edit-panel').style.display='block';this.style.display='none'" style="font-size:11px;color:rgba(0,170,255,.6);cursor:pointer;border:1px solid rgba(0,170,255,.2);background:none;border-radius:6px;padding:5px 12px;white-space:nowrap;align-self:flex-start;flex-shrink:0;">✏ Edit</button>` : ''}
+    </div>
+
+    ${adminEditPanel}
+
+    ${!isSelf && !isPassed ? `<div id="conn-slot"></div>` : ''}
+
+    <div class="ai-card">
+      <div class="ai-card-header">
+        <span class="ai-card-icon">⚡</span>
+        <span class="ai-card-title">Network Summary</span>
+      </div>
+      <div class="ai-placeholder">
+        ${_targetFirst}'s place in this network is being mapped as members add their stories and connections.
+        <br><span>· Nightly summaries — coming soon</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-label">Details</div>
+      <div class="info-grid">
+        <div class="info-row"><div class="info-key">Born</div><div class="info-val">${fmt(bdate,'Unknown')}${m.birth_location?' · '+m.birth_location:''}</div></div>
+        <div class="info-row"><div class="info-key">Location</div><div class="info-val">${fmt(m.current_location,'Unknown')}</div></div>
+        <div class="info-row"><div class="info-key">Languages</div><div class="info-val">${fmt(langs,'Not recorded')}</div></div>
+        <div class="info-row"><div class="info-key">Cultural origin</div><div class="info-val">${fmt(m.cultural_origin,'Not recorded')}</div></div>
+      </div>
+    </div>
+
+    <div class="content-ph">
+      <div class="content-ph-header">
+        <span>🔒</span>
+        <span class="content-ph-title">Memories &amp; Stories from ${_targetFirst}</span>
+      </div>
+      <div class="content-ph-text">
+        ${_targetFirst} hasn't shared any memories yet. When they do, you'll see photos, moments, and stories they've chosen to share with their network here.
+      </div>
+    </div>
+
+    <div class="notes-section" id="notes-section">
+      <div class="notes-label">Notes about ${_targetFirst}</div>
+      ${!isSelf ? `<div class="note-input-row">
+        <textarea class="note-input" id="note-input" placeholder="Add something you know about ${_targetFirst} — a memory, a fact, a story worth keeping…" rows="3"></textarea>
+        <div class="note-post-btn" onclick="window.ecoPostNote()">Save →</div>
+      </div>` : ''}
+      <div id="notes-list"><div style="color:rgba(255,255,255,.2);font-size:12px;">Loading notes…</div></div>
+    </div>
+
+    <div id="contrib-roles-section"></div>
+    <div id="pets-section"></div>
+
+    ${related.length?`
+    <div class="section">
+      <div class="sec-label">In this network with (${related.length})</div>
+      <div class="connections-grid">${connCards}</div>
+    </div>`:''}
+  `;
+
+  if (!isSelf && !isPassed) renderConnSlot();
+}
+
+// ── YOUR CONNECTION SECTION ──────────────────────────────────────────────────
+function buildPillGrid(current) {
+  return REL_GROUPS.map(g=>`
+    <div class="rel-group">
+      <div class="rel-group-label">${g.label}</div>
+      <div class="rel-pills">${g.types.map(t=>
+        `<div class="rel-pill${t===current?' selected':''}" onclick="window.ecoPickRel('${t}')">${REL_LABELS[t]}</div>`
+      ).join('')}</div>
+    </div>`).join('')
+    + `<div class="rel-edit-actions">
+        <div class="rel-save-btn${current?' ready':''}" id="rel-save-btn" onclick="window.ecoSaveRel()">Save connection</div>
+        ${_myRel?`<div class="rel-cancel-btn" onclick="window.ecoCancelEdit()">Cancel</div>
+                  <div class="rel-delete-btn" onclick="window.ecoDeleteRel()">Remove</div>`:''}
+       </div>`;
+}
+
+let _tieStrength = null;
+let _culturalTag = '';
+
+function renderConnSlot() {
+  const slot = document.getElementById('conn-slot');
+  if (!slot) return;
+  if (_myRel) {
+    const lbl = REL_LABELS[_myRel.relation_type] || _myRel.relation_type;
+    const tieLabel = _myRel.tie_strength === 'bonding' ? '⬤ Bonding' : _myRel.tie_strength === 'bridging' ? '◎ Bridging' : '';
+    const ctag = _myRel.cultural_tag ? `· <em>${_myRel.cultural_tag}</em>` : '';
+    slot.innerHTML = `<div class="conn-section">
+      <div class="conn-section-label">Your connection</div>
+      <div class="rel-existing" id="rel-display">
+        <div class="rel-existing-text">${_targetFirst} is your <span>${lbl}</span>${tieLabel ? ` <span style="font-size:10px;opacity:.6;margin-left:4px;">${tieLabel} ${ctag}</span>` : ''}</div>
+        <div class="rel-edit-btn" onclick="window.ecoOpenEdit()">Edit</div>
+      </div>
+      <div id="rel-picker" style="display:none;"></div>
+    </div>`;
+  } else {
+    slot.innerHTML = `<div class="conn-section">
+      <div class="conn-section-label">Your connection</div>
+      <div class="rel-prompt">How do you know ${_targetFirst}? Tap to add your connection.</div>
+      <div id="rel-picker">${buildPillGrid(null)}</div>
+    </div>`;
+  }
+}
+
+function buildTieStrengthUI() {
+  return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,170,255,.08);">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#3A5A54;margin-bottom:8px;">Energy of this connection</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button onclick="setTie('bonding',this)" class="tie-btn${_tieStrength==='bonding'?' tie-active':''}" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(0,170,255,.2);background:${_tieStrength==='bonding'?'rgba(0,170,255,.15)':'none'};color:${_tieStrength==='bonding'?'#00AAFF':'#5A8A80'};transition:all .13s;">
+        ⬤ Bonding<br><span style="font-size:9px;font-weight:400;opacity:.7;">Deep history · thick trust</span>
+      </button>
+      <button onclick="setTie('bridging',this)" class="tie-btn${_tieStrength==='bridging'?' tie-active':''}" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(0,204,68,.2);background:${_tieStrength==='bridging'?'rgba(0,204,68,.12)':'none'};color:${_tieStrength==='bridging'?'#00CC44':'#5A8A80'};transition:all .13s;">
+        ◎ Bridging<br><span style="font-size:9px;font-weight:400;opacity:.7;">New perspectives · cross-cultural</span>
+      </button>
+    </div>
+    <input id="cultural-tag-input" value="${_culturalTag||''}" placeholder="Cultural word for this bond… (e.g. Ubuntu, Querencia)" 
+      oninput="_culturalTag=this.value"
+      style="width:100%;background:#080D14;border:1px solid rgba(0,170,255,.15);border-radius:8px;padding:8px 12px;font-size:12px;color:#E8F4F0;outline:none;font-family:Arial,sans-serif;">
+  </div>`;
+}
+
+window.setTie = function(type, btn) {
+  _tieStrength = _tieStrength === type ? null : type;
+  document.querySelectorAll('.tie-btn').forEach(b => {
+    const isBonding = b.textContent.includes('Bonding');
+    const active = (isBonding && _tieStrength==='bonding') || (!isBonding && _tieStrength==='bridging');
+    b.style.background = active ? (isBonding?'rgba(0,170,255,.15)':'rgba(0,204,68,.12)') : 'none';
+    b.style.color = active ? (isBonding?'#00AAFF':'#00CC44') : '#5A8A80';
+    b.style.borderColor = active ? (isBonding?'rgba(0,170,255,.4)':'rgba(0,204,68,.4)') : (isBonding?'rgba(0,170,255,.2)':'rgba(0,204,68,.2)');
+  });
+};
+
+// ── INTERACTION HANDLERS ─────────────────────────────────────────────────────
+window.ecoOpenEdit = function() {
+  _selectedType = _myRel ? _myRel.relation_type : null;
+  _tieStrength = _myRel?.tie_strength || null;
+  _culturalTag = _myRel?.cultural_tag || '';
+  const d = document.getElementById('rel-display');
+  const p = document.getElementById('rel-picker');
+  if (d) d.style.display = 'none';
+  if (p) { p.innerHTML = buildPillGrid(_selectedType) + buildTieStrengthUI(); p.style.display = 'block'; }
+};
+
+window.ecoCancelEdit = function() {
+  const d = document.getElementById('rel-display');
+  const p = document.getElementById('rel-picker');
+  if (d) d.style.display = 'flex';
+  if (p) p.style.display = 'none';
+};
+
+window.ecoPickRel = function(type) {
+  _selectedType = type;
+  document.querySelectorAll('.rel-pill').forEach(p => {
+    p.classList.toggle('selected', p.textContent.trim() === REL_LABELS[type]);
+  });
+  const btn = document.getElementById('rel-save-btn');
+  if (btn) btn.classList.add('ready');
+  // Show tie strength after type is picked
+  const picker = document.getElementById('rel-picker');
+  if (picker && !picker.querySelector('.tie-btn')) {
+    picker.innerHTML = buildPillGrid(_selectedType) + buildTieStrengthUI();
+  }
+};
+
+window.ecoSaveRel = async function() {
+  if (!_selectedType || !_me) return;
+  const btn = document.getElementById('rel-save-btn');
+  if (btn) { btn.textContent = 'Saving…'; btn.classList.remove('ready'); }
+  const culturalTagVal = document.getElementById('cultural-tag-input')?.value?.trim() || _culturalTag || null;
+  try {
+    if (_myRel) {
+      const { error } = await sb.from('relationships')
+        .update({ relation_type: _selectedType, tie_strength: _tieStrength, cultural_tag: culturalTagVal })
+        .eq('subject_id', _myRel.subject_id).eq('target_id', _myRel.target_id).eq('source','manual');
+      if (error) throw error;
+      _myRel = { ..._myRel, relation_type: _selectedType, tie_strength: _tieStrength, cultural_tag: culturalTagVal };
+    } else {
+      const { data, error } = await sb.from('relationships').insert({
+        network_id: 'lightning-001',
+        subject_id: _me.user_id, target_id: TARGET_ID,
+        relation_type: _selectedType, tie_strength: _tieStrength || null,
+        cultural_tag: culturalTagVal, source: 'manual'
+      }).select().maybeSingle();
+      if (error) throw error;
+      _myRel = data;
+    }
+    showToast('Connection saved', 'green');
+    renderConnSlot();
+  } catch(e) {
+    showToast('Could not save — please try again', 'red');
+    if (btn) { btn.textContent = 'Save connection'; btn.classList.add('ready'); }
+  }
+};
+
+window.ecoDeleteRel = async function() {
+  if (!_myRel) return;
+  try {
+    const { error } = await sb.from('relationships').delete()
+      .eq('subject_id', _myRel.subject_id).eq('target_id', _myRel.target_id).eq('source','manual');
+    if (error) throw error;
+    _myRel = null; _selectedType = null; _tieStrength = null; _culturalTag = '';
+    showToast('Connection removed');
+    renderConnSlot();
+  } catch(e) { showToast('Could not remove — please try again', 'red'); }
+};
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+</script>
+<script>
+// ── CR-02: CONTRIBUTION ROLES ────────────────────────────────────────────────
+const ROLE_CFG = {
+  Keeper:    {color:'#F39C12', bg:'rgba(243,156,18,.15)',  border:'rgba(243,156,18,.35)',  emoji:'🔑'},
+  Scholar:   {color:'#9B59B6', bg:'rgba(155,89,182,.15)', border:'rgba(155,89,182,.35)', emoji:'📚'},
+  Conductor: {color:'#00AAFF', bg:'rgba(0,170,255,.15)',  border:'rgba(0,170,255,.35)',  emoji:'⚡'},
+  Moderator: {color:'#00CC44', bg:'rgba(0,204,68,.15)',   border:'rgba(0,204,68,.35)',   emoji:'🛡'},
+};
+
+async function loadContribRoles(targetId, viewerId) {
+  const slot = document.getElementById('contrib-roles-section');
+  if (!slot) return;
+
+  const sb = window.ecoSB;
+  const [{ data: target }, { data: noms }] = await Promise.all([
+    sb.from('users').select('full_name,contribution_roles').eq('user_id', targetId).maybeSingle(),
+    sb.from('contribution_nominations')
+      .select('*').eq('nominated_user_id', targetId).eq('status','pending'),
+  ]);
+
+  const existing = target?.contribution_roles || [];
+  const isSelf = targetId === viewerId;
+
+  // Which roles are already nominated (pending)
+  const nominatedRoles = new Set((noms||[]).map(n => n.role));
+  // Which roles already approved
+  const approvedRoles = new Set(existing);
+  // Available roles viewer can nominate (not already approved or pending)
+  const available = Object.keys(ROLE_CFG).filter(r => !approvedRoles.has(r) && !nominatedRoles.has(r));
+
+  const existingHtml = existing.length ? existing.map(r => {
+    const c = ROLE_CFG[r] || {color:'#888',bg:'rgba(128,128,128,.1)',border:'rgba(128,128,128,.25)',emoji:'●'};
+    return `<div class="contrib-badge" style="background:${c.bg};border:1px solid ${c.border};color:${c.color};">${c.emoji} ${r}</div>`;
+  }).join('') : `<span style="font-size:12px;color:rgba(255,255,255,.25);font-style:italic;">No roles yet</span>`;
+
+  const nomsHtml = (noms||[]).map(n => {
+    const c = ROLE_CFG[n.role] || {};
+    const pct = Math.min(100, Math.round((n.validation_count/3)*100));
+    const vals = n.validations || [];
+    const alreadyValidated = vals.some(v => v.user_id === viewerId);
+    const isNominator = n.nominated_by === viewerId;
+    const canValidate = !isSelf && !alreadyValidated && !isNominator;
+    return `<div class="contrib-nom-row">
+      <div>
+        <div class="contrib-nom-role">${ROLE_CFG[n.role]?.emoji||'●'} ${n.role}</div>
+        <div class="contrib-nom-by">${n.validation_count}/3 validations</div>
+      </div>
+      <div class="contrib-nom-bar"><div class="contrib-nom-fill" style="width:${pct}%;background:${c.color||'#00AAFF'};"></div></div>
+      <button class="contrib-validate-btn" ${canValidate?'':'disabled'}
+        onclick="validateNomination('${n.id}','${viewerId}')">
+        ${alreadyValidated?'✓ Validated':isNominator?'Nominated by you':isSelf?'—':'Validate'}
+      </button>
+    </div>`;
+  }).join('');
+
+  const nomButtons = (!isSelf && available.length) ? `
+    <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px;">Nominate for a role:</div>
+    <div class="contrib-nominate-row">
+      ${available.map(r=>`<div class="contrib-nom-pill" onclick="nominateRole('${targetId}','${viewerId}','${r}')">${ROLE_CFG[r].emoji} ${r}</div>`).join('')}
+    </div>` : '';
+
+  slot.innerHTML = `<div class="contrib-card">
+    <div class="contrib-label">Contribution roles</div>
+    <div class="contrib-existing">${existingHtml}</div>
+    ${nomsHtml ? `<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-bottom:8px;">Pending nominations</div>${nomsHtml}` : ''}
+    ${nomButtons}
+  </div>`;
+}
+
+async function nominateRole(targetId, viewerId, role) {
+  const sb = window.ecoSB;
+  const { error } = await sb.from('contribution_nominations').insert({
+    nominated_user_id: targetId,
+    nominated_by: viewerId,
+    role,
+    validations: JSON.stringify([{user_id: viewerId, validated_at: new Date().toISOString()}]),
+    validation_count: 1,
+  });
+  if (!error) { showToast(`Nominated for ${role}`, 'green'); loadContribRoles(targetId, viewerId); }
+  else showToast('Could not nominate — they may already be nominated');
+}
+
+async function validateNomination(nomId, viewerId) {
+  const sb = window.ecoSB;
+  const { data: nom } = await sb.from('contribution_nominations').select('*').eq('id', nomId).maybeSingle();
+  if (!nom) return;
+  const vals = [...(nom.validations||[]), {user_id: viewerId, validated_at: new Date().toISOString()}];
+  const { error } = await sb.from('contribution_nominations')
+    .update({ validations: vals, validation_count: vals.length }).eq('id', nomId);
+  if (!error) { showToast('Validation added ✓', 'green'); loadContribRoles(nom.nominated_user_id, viewerId); }
+}
+</script>
+<script>
+// ── PETS on member profile ────────────────────────────────────────────────────
+const PET_EMOJI_M = { Dog:'🐕', Cat:'🐈', Bird:'🦜', Fish:'🐟', Rabbit:'🐇', Horse:'🐴', Other:'🐾' };
+async function loadPets(userId){
+  const slot = document.getElementById('pets-section');
+  if(!slot) return;
+  const {data:pets} = await window.ecoSB.from('pets')
+    .select('pet_id,name,type,breed,status,photo_id,passed_mm_yyyy,bio,birth_mm_yyyy')
+    .or(`owner_id.eq.${userId},co_owner_ids.cs.{"${userId}"}`);
+  if(!pets?.length) return;
+  const isSelf = _me && _me.user_id === userId;
+  const cards = pets.map(p => {
+    const emoji = PET_EMOJI_M[p.type]||'🐾';
+    const passed = p.status==='Passed'||p.status==='passed';
+    const img = p.photo_id
+      ? `<img src="${p.photo_id}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(0,170,255,.25);">`
+      : `<div style="width:52px;height:52px;border-radius:50%;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${emoji}</div>`;
+    const editLink = isSelf
+      ? `<a href="pet.html?id=${p.pet_id}" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 9px;flex-shrink:0;">Edit →</a>`
+      : `<a href="pet.html?id=${p.pet_id}" style="font-size:11px;color:rgba(0,170,255,.5);text-decoration:none;font-weight:700;flex-shrink:0;">View →</a>`;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      ${img}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:#E8F4F0;">${p.name}${passed?' 🌈':''}</div>
+        <div style="font-size:11px;color:#3A5A54;margin-top:2px;">${emoji} ${p.type||'Pet'}${p.breed?' · '+p.breed:''}${p.birth_mm_yyyy?' · b.'+p.birth_mm_yyyy:''}</div>
+        ${p.bio?`<div style="font-size:12px;color:#7ABDB5;margin-top:4px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.bio}</div>`:''}
+      </div>
+      ${editLink}
+    </div>`;
+  }).join('');
+
+  slot.innerHTML = `<div style="background:#0D1820;border:1px solid rgba(0,170,255,.10);border-radius:14px;padding:20px 22px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;">Fur family (${pets.length})</div>
+      ${isSelf?`<a href="pet.html" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 9px;">+ Add pet</a>`:''}
+    </div>
+    ${cards}
+  </div>`;
+}
+
+// ── ADMIN / SELF PROFILE EDIT ─────────────────────────────────────────────
+async function saveMemberEdit(userId) {
+  const btn = document.getElementById('me-save-btn');
+  const err = document.getElementById('me-err');
+  if (!btn || !err) return;
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const first    = document.getElementById('me-first')?.value.trim() || null;
+  const last     = document.getElementById('me-last')?.value.trim()  || null;
+  const birth    = document.getElementById('me-birth')?.value.trim() || null;
+  const birthLoc = document.getElementById('me-birth-loc')?.value.trim() || null;
+  const loc      = document.getElementById('me-location')?.value.trim() || null;
+  const origin   = document.getElementById('me-origin')?.value.trim() || null;
+  const langsRaw = document.getElementById('me-langs')?.value.trim() || '';
+  const langs    = langsRaw ? langsRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
+  const role     = document.getElementById('me-role')?.value.trim() || null;
+  const bio      = document.getElementById('me-bio')?.value.trim()  || null;
+
+  const full_name = [first, last].filter(Boolean).join(' ') || null;
+
+  const updates = {};
+  if (first)     updates.first_name         = first;
+  if (last)      updates.last_name          = last;
+  if (full_name) updates.full_name          = full_name;
+  if (birth)     updates.birth_mm_yyyy      = birth;
+  if (birthLoc)  updates.birth_location     = birthLoc;
+  if (loc)       updates.current_location   = loc;
+  if (origin)    updates.cultural_origin    = origin;
+  if (langs)     updates.languages_spoken   = langs;
+  if (role)      updates.family_role        = role;
+  if (bio !== null) updates.bio             = bio;
+
+  const { error } = await sb.from('users').update(updates).eq('user_id', userId);
+  if (error) {
+    err.textContent = error.message;
+    btn.disabled = false; btn.textContent = 'Save →';
+    return;
+  }
+
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { window.location.reload(); }, 800);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>
