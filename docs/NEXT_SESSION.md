@@ -43,6 +43,23 @@ The container has no images/ or textures/ — full extract will delete them from
 
 ---
 
+
+## WORKFLOW — WHAT CLAUDE DOES vs WHAT VIKAS DOES
+
+| Task | Who | How |
+|---|---|---|
+| SQL migrations | Claude | Via Supabase MCP — automatic, no paste needed |
+| HTML/JS/CSS | Claude | Built in session · in zip |
+| GitHub deploy | Vikas | Run deploy.bat once at session end |
+| Edge function source | Vikas | Copy from zip → Supabase Dashboard → Edge Functions |
+| Secrets | Vikas | Paste into Supabase Dashboard → Edge Functions → Secrets |
+| SQL files on GitHub | Automatic | deploy.bat stages sql/*.sql every run |
+
+**deploy.bat is now safe to run after full zip extract** — exclusions built in:
+- Never stages images/ textures/ or binary files
+- Detects placeholder edge functions and refuses to overwrite real source
+- Re-stages deploy.bat itself after safety resets
+
 ## ACTIVE PAGES (26)
 
 index · home · network · enter · manifesto · eco_academic_review · milestone
@@ -73,3 +90,22 @@ whatsapp-import · year-in-review · theme-manager · admin · **sahiba-xavier-c
 - `users` PK: `user_id` · birth date: `birth_mm_yyyy` string "MM/YYYY"
 - Photo join: `users.photo_id → photos.id → photos.public_url`
 - RLS: anon reads return only `visible_to='all'` (48 members); auth returns all 104
+
+
+## UPDATED SESSION START TEMPLATE (Session 12+)
+
+```
+I'm Vikas Bakshi (STAR), founder of EternalCurrent.Online (ECO).
+INFRA: Supabase prbeyvmsyxuiggqwiham · 108 members · Namecheap · Adm1n-ECO/ECO.git
+BRANCH: local=master · remote deploy=main · always: git push --force origin master:main
+DEPLOY: deploy.bat only — extract full zip first, then run deploy.bat (safe — exclusions built in)
+EDGE FUNCTIONS (all live): claude-proxy · stripe-create-checkout · stripe-webhook · quest-generator · weekly-digest · pulse-generator · update-auth-email
+STRIPE (live): conductor price_1TKVWQ9AzGOao739NgU94gC2 · pro_conductor price_1TKVYU9AzGOao739sQbQxt6T · org_admin price_1TKVah9AzGOao739y5zja4UH
+ISAIAH: IB-STAR platform_role=SystemAdmin (DB set) · auth_id null · awaiting claim
+BRAND: E=#00AAFF C=#00CC44 O=#FFF · Arial Black 900 · bg #080D14 · No forms ever
+HOUSEHOLDS: h_madanmbakhshi (STAR) · h_ramrakha (Arishma+Vipul) · h_asingh (Alvin+Preetina)
+PHOTO NOTE: users.photo_id is a direct URL — never join to photos table for profile avatars
+WORKFLOW: Claude runs all SQL via Supabase MCP directly · Vikas only: edge function source paste + secrets paste + deploy.bat
+PHASE 3: COMPLETE (SOV-01 deferred) · All pages header-compliant · service-worker live · 008_vendor-marketplace deploy pending
+[Upload latest ECO_Complete_Site.zip to continue]
+```

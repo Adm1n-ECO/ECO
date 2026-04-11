@@ -203,3 +203,37 @@ Files changed this session — copy only these from the zip:
 - **4 functions have placeholder index.ts**: claude-proxy, stripe-create-checkout, stripe-webhook, quest-generator were deployed before source control. Retrieve from Supabase Dashboard and replace placeholder.
 - **deploy.bat stages both**: `sql\*.sql` and `supabaseunctions\*\*.ts` — both land on GitHub automatically every deploy.
 - **GitHub is the file store**: No more copy/paste from chat. After deploy, go to GitHub to find any SQL or edge function file.
+
+## SESSION 11 — WORKFLOW LOCKED
+
+- **CREATE POLICY IF NOT EXISTS is invalid Postgres syntax.** Always use DROP POLICY IF EXISTS + CREATE POLICY. Apply to every SQL file going forward.
+- **Claude runs all SQL directly** via Supabase MCP (Supabase:execute_sql). No manual paste into SQL editor ever again.
+- **Vikas manual actions reduced to two**: (1) edge function source paste into Supabase Dashboard, (2) secrets paste into Supabase Dashboard. That is all.
+- **deploy.bat full-zip-safe**: git reset lines suppress all output with >nul 2>&1. deploy.bat re-stages itself after resets. Placeholder detection on 001-004 fires warnings but never blocks commit.
+- **SQL naming**: NNN_description_snake_case.sql in sql/ folder. Next = 006.
+- **Edge function naming**: NNN_function-name/ in supabase/functions/. Next = 008.
+- **GitHub token ghp_*** stored in memory — Claude cannot push directly from web chat (api.github.com blocked by container proxy). deploy.bat remains the push mechanism.
+- **Supabase MCP project_id**: prbeyvmsyxuiggqwiham — required on every Supabase:execute_sql call.
+
+## SESSION 11 — GROUPS 2 3 4
+
+- **confluence.html was truncated** in zip — missing closing script/body/html tags. Always check tail of large files: wc -l + tail -10 + check </body> count.
+- **CREATE POLICY IF NOT EXISTS** invalid Postgres. Always DROP POLICY IF EXISTS first. Fixed in all SQL files going forward.
+- **globe-min.html and index.html**: intentionally no header.js — embed page and splash redirect respectively. Do not add header to these.
+- **GEDCOM 5.5.1**: birth date format = MON YYYY (JAN 1985 not 01/1985). Split birth_mm_yyyy on / then map to 3-letter month. Guard parseInt for month index.
+- **service-worker.js**: never cache admin.html (contains sensitive data). Always network-first for supabase.co, anthropic.com, stripe.com.
+- **Vendor marketplace**: always gate on vendor_opted_in before returning any vendor data. Log every connection to event_vendor_connections for audit.
+- **user.html video**: add video_url and video_thumbnail to select alongside existing fields — additive, no existing logic changed.
+- **Tribe switcher**: ecoCheckNetworkSwitcher() added to header.js — only renders if user has entries in user_network_memberships. Safe no-op for all current users.
+- **Header audit pattern**: grep -rL header.js *.html — run at start of every session to catch regressions.
+
+## SESSION 11 — FINAL FIXES + NEW PAGES
+
+- **claim.html ?id= IIFE pattern**: wrap in async IIFE + 400ms delay to ensure ecoSB is ready before calling selectProfile(). Never call DB functions at module scope without a readiness check.
+- **join.html suggest param**: decode URI component when reading ?suggest= — names with spaces will be URL-encoded.
+- **Leaflet dark tiles**: use cartocdn.com dark_all tiles for ECO dark theme. Never use default OpenStreetMap tiles (too light).
+- **Video upload**: always check network_settings.allow_video before showing upload UI. Use photos storage bucket with videos/ prefix path.
+- **Mobile safe-area-inset-bottom**: use env(safe-area-inset-bottom, 0px) on floating buttons for iPhone notch/home bar.
+- **theme-selector.js touch**: add passive:true to all touch event listeners to avoid janky scroll.
+- **LookMeUp removal**: footer copyright lines only — no functional code. grep -ril lookmeup *.html before every release.
+- **tribe-onboard.html**: uses waitAndLoad() pattern (not ecoAuthGuard) because page is public-facing — no auth required.

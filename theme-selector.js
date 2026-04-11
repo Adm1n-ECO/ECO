@@ -262,6 +262,41 @@
 
     /* Admin button */
     initAdminBtn();
+
+  /* ── Touch swipe to close panel ─────────────────────────── */
+  var touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var delta = e.changedTouches[0].clientY - touchStartY;
+    if (panelOpen && delta > 40) {
+      // Swipe down = close panel
+      panelOpen = false;
+      var panel = document.getElementById('eco-theme-panel');
+      var btn = document.getElementById('eco-theme-btn');
+      if (panel) panel.classList.add('hidden');
+      if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+    }
+  }, { passive: true });
+
+  /* ── Mobile: expand tap target ───────────────────────────── */
+  function applyMobileStyles() {
+    if (window.innerWidth > 600) return;
+    var sel = document.getElementById('eco-theme-selector');
+    if (!sel) return;
+    sel.style.bottom = '12px';
+    sel.style.right = '12px';
+    // Move panel to open upward with enough clearance
+    var panel = document.getElementById('eco-theme-panel');
+    if (panel) {
+      panel.style.bottom = '50px';
+      panel.style.right = '0';
+    }
+  }
+  window.addEventListener('resize', applyMobileStyles);
+  applyMobileStyles();
+
   }
 
   /* ── Boot ────────────────────────────────────────────────── */

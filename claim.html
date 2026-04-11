@@ -116,6 +116,16 @@ const sb = window.ecoSB;
 let _selectedProfile = null;
 let _searchTimeout   = null;
 
+// Auto-select if ?id= param present
+(async function preloadFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const preId = params.get('id');
+  if (!preId) return;
+  // Small delay to ensure DOM ready
+  await new Promise(r => setTimeout(r, 400));
+  await selectProfile(preId);
+})();
+
 function onSearch(q) {
   clearTimeout(_searchTimeout);
   const res = document.getElementById('search-results');
@@ -290,6 +300,8 @@ function showStep(id) {
 
 function goBack(stepId) { showStep(stepId); }
 </script>
+<script src="theme-selector.js"></script>
+<script src="header.js"></script>
 <script src="theme-selector.js"></script>
 </body>
 </html>

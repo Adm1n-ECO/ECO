@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share a Video — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<style>
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .page-wrap{max-width:600px;margin:0 auto;padding:80px 24px 60px;}
+  .page-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;margin-bottom:6px;}
+  .page-sub{color:var(--color-text-dim);font-size:14px;margin-bottom:32px;line-height:1.6;}
+  .upload-zone{border:2px dashed rgba(0,170,255,.3);border-radius:14px;padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:20px;position:relative;}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--color-accent-b);background:rgba(0,170,255,.04);}
+  .upload-icon{font-size:40px;margin-bottom:12px;}
+  .upload-label{font-size:14px;color:var(--color-text-dim);line-height:1.6;}
+  .upload-label strong{color:var(--color-accent-b);}
+  .upload-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .preview-wrap{margin-bottom:20px;display:none;}
+  .preview-wrap video{width:100%;border-radius:10px;max-height:280px;background:#000;}
+  .preview-name{font-size:12px;color:var(--color-text-dim);margin-top:8px;}
+  .caption-input{width:100%;background:var(--color-bg2);border:1px solid var(--color-border);border-radius:8px;padding:12px 14px;color:var(--color-text);font-size:14px;font-family:Arial,Helvetica,sans-serif;resize:vertical;min-height:80px;box-sizing:border-box;margin-bottom:16px;}
+  .caption-input:focus{outline:none;border-color:var(--color-accent-b);}
+  .progress-bar{height:4px;background:rgba(0,170,255,.15);border-radius:2px;margin-bottom:16px;display:none;}
+  .progress-fill{height:100%;background:var(--color-accent-b);border-radius:2px;transition:width .2s;width:0;}
+  .submit-btn{width:100%;background:var(--color-accent-b);color:var(--color-bg);font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:14px;padding:14px;border-radius:10px;border:none;cursor:pointer;transition:opacity .15s;}
+  .submit-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .status-msg{font-size:13px;margin-top:12px;min-height:18px;text-align:center;}
+  .limit-note{font-size:11px;color:var(--color-text-dim);text-align:center;margin-top:8px;}
+  @media(max-width:600px){.page-wrap{padding:70px 16px 40px;}.upload-zone{padding:32px 16px;}}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page-wrap">
+  <div class="page-title">Share a Video</div>
+  <div class="page-sub">Share a moment with your network. Videos stay within your network — never public.</div>
+
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" class="upload-input" id="video-file" accept="video/*">
+    <div class="upload-icon">🎬</div>
+    <div class="upload-label"><strong>Tap to choose a video</strong><br>or drag and drop here<br><br>MP4, MOV, WebM · max 50MB</div>
+  </div>
+
+  <div class="preview-wrap" id="preview-wrap">
+    <video id="video-preview" controls playsinline></video>
+    <div class="preview-name" id="preview-name"></div>
+  </div>
+
+  <textarea class="caption-input" id="caption" placeholder="What's this video about? Add some context for your network…"></textarea>
+
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="uploadVideo()" disabled>Share with network →</button>
+  <div class="status-msg" id="status-msg"></div>
+  <div class="limit-note">Only members of your network can view this.</div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+let _me = null;
+let _file = null;
+
+ecoAuthGuard(async session => {
+  const { data } = await sb.from('users')
+    .select('user_id,full_name,network_id').eq('auth_id', session.user.id).maybeSingle();
+  if (!data) { window.location.href = 'enter.html'; return; }
+  _me = data;
+
+  // Check video allowed
+  const { data: settings } = await sb.from('network_settings')
+    .select('allow_video').eq('network_id','lightning-001').maybeSingle();
+  if (!settings?.allow_video) {
+    document.getElementById('status-msg').style.color = '#ff6b6b';
+    document.getElementById('status-msg').textContent = 'Video sharing is not enabled for this network.';
+    document.getElementById('submit-btn').style.display = 'none';
+    return;
+  }
+});
+
+// File selection
+document.getElementById('video-file').addEventListener('change', function(e) {
+  handleFile(e.target.files[0]);
+});
+
+// Drag and drop
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('video/')) {
+    showMsg('Please select a video file.', true); return;
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    showMsg('File is too large. Maximum size is 50MB.', true); return;
+  }
+  _file = file;
+  const url = URL.createObjectURL(file);
+  const vid = document.getElementById('video-preview');
+  vid.src = url;
+  document.getElementById('preview-name').textContent = file.name + ' · ' + (file.size / 1024 / 1024).toFixed(1) + 'MB';
+  document.getElementById('preview-wrap').style.display = 'block';
+  document.getElementById('upload-zone').style.display = 'none';
+  document.getElementById('submit-btn').disabled = false;
+}
+
+async function uploadVideo() {
+  if (!_file || !_me) return;
+  const btn = document.getElementById('submit-btn');
+  const caption = document.getElementById('caption').value.trim();
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+
+  const progress = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  progress.style.display = 'block';
+  fill.style.width = '20%';
+
+  try {
+    // Upload to storage
+    const ext = _file.name.split('.').pop() || 'mp4';
+    const path = `videos/${_me.user_id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('photos').upload(path, _file, {
+      contentType: _file.type,
+      upsert: false
+    });
+    if (upErr) throw upErr;
+    fill.style.width = '70%';
+
+    const { data: urlData } = sb.storage.from('photos').getPublicUrl(path);
+    const videoUrl = urlData.publicUrl;
+    fill.style.width = '85%';
+
+    // Create post
+    const { error: postErr } = await sb.from('network_posts').insert({
+      network_id: 'lightning-001',
+      posted_by: _me.user_id,
+      posted_by_name: _me.full_name,
+      post_type: 'video',
+      content: caption || 'Shared a video.',
+      video_url: videoUrl
+    });
+    if (postErr) throw postErr;
+    fill.style.width = '100%';
+
+    showMsg('✓ Video shared with your network!', false);
+    btn.textContent = 'Share with network →';
+    setTimeout(() => { window.location.href = 'user.html'; }, 1500);
+
+  } catch(e) {
+    showMsg('Upload failed: ' + e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'Share with network →';
+    fill.style.width = '0';
+  }
+}
+
+function showMsg(msg, isErr) {
+  const el = document.getElementById('status-msg');
+  el.style.color = isErr ? '#ff6b6b' : '#00CC44';
+  el.textContent = msg;
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

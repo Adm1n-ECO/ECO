@@ -141,8 +141,20 @@ body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-se
 function getSB(){ return window.ecoSB; }
 const params = new URLSearchParams(location.search);
 const REF_ID = params.get('ref');
+const SUGGEST_NAME = params.get('suggest') || '';
 let _inviter = null;
 let _searchTimer = null;
+
+// Pre-fill search if a name was suggested from member profile
+if (SUGGEST_NAME) {
+  window.addEventListener('DOMContentLoaded', () => {
+    const inp = document.getElementById('join-search');
+    if (inp) {
+      inp.value = decodeURIComponent(SUGGEST_NAME);
+      setTimeout(() => onJoinSearch(inp.value), 500);
+    }
+  });
+}
 
 const AV_COLORS = ['#1A6B5A','#2D4A8A','#7A3B5E','#4A5A2A'];
 function av(s){ return AV_COLORS[(s||'').charCodeAt(0)%AV_COLORS.length]; }
@@ -276,6 +288,8 @@ function togglePw(id,eye){
   eye.textContent=show?'🙈':'👁';
 }
 </script>
+<script src="theme-selector.js"></script>
+<script src="header.js"></script>
 <script src="theme-selector.js"></script>
 </body>
 </html>

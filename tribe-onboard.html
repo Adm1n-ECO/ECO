@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tribal Network — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .hero{padding:100px 24px 60px;text-align:center;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(0,204,68,.06) 0%,transparent 70%);pointer-events:none;}
+  .hero-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-c);margin-bottom:14px;}
+  .hero-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:42px;line-height:1.1;margin-bottom:16px;}
+  .hero-title span{color:var(--color-accent-b);}
+  .hero-sub{font-size:16px;color:var(--color-text-dim);max-width:560px;margin:0 auto 40px;line-height:1.7;}
+  .hero-cta{display:inline-block;background:var(--color-accent-c);color:var(--color-bg);font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;cursor:pointer;border:none;transition:opacity .15s;}
+  .hero-cta:hover{opacity:.85;}
+  .section{max-width:860px;margin:0 auto;padding:0 24px 60px;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-b);margin-bottom:20px;}
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;}
+  .pillar{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:28px 22px;}
+  .pillar-icon{font-size:32px;margin-bottom:12px;}
+  .pillar-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:15px;margin-bottom:8px;}
+  .pillar-desc{font-size:13px;color:var(--color-text-dim);line-height:1.7;}
+  .protocol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;}
+  .protocol-card{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:24px;text-align:center;}
+  .protocol-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:14px;margin-bottom:6px;}
+  .protocol-desc{font-size:12px;color:var(--color-text-dim);line-height:1.6;}
+  .protocol-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;margin-bottom:12px;}
+  .badge-cloud{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:#00AAFF;}
+  .badge-hybrid{background:rgba(255,200,0,.1);border:1px solid rgba(255,200,0,.3);color:#FFC800;}
+  .badge-onprem{background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;}
+  .nations-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:40px;}
+  .nation-row{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:10px;padding:16px 18px;}
+  .nation-name{font-weight:700;font-size:14px;margin-bottom:3px;}
+  .nation-meta{font-size:12px;color:var(--color-text-dim);}
+  .contact-box{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:36px;text-align:center;max-width:560px;margin:0 auto;}
+  .contact-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:20px;margin-bottom:10px;}
+  .contact-sub{font-size:14px;color:var(--color-text-dim);margin-bottom:24px;line-height:1.6;}
+  .contact-email{font-size:14px;color:var(--color-accent-b);font-weight:700;}
+  @media(max-width:600px){
+    .hero-title{font-size:28px;}
+    .pillars,.protocol-grid{grid-template-columns:1fr;}
+    .hero{padding:80px 16px 40px;}
+    .section{padding:0 16px 40px;}
+  }
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+
+<div class="hero">
+  <div class="hero-label">For Tribal Communities</div>
+  <div class="hero-title">Your story.<br><span>Your sovereignty.</span></div>
+  <div class="hero-sub">EternalCurrent gives tribal nations a private, culturally grounded network to preserve language, migration stories, and family connections — on your terms and on your infrastructure.</div>
+  <a href="enter.html" class="hero-cta">Request a Pilot Network</a>
+</div>
+
+<div class="section">
+  <div class="section-label">Why Tribal Networks</div>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="pillar-icon">🔒</div>
+      <div class="pillar-title">Data Sovereignty</div>
+      <div class="pillar-desc">Your data belongs to your nation. Choose cloud, hybrid, or fully on-premise hosting depending on your sovereignty requirements.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon">🌿</div>
+      <div class="pillar-title">Traditional Knowledge</div>
+      <div class="pillar-desc">Traditional Use and Stewardship (TUS) controls let Keepers mark cultural content with access restrictions. Sensitive knowledge stays protected.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon">🌍</div>
+      <div class="pillar-title">Diaspora Mapping</div>
+      <div class="pillar-desc">Trace where your people have moved across generations. Migration maps, journey timelines, and heritage site records in one place.</div>
+    </div>
+  </div>
+
+  <div class="section-label">Data Hosting Options</div>
+  <div class="protocol-grid">
+    <div class="protocol-card">
+      <div class="protocol-badge badge-cloud">☁️ Cloud</div>
+      <div class="protocol-name">Cloud</div>
+      <div class="protocol-desc">Managed by EternalCurrent on secure US servers. Fastest to deploy. Best for most tribal networks starting out.</div>
+    </div>
+    <div class="protocol-card">
+      <div class="protocol-badge badge-hybrid">⚡ Hybrid</div>
+      <div class="protocol-name">Hybrid</div>
+      <div class="protocol-desc">Sensitive cultural records stored on-premise. Public-facing content in cloud. Best of both worlds.</div>
+    </div>
+    <div class="protocol-card">
+      <div class="protocol-badge badge-onprem">🔒 On-Premise</div>
+      <div class="protocol-name">On-Premise</div>
+      <div class="protocol-desc">Full network runs on hardware at your location. Complete sovereignty. Available for federally recognized nations.</div>
+    </div>
+  </div>
+
+  <div class="section-label">Nations in Pipeline</div>
+  <div class="nations-list" id="nations-list">
+    <div style="color:var(--color-text-dim);font-size:13px;">Loading…</div>
+  </div>
+
+  <div class="contact-box">
+    <div class="contact-title">Start a Pilot Network</div>
+    <div class="contact-sub">We work directly with tribal leadership to set up a pilot network at no cost. Contact us to discuss your nation's specific needs.</div>
+    <div class="contact-email">tribal@eternalcurrent.online</div>
+  </div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+
+async function loadNations() {
+  const el = document.getElementById('nations-list');
+  const { data } = await sb.from('tribal_nations').select('*').eq('active',true).order('name');
+  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--color-text-dim);font-size:13px;">Pilot nations being onboarded — check back soon.</div>'; return; }
+  el.innerHTML = data.map(n => `
+    <div class="nation-row">
+      <div class="nation-name">${n.name}</div>
+      <div class="nation-meta">${n.region || ''}${n.state ? ', ' + n.state : ''}${n.federal_status ? ' · ' + n.federal_status : ''}</div>
+    </div>`).join('');
+}
+
+function waitAndLoad() {
+  if (!window.ecoSB) { setTimeout(waitAndLoad, 80); return; }
+  loadNations();
+}
+waitAndLoad();
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

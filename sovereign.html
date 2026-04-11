@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html data-theme="void" lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ECO · Sovereign</title>
@@ -35,6 +35,7 @@ body{background:#04080F;color:#E8F4F0;font-family:Arial,Helvetica,sans-serif;min
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0A1520;border:1px solid rgba(255,80,80,.3);border-radius:8px;padding:10px 20px;font-size:13px;color:#E8F4F0;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
 </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="shell">
@@ -178,5 +179,7 @@ function showToast(msg){
   setTimeout(()=>{t.className='toast';},2800);
 }
 </script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
 </body>
 </html>

@@ -61,6 +61,13 @@ body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-se
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
 .toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+
+@media(max-width:600px){
+  .page-wrap,.upload-wrap{padding-left:14px!important;padding-right:14px!important;}
+  .sender-row{flex-direction:column;gap:8px;}
+  .member-selector{width:100%;}
+  .import-stats{grid-template-columns:1fr 1fr;}
+}
 </style>
 </head>
 <body>
@@ -244,6 +251,23 @@ function updateImportSummary(){
     `${msgs} messages from ${mapped} mapped members will be saved. ${skipped} senders skipped.`;
 }
 
+
+async function undoLastImport() {
+  if (!_batchId) { showToast('No import to undo'); return; }
+  const btn = document.getElementById('undo-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Undoing…'; }
+  const { error, count } = await sb.from('family_notes')
+    .delete().eq('import_batch_id', _batchId).eq('source','whatsapp_import');
+  if (!error) {
+    showToast('Import undone ✓', 'green');
+    document.getElementById('import-result').style.display = 'none';
+    if (btn) btn.style.display = 'none';
+  } else {
+    showToast('Undo failed: ' + error.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Undo import'; }
+  }
+}
+
 async function runImport(){
   const btn=document.getElementById('import-btn');
   btn.disabled=true; btn.textContent='Importing…';
@@ -273,6 +297,20 @@ async function runImport(){
   fill.style.width='100%';
   const resultDiv=document.getElementById('import-result');
   resultDiv.style.display='block';
+  // Show undo button
+  let undoBtn = document.getElementById('undo-btn');
+  if (!undoBtn) {
+    undoBtn = document.createElement('button');
+    undoBtn.id = 'undo-btn';
+    undoBtn.textContent = 'Undo import';
+    undoBtn.style.cssText = 'margin-top:12px;background:none;border:1px solid rgba(255,80,80,.4);color:rgba(255,80,80,.8);font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;';
+    undoBtn.onclick = undoLastImport;
+    resultDiv.appendChild(undoBtn);
+  } else {
+    undoBtn.style.display = 'inline-block';
+    undoBtn.disabled = false;
+    undoBtn.textContent = 'Undo import';
+  }
   document.getElementById('result-summary').textContent=`✓ ${saved} messages imported successfully`;
   document.getElementById('result-list').innerHTML=results.slice(0,20).map(r=>`
     <div class="result-item"><span class="result-name">${r.note_text.split(']')[0].replace('[WhatsApp · ','').replace('[',' ')}</span> — ${r.note_text.split('] ')[1]?.slice(0,80)||''}</div>

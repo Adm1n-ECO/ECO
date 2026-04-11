@@ -152,14 +152,58 @@ view-currents, view-pro, visual-river, whatsapp-import, year-in-review
 
 ---
 
+## WORKFLOW — CLAUDE vs MANUAL (SESSION 11 LOCKED)
+
+### Claude does automatically (no action needed from Vikas):
+- **All SQL** — schema, migrations, RLS policies, data — run directly via Supabase MCP
+- **All HTML/JS/CSS** — built in session, exported in zip
+- **SQL files** written to `sql/` folder for GitHub record
+- **deploy.bat** — Vikas runs once at session end, everything goes to GitHub + cPanel
+
+### Vikas does manually (copy/paste only):
+- **Edge function source** — paste into Supabase Dashboard → Edge Functions → new function
+- **Secrets** — paste into Supabase Dashboard → Edge Functions → Secrets
+- **Run deploy.bat** — once per session at the end
+
+### Never needed again:
+- Copying individual files from zip
+- Running SQL manually in Supabase editor
+- Hunting for files in chat history
+- FTP window
+- cmd window (except deploy.bat)
+
+### Edge function naming convention:
+- `001_claude-proxy` · `002_stripe-create-checkout` · `003_stripe-webhook`
+- `004_quest-generator` · `005_weekly-digest` · `006_pulse-generator` · `007_update-auth-email`
+- New functions: next number in sequence, snake_case after prefix
+
+### SQL naming convention:
+- `001_pulse_migration` · `002_tek02_migration` · `003_tribe_schema`
+- `004_org_schema` · `005_video_flag`
+- New migrations: next number in sequence, snake_case description
+
 ## PENDING WORK
 
-### Phase 3 (not started)
-TRIBE-01, ORG-01, GEDCOM-01, VEND-01, OFF-01, SOV-01, VIDEO-01
+### Phase 3 (complete except SOV-01)
+- TRIBE-01 ✅ SQL + tribe.html + header switcher
+- ORG-01 ✅ SQL + org-admin.html + admin.html module
+- GEDCOM-01 ✅ gedcom-export.html
+- VIDEO-01 ✅ SQL + user.html video rendering
+- OFF-01 ✅ service-worker.js registered via header.js
+- VEND-01 ✅ 008_vendor-marketplace edge function
+- SOV-01 Deferred — separate product, own repo when ready
 
 ### Known issues / next
 - Continue theme color refinement per-page as members report issues
-- household.html — needs header.js nav link added
-- join.html — needs nav link from member profile "Invite to network" button
-- Admin → email update (auth email) requires Supabase dashboard — service role edge function not yet built
 - Isaiah (IB-STAR) to be promoted to SystemAdmin once he claims his profile
+- Deploy 008_vendor-marketplace edge function to Supabase Dashboard (manual step)
+
+### Remaining planned features
+- Annual Diaspora Report section on confluence.html
+- Mobile globe bottom sheet (globe.html)
+- Milestone QR code generation
+- WhatsApp import improvements
+- Language learning affiliate UI
+- Stripe vendor tier price ID
+- Org Admin billing/Stripe wiring
+- JS/CSS folder restructure (dedicated session, high risk)

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey Replay — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .page-wrap{max-width:900px;margin:0 auto;padding:80px 24px 60px;}
+  .page-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;margin-bottom:6px;}
+  .page-sub{color:var(--color-text-dim);font-size:14px;margin-bottom:32px;}
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
+  .member-select{background:var(--color-bg2);border:1px solid var(--color-border);color:var(--color-text);font-size:13px;padding:9px 14px;border-radius:8px;min-width:200px;}
+  .btn-replay{background:var(--color-accent-b);color:var(--color-bg);font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;transition:opacity .15s;}
+  .btn-replay:hover{opacity:.85;}
+  .btn-share{background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;font-size:13px;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;border:none;transition:background .15s;}
+  .btn-share:hover{background:rgba(0,204,68,.2);}
+  #map{width:100%;height:420px;border-radius:14px;border:1px solid var(--color-border);margin-bottom:20px;}
+  .timeline{display:flex;flex-direction:column;gap:8px;}
+  .journey-step{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:10px;padding:14px 18px;display:flex;gap:16px;align-items:flex-start;cursor:pointer;transition:border-color .15s;}
+  .journey-step:hover{border-color:var(--color-accent-b);}
+  .journey-step.active{border-color:var(--color-accent-b);background:rgba(0,170,255,.05);}
+  .step-year{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:16px;color:var(--color-accent-b);min-width:48px;}
+  .step-loc{font-size:14px;font-weight:700;}
+  .step-reason{font-size:12px;color:var(--color-text-dim);margin-top:3px;}
+  .step-cat{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.2);color:var(--color-accent-b);margin-top:4px;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--color-text-dim);}
+  .share-strip{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;}
+  .share-text{font-size:13px;color:var(--color-text-dim);}
+  @media(max-width:600px){
+    #map{height:260px;}
+    .controls{flex-direction:column;align-items:stretch;}
+    .member-select,.btn-replay,.btn-share{width:100%;}
+    .share-strip{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page-wrap">
+  <div class="page-title">Journey Replay</div>
+  <div class="page-sub">Trace a member's migration story — every move, every reason, animated on the map.</div>
+
+  <div class="controls">
+    <select class="member-select" id="member-select">
+      <option value="">Select a network member…</option>
+    </select>
+    <button class="btn-replay" onclick="replayJourney()">▶ Replay</button>
+    <button class="btn-share" onclick="shareMap()" id="share-btn" style="display:none;">↓ Share as Image</button>
+  </div>
+
+  <div id="map"></div>
+  <div class="timeline" id="timeline"><div class="empty-state">Select a member to see their journey.</div></div>
+
+  <div class="share-strip" id="share-strip" style="display:none;">
+    <div class="share-text" id="share-name-text"></div>
+    <button class="btn-share" onclick="shareMap()">↓ Download Migration Map</button>
+  </div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+let _map = null;
+let _markers = [];
+let _polylines = [];
+let _journeys = [];
+let _replayTimer = null;
+
+// Init Leaflet map with dark tiles
+function initMap() {
+  _map = L.map('map', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 18
+  }).addTo(_map);
+  _map.setView([25, 20], 2);
+}
+
+ecoAuthGuard(async session => {
+  initMap();
+  // Load members with journeys
+  const { data: members } = await sb.from('users')
+    .select('user_id,full_name')
+    .eq('network_id','lightning-001')
+    .eq('status','Living')
+    .order('full_name');
+
+  if (!members) return;
+  const sel = document.getElementById('member-select');
+  members.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.user_id;
+    opt.textContent = m.full_name;
+    sel.appendChild(opt);
+  });
+
+  // Auto-load from ?id= param
+  const params = new URLSearchParams(location.search);
+  const preId = params.get('id');
+  if (preId) { sel.value = preId; await replayJourney(); }
+});
+
+async function replayJourney() {
+  const uid = document.getElementById('member-select').value;
+  if (!uid) return;
+
+  clearMap();
+  const { data: journeys } = await sb.from('journeys')
+    .select('*').eq('person_id', uid)
+    .not('lat','is',null).not('lon','is',null)
+    .order('year');
+
+  if (!journeys || !journeys.length) {
+    document.getElementById('timeline').innerHTML = '<div class="empty-state">No journey data recorded for this member yet.</div>';
+    return;
+  }
+  _journeys = journeys;
+
+  const memberName = document.querySelector('#member-select option:checked').textContent;
+  renderTimeline(journeys);
+  animateJourney(journeys, memberName);
+
+  document.getElementById('share-btn').style.display = 'block';
+  document.getElementById('share-strip').style.display = 'flex';
+  document.getElementById('share-name-text').textContent = memberName + '\'s migration story · ' + journeys.length + ' moves';
+}
+
+function animateJourney(journeys, name) {
+  clearMap();
+  const coords = journeys.map(j => [+j.lat, +j.lon]);
+
+  // Draw full path dimmed
+  L.polyline(coords, { color: 'rgba(0,170,255,0.2)', weight: 2, dashArray: '4 4' }).addTo(_map);
+
+  // Animate markers one by one
+  let i = 0;
+  function addNext() {
+    if (i >= journeys.length) return;
+    const j = journeys[i];
+    const isLast = i === journeys.length - 1;
+    const marker = L.circleMarker([+j.lat, +j.lon], {
+      radius: isLast ? 10 : 6,
+      fillColor: isLast ? '#00CC44' : '#00AAFF',
+      color: isLast ? '#00CC44' : '#00AAFF',
+      weight: 2,
+      fillOpacity: 0.9
+    }).addTo(_map);
+    marker.bindPopup(`<b>${j.location_name}</b><br>${j.year || ''}${j.reason ? '<br>' + j.reason : ''}`);
+    if (i > 0) {
+      L.polyline([[+journeys[i-1].lat, +journeys[i-1].lon], [+j.lat, +j.lon]], {
+        color: '#00AAFF', weight: 2, opacity: 0.7
+      }).addTo(_map);
+    }
+    // Highlight timeline step
+    document.querySelectorAll('.journey-step').forEach((el,idx) => el.classList.toggle('active', idx === i));
+    i++;
+    if (i < journeys.length) _replayTimer = setTimeout(addNext, 800);
+    else _map.fitBounds(coords.map(c => c));
+  }
+  addNext();
+}
+
+function renderTimeline(journeys) {
+  document.getElementById('timeline').innerHTML = journeys.map((j,i) => `
+    <div class="journey-step" onclick="focusStep(${i})">
+      <div class="step-year">${j.year || '—'}</div>
+      <div>
+        <div class="step-loc">${j.location_name || 'Unknown location'}</div>
+        ${j.reason ? '<div class="step-reason">' + j.reason + '</div>' : ''}
+        ${j.category ? '<span class="step-cat">' + j.category + '</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+function focusStep(idx) {
+  if (!_journeys[idx]) return;
+  const j = _journeys[idx];
+  _map.setView([+j.lat, +j.lon], 5, { animate: true });
+  document.querySelectorAll('.journey-step').forEach((el,i) => el.classList.toggle('active', i === idx));
+}
+
+function clearMap() {
+  if (_replayTimer) clearTimeout(_replayTimer);
+  if (_map) { _map.eachLayer(l => { if (!(l instanceof L.TileLayer)) _map.removeLayer(l); }); }
+}
+
+async function shareMap() {
+  // Static PNG via html2canvas fallback — prompt user to screenshot
+  alert('To save your migration map: take a screenshot of the map above, or use your browser\'s Print function to save as PDF.');
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

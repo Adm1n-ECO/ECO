@@ -310,3 +310,129 @@ input::placeholder, textarea::placeholder {
 [data-theme="parchment"] .info-card {
   color: var(--color-text);
 }
+
+/* ============================================================
+   ECO GLOBAL MOBILE STYLES — Session 11
+   Applies across all pages via theme.css
+   ============================================================ */
+
+/* ── Base mobile resets ───────────────────────────────────── */
+@media (max-width: 600px) {
+
+  /* Prevent horizontal scroll from fixed-width elements */
+  body { overflow-x: hidden; }
+
+  /* Page wrappers — full width with safe padding */
+  .page-wrap,
+  .content-wrap,
+  .inner-wrap,
+  .app-wrap {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    max-width: 100% !important;
+  }
+
+  /* Cards — full width, reduced padding */
+  .card, .section-card, .org-card, .nation-card,
+  .network-card, .export-card, .hero-card,
+  .net-post-card, .feed-card {
+    border-radius: 10px;
+    padding: 16px !important;
+  }
+
+  /* Grids → single column */
+  .nation-grid,
+  .network-grid,
+  .org-grid,
+  .stats-row,
+  .info-grid,
+  .connections-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Stats row → 2 columns on mobile */
+  .stats-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Typography — scale down large headings */
+  .page-title { font-size: 24px !important; }
+  .hero-name  { font-size: 22px !important; }
+
+  /* Tables — horizontal scroll container */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Nav hamburger — ensure tap target is 44px min */
+  .eco-hdr-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Theme selector — larger tap target on mobile */
+  #eco-theme-selector {
+    bottom: 12px !important;
+    right: 12px !important;
+  }
+  .theme-toggle-btn {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 18px !important;
+  }
+  .theme-panel {
+    right: 0 !important;
+    bottom: 48px !important;
+  }
+
+  /* Floating buttons — safe from notch/home bar */
+  .admin-float-btn,
+  #eco-theme-selector {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Hide non-essential decorative elements */
+  .desktop-only { display: none !important; }
+
+  /* Full-width buttons on mobile */
+  .btn-primary,
+  .btn-green,
+  .export-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Prevent overflow in post/note content */
+  .npc-content,
+  .hero-bio,
+  .card-desc {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Tab bars — scrollable horizontal */
+  .page-tabs,
+  .tab-row {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+  .page-tabs::-webkit-scrollbar { display: none; }
+}
+
+/* ── Tablet (601–900px) ───────────────────────────────────── */
+@media (min-width: 601px) and (max-width: 900px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .nation-grid,
+  .network-grid,
+  .org-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .page-title { font-size: 28px !important; }
+}

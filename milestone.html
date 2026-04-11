@@ -69,6 +69,13 @@ body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-se
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
 .toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+
+@media(max-width:600px){
+  .page-wrap,.inner,.content{padding-left:14px!important;padding-right:14px!important;}
+  .grid-2,.grid-3,.card-grid{grid-template-columns:1fr!important;}
+  h1,.page-title{font-size:24px!important;}
+  .stat-row,.stats-grid{grid-template-columns:1fr 1fr!important;}
+}
 </style>
 </head>
 <body>

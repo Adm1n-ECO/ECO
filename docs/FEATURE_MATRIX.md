@@ -82,10 +82,24 @@
 
 | ID | Feature | Priority | Notes |
 |---|---|---|---|
-| TRIBE-01 | Tribal network expansion | High | sql/003 ready · tribal_nations, tribal_network_profiles, user_network_memberships · Graton Rancheria seeded |
-| ORG-01 | Org Admin dashboard | High | sql/004 ready · org_user_access, org_activity_log, admin_user_id added to org_subscriptions |
-| GEDCOM-01 | GEDCOM export | Medium | Standard family tree interoperability |
-| VEND-01 | Vendor marketplace | Medium | Language learning affiliate · Phase 3 revenue |
-| OFF-01 | Offline-first mode | Medium | Service worker · IndexedDB · tribal/remote use |
+| TRIBE-01 | Tribal network expansion | High | ✅ SQL done · tribe.html built · network switcher in header.js |
+| ORG-01 | Org Admin dashboard | High | ✅ SQL done · org-admin.html built · module added to admin.html |
+| GEDCOM-01 | GEDCOM export | Medium | ✅ gedcom-export.html built · GEDCOM 5.5.1 · admin sees all members |
+| VEND-01 | Vendor marketplace | Medium | ✅ 008_vendor-marketplace edge function built · opt-in gated · geo+type matching |
+| OFF-01 | Offline-first mode | Medium | ✅ service-worker.js built · registered via header.js · cache-first static · network-first API |
 | SOV-01 | On-premise mini-server | Low | Tribal sovereignty · no cloud dependency |
-| VIDEO-01 | Video in posts | Low | sql/005 ready · allow_video enabled · video_url + video_thumbnail added to network_posts |
+| VIDEO-01 | Video in posts | Low | ✅ SQL done · video rendering in user.html feed |
+
+## ✅ SESSION 11 ADDITIONS
+
+| ID | Feature | Page | Notes |
+|---|---|---|---|
+| VIDEO-02 | Video upload UI | video-upload.html | Drag/drop · 50MB limit · storage bucket · network-only |
+| JOURNEY-01 | Journey Replay | journey-replay.html | Leaflet animated map · timeline · ?id= param |
+| TRIBE-02 | Tribal onboarding page | tribe-onboard.html | Public landing · data sovereignty tiers · nations list |
+| MOBILE-01 | Global mobile CSS | theme.css | 600px breakpoint · all grids → 1col · safe-area insets |
+| MOBILE-02 | Theme selector mobile | theme-selector.js | Swipe-to-close · tap target · safe positioning |
+| FIX-01 | claim.html ?id= | claim.html | Auto-selects profile from URL param |
+| FIX-02 | join.html suggest | join.html + member.html | Pre-fills search from member profile invite button |
+| FIX-03 | household nav | header.js | My Household in authenticated nav |
+| BRAND-01 | Remove LookMeUp refs | home, confluence, network | Footer cleaned |

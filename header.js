@@ -33,6 +33,8 @@
       'map-pins.html':'Map Pins','network-map.html':'Network Map','photos.html':'Photos',
       'household.html':'My Household','join.html':'Invite to Network',
       'pet.html':'Pet Profile','sovereign.html':'Sovereign',
+      'tribe.html':'Tribal Networks','org-admin.html':'Org Admin','gedcom-export.html':'GEDCOM Export',
+      'video-upload.html':'Share Video','journey-replay.html':'Journey Replay','tribe-onboard.html':'Tribal Networks',
     };
     if (INNER[path])
       return [{label:INNER[path],href:path,active:true}];
@@ -51,6 +53,7 @@
   function appNav(isSuperUser) {
     return [
       {label:'My Network',href:'user.html'},
+      {label:'My Household',href:'household.html'},
       {label:'Photos',href:'photos.html'},
       {label:'Globe',href:'globe.html'},
       {label:'Tree',href:'tree.html'},
@@ -553,3 +556,33 @@
     inject();
   }
 })();
+
+
+// ── Network Switcher ─────────────────────────────────────────
+async function ecoCheckNetworkSwitcher(userId) {
+  if (!window.ecoSB || !userId) return;
+  try {
+    const { data } = await window.ecoSB.from('user_network_memberships')
+      .select('network_id, networks(name)')
+      .eq('user_id', userId).eq('status', 'active');
+    if (!data || data.length < 1) return;
+    const existing = document.getElementById('eco-network-switcher');
+    if (existing) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'eco-network-switcher';
+    wrap.style.cssText = 'position:fixed;bottom:60px;right:16px;z-index:999;background:#0D1820;border:1px solid rgba(0,170,255,.3);border-radius:10px;padding:10px 14px;font-size:12px;font-family:Arial,Helvetica,sans-serif;';
+    wrap.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:6px;">YOUR NETWORKS</div>'
+      + '<div style="color:#00AAFF;font-weight:700;cursor:default;padding:3px 0;">lightning-001 (current)</div>'
+      + data.map(m => '<div style="color:rgba(255,255,255,.6);cursor:pointer;padding:3px 0;" onclick="alert(\'Switching networks coming soon — ' + (m.networks?.name || m.network_id) + '\')">→ ' + (m.networks?.name || m.network_id) + '</div>').join('');
+    document.body.appendChild(wrap);
+  } catch(e) {}
+}
+window.ecoCheckNetworkSwitcher = ecoCheckNetworkSwitcher;
+
+// ── Service Worker Registration ──────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .catch(err => console.warn('[ECO] SW registration failed:', err));
+  });
+}

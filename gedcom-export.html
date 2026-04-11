@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEDCOM Export — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<style>
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .page-wrap{max-width:700px;margin:0 auto;padding:80px 24px 60px;}
+  .page-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:32px;margin-bottom:6px;}
+  .page-sub{color:var(--color-text-dim);font-size:14px;margin-bottom:40px;line-height:1.6;}
+  .export-card{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:32px;margin-bottom:24px;}
+  .card-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:16px;margin-bottom:8px;}
+  .card-desc{font-size:13px;color:var(--color-text-dim);margin-bottom:20px;line-height:1.6;}
+  .export-btn{display:inline-block;background:var(--color-accent-b);color:var(--color-bg);font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:13px;padding:11px 24px;border-radius:8px;cursor:pointer;border:none;transition:opacity .15s;}
+  .export-btn:hover{opacity:.85;}
+  .export-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .status-msg{font-size:13px;margin-top:14px;min-height:18px;color:var(--color-accent-c);}
+  .stats-line{font-size:12px;color:var(--color-text-dim);margin-bottom:16px;}
+  .note-box{background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:16px 20px;font-size:12px;color:var(--color-text-dim);line-height:1.7;margin-top:24px;}
+  .note-box strong{color:var(--color-accent-b);}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page-wrap">
+  <div class="page-title">GEDCOM Export</div>
+  <div class="page-sub">Export your network as a standard GEDCOM file — compatible with Ancestry, FamilySearch, MyHeritage, and most genealogy software.</div>
+
+  <div class="export-card">
+    <div class="card-title">Full Network Export</div>
+    <div class="stats-line" id="stats-line">Loading network stats…</div>
+    <div class="card-desc">Exports all members, birth dates, locations, and family relationships in GEDCOM 5.5.1 format. Photos and cultural vocabulary are not included (GEDCOM limitation).</div>
+    <button class="export-btn" id="export-btn" onclick="runExport()" disabled>Export GEDCOM</button>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+
+  <div class="note-box">
+    <strong>What's included:</strong> Full names · Birth month/year · Birth location · Current location · Family relationships (parent, child, spouse, sibling)<br><br>
+    <strong>What's excluded:</strong> Photos · Cultural vocabulary · Journey data · Network posts · Passing dates are included as death records<br><br>
+    <strong>Privacy:</strong> Only members with <code>visible_to = 'all'</code> are exported unless you are a SystemAdmin, in which case all members are included.
+  </div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+let _members = [], _rels = [], _isAdmin = false;
+
+ecoAuthGuard(async session => {
+  const { data: me } = await sb.from('users')
+    .select('platform_role,user_id').eq('auth_id', session.user.id).maybeSingle();
+  _isAdmin = me && ['SystemAdmin','SuperUser'].includes(me.platform_role);
+
+  let membersQ = sb.from('users').select(
+    'user_id,full_name,first_name,last_name,gender,birth_mm_yyyy,birth_location,passing_mm_yyyy,status'
+  ).eq('network_id','lightning-001');
+  if (!_isAdmin) membersQ = membersQ.eq('visible_to','all');
+
+  const [mRes, rRes] = await Promise.all([
+    membersQ,
+    sb.from('relationships').select('subject_id,target_id,relation_type').eq('network_id','lightning-001')
+  ]);
+
+  _members = mRes.data || [];
+  _rels = rRes.data || [];
+
+  document.getElementById('stats-line').textContent =
+    `${_members.length} members · ${_rels.length} relationships · lightning-001`;
+  document.getElementById('export-btn').disabled = false;
+});
+
+function runExport() {
+  const btn = document.getElementById('export-btn');
+  const msg = document.getElementById('status-msg');
+  btn.disabled = true;
+  msg.textContent = 'Building GEDCOM…';
+
+  try {
+    const gedcom = buildGEDCOM(_members, _rels);
+    downloadFile(gedcom, `ECO_lightning-001_${new Date().toISOString().slice(0,10)}.ged`, 'text/plain');
+    msg.textContent = `✓ Exported ${_members.length} individuals.`;
+  } catch(e) {
+    msg.style.color = '#ff6b6b';
+    msg.textContent = 'Export failed: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+function buildGEDCOM(members, rels) {
+  const lines = [];
+  const now = new Date();
+  const gedDate = now.toISOString().slice(0,10).replace(/-/g,'/');
+
+  // Header
+  lines.push('0 HEAD');
+  lines.push('1 SOUR EternalCurrent');
+  lines.push('2 NAME EternalCurrent.Online');
+  lines.push('2 VERS 1.0');
+  lines.push('1 GEDC');
+  lines.push('2 VERS 5.5.1');
+  lines.push('1 CHAR UTF-8');
+  lines.push(`1 DATE ${gedDate}`);
+  lines.push('1 FILE ECO_Export.ged');
+
+  // Individual records
+  members.forEach(m => {
+    const id = `@I${m.user_id.replace(/[^a-zA-Z0-9]/g,'').slice(0,16)}@`;
+    lines.push(`0 ${id} INDI`);
+    lines.push(`1 NAME ${m.full_name || 'Unknown'}`);
+    if (m.first_name) lines.push(`2 GIVN ${m.first_name}`);
+    if (m.last_name) lines.push(`2 SURN ${m.last_name}`);
+    if (m.gender === 'male') lines.push('1 SEX M');
+    else if (m.gender === 'female') lines.push('1 SEX F');
+
+    if (m.birth_mm_yyyy) {
+      lines.push('1 BIRT');
+      const parts = m.birth_mm_yyyy.split('/');
+      const months = ['','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      const mon = parseInt(parts[0]);
+      const yr = parts[1];
+      lines.push(`2 DATE ${months[mon] || ''} ${yr}`.trim());
+      if (m.birth_location) lines.push(`2 PLAC ${m.birth_location}`);
+    }
+
+    if (m.status === 'Passed' && m.passing_mm_yyyy) {
+      lines.push('1 DEAT Y');
+      const parts = m.passing_mm_yyyy.split('/');
+      const months = ['','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      lines.push(`2 DATE ${months[parseInt(parts[0])]||''} ${parts[1]}`.trim());
+    }
+  });
+
+  // Build family units from spouse relationships
+  const spouseRels = rels.filter(r => r.relation_type === 'Spouse');
+  const families = new Map();
+  spouseRels.forEach(r => {
+    const key = [r.subject_id, r.target_id].sort().join('_');
+    if (!families.has(key)) families.set(key, { husb: r.subject_id, wife: r.target_id, children: [] });
+  });
+
+  // Add children
+  rels.filter(r => r.relation_type === 'Parent').forEach(r => {
+    // subject_id is parent of target_id
+    families.forEach((fam, key) => {
+      if (fam.husb === r.subject_id || fam.wife === r.subject_id) {
+        if (!fam.children.includes(r.target_id)) fam.children.push(r.target_id);
+      }
+    });
+  });
+
+  const memberIdMap = new Map(members.map(m => [m.user_id, `@I${m.user_id.replace(/[^a-zA-Z0-9]/g,'').slice(0,16)}@`]));
+  let famIdx = 1;
+  families.forEach(fam => {
+    const fid = `@F${famIdx++}@`;
+    lines.push(`0 ${fid} FAM`);
+    if (memberIdMap.has(fam.husb)) lines.push(`1 HUSB ${memberIdMap.get(fam.husb)}`);
+    if (memberIdMap.has(fam.wife)) lines.push(`1 WIFE ${memberIdMap.get(fam.wife)}`);
+    fam.children.forEach(cid => {
+      if (memberIdMap.has(cid)) lines.push(`1 CHIL ${memberIdMap.get(cid)}`);
+    });
+  });
+
+  lines.push('0 TRLR');
+  return lines.join('\n');
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

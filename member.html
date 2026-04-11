@@ -159,7 +159,17 @@ body{background:var(--color-bg);color:var(--color-text);}
     .contrib-nominate-row{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
     .contrib-nom-pill{padding:6px 14px;border-radius:20px;border:1px solid rgba(0,170,255,.2);background:rgba(0,170,255,.05);color:rgba(0,170,255,.7);font-size: 12px;cursor:pointer;transition:all .15s;}
     .contrib-nom-pill:hover{border-color:var(--blue);color:var(--blue);background:rgba(0,170,255,.12);}
-  </style>
+  
+@media(max-width:600px){
+  .hero-card{flex-direction:column;gap:14px;padding:18px;}
+  .avatar-ring{width:64px;height:64px;font-size:22px;}
+  .hero-name{font-size:22px;}
+  .hero-tags{gap:6px;}
+  .connections-grid{grid-template-columns:1fr 1fr;}
+  .info-grid{gap:6px;}
+  .contrib-nom-pill{font-size:11px;padding:5px 10px;}
+}
+</style>
 </head>
 <body>
 <div id="eco-header"></div>
@@ -370,7 +380,7 @@ function renderPage(m, related, relMap) {
           ${m.current_location?`<span class="tag dim">📍 ${m.current_location}</span>`:''}
         </div>
         ${m.bio?`<div class="hero-bio">${m.bio}</div>`:`<div class="nudge">No bio yet — their story is waiting to be told.</div>`}
-        ${(!isSelf && !m.auth_id) ? `<div style="margin-top:14px;"><a href="join.html?ref=${_me?_me.user_id:''}" style="display:inline-block;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;text-decoration:none;cursor:pointer;">＋ Invite ${m.full_name.split(' ')[0]} to join</a></div>` : ''}
+        ${(!isSelf && !m.auth_id) ? `<div style="margin-top:14px;"><a href="join.html?ref=${_me?_me.user_id:''}&suggest=${m.full_name}" style="display:inline-block;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;text-decoration:none;cursor:pointer;">＋ Invite ${m.full_name.split(' ')[0]} to join</a></div>` : ''}
         ${isPassed?`<div class="passed-note">Their current lives on in everyone they touched.</div>`:''}
       </div>
     </div>

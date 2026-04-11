@@ -1419,6 +1419,14 @@ body{background:var(--color-bg);color:var(--color-text);}
           <div id="sync-challenges-list"></div>
         </div>
 
+
+        <!-- ORG ADMIN MODULE -->
+        <div class="section-card" id="org-admin-section">
+          <div class="panel-title">🏢 Org Admin</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Multi-network organisation management. <a href="org-admin.html" style="color:#00AAFF;">Open full dashboard →</a></div>
+          <div id="org-admin-summary"><div style="color:var(--muted);font-size:12px;">Loading…</div></div>
+        </div>
+
       </div><!-- /content -->
     </div><!-- /main -->
   </div><!-- /layout -->
@@ -1522,6 +1530,7 @@ async function initApp(user) {
   await loadMembers();
   await loadBannerStatements();
   loadActivityLog();
+  loadOrgSummary();
 }
 
 // ── STATS ─────────────────────────────────────────────
@@ -2468,6 +2477,22 @@ function selectEmailUpdateUser(uid, name, email){
   document.getElementById('email-update-search').value = name;
   document.getElementById('email-update-value').value = email;
   document.getElementById('email-update-results').innerHTML='';
+}
+
+
+async function loadOrgSummary() {
+  const el = document.getElementById('org-admin-summary');
+  if (!el) return;
+  const { data } = await sb.from('org_subscriptions').select('org_name,org_type,status,member_count,network_ids');
+  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No organisations yet.</div>'; return; }
+  el.innerHTML = data.map(o => `
+    <div style="background:#0D1820;border:1px solid rgba(0,170,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;font-size:13px;">ORG: ${o.org_name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${o.org_type||''} · ${o.network_ids?.length||0} networks · ${o.member_count||0} members</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:2px 10px;border-radius:10px;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;">${(o.status||'').toUpperCase()}</span>
+    </div>`).join('');
 }
 
 async function updateMemberEmail(){

@@ -187,6 +187,13 @@
     grid-template-columns: 40px 1fr;
   }
 }
+
+@media(max-width:600px){
+  .page-wrap,.inner,.content{padding-left:14px!important;padding-right:14px!important;}
+  .grid-2,.grid-3,.card-grid{grid-template-columns:1fr!important;}
+  h1,.page-title{font-size:24px!important;}
+  .stat-row,.stats-grid{grid-template-columns:1fr 1fr!important;}
+}
 </style>
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tribal Networks — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<style>
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .page-wrap{max-width:900px;margin:0 auto;padding:80px 24px 60px;}
+  .page-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:32px;margin-bottom:6px;}
+  .page-sub{color:var(--color-text-dim);font-size:14px;margin-bottom:40px;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-c);margin-bottom:14px;}
+  .nation-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:40px;}
+  .nation-card{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:12px;padding:20px;cursor:pointer;transition:border-color .15s;}
+  .nation-card:hover{border-color:var(--color-accent-b);}
+  .nation-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:15px;margin-bottom:4px;}
+  .nation-meta{font-size:12px;color:var(--color-text-dim);line-height:1.6;}
+  .nation-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:8px;background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;}
+  .network-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .network-card{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:12px;padding:24px;position:relative;overflow:hidden;}
+  .network-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--color-accent-b),var(--color-accent-c));}
+  .net-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:17px;margin-bottom:4px;}
+  .net-meta{font-size:12px;color:var(--color-text-dim);margin-bottom:12px;}
+  .net-stat{display:flex;gap:20px;font-size:12px;}
+  .net-stat span{color:var(--color-text-dim);}
+  .net-stat strong{color:var(--color-text);}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--color-text-dim);font-size:14px;}
+  .admin-btn{display:inline-block;background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:var(--color-accent-b);font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px;text-decoration:none;cursor:pointer;transition:background .15s;margin-top:12px;}
+  .admin-btn:hover{background:rgba(0,170,255,.2);}
+  .loading{color:var(--color-text-dim);font-size:13px;padding:20px 0;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page-wrap">
+  <div class="page-title">Tribal Networks</div>
+  <div class="page-sub">Cultural sovereignty through connected networks.</div>
+
+  <div class="section-label">Recognized Nations</div>
+  <div class="nation-grid" id="nations-grid"><div class="loading">Loading nations…</div></div>
+
+  <div class="section-label">Active Tribal Networks</div>
+  <div class="network-grid" id="networks-grid"><div class="loading">Loading networks…</div></div>
+</div>
+
+<script>
+const sb = window.ecoSB;
+
+async function loadAll() {
+  const [nationsRes, networksRes] = await Promise.all([
+    sb.from('tribal_nations').select('*').eq('active', true).order('name'),
+    sb.from('tribal_network_profiles')
+      .select('*, networks(network_id, name, status), tribal_nations(name, region)')
+      .order('created_at', { ascending: false })
+  ]);
+
+  renderNations(nationsRes.data || []);
+  renderNetworks(networksRes.data || []);
+}
+
+function renderNations(nations) {
+  const el = document.getElementById('nations-grid');
+  if (!nations.length) { el.innerHTML = '<div class="empty-state">No nations listed yet.</div>'; return; }
+  el.innerHTML = nations.map(n => `
+    <div class="nation-card">
+      <div class="nation-name">${n.name}</div>
+      <div class="nation-meta">
+        ${n.region ? n.region + (n.state ? ', ' + n.state : '') : ''}
+        ${n.language_group ? '<br>' + n.language_group : ''}
+        ${n.territory_desc ? '<br>' + n.territory_desc : ''}
+      </div>
+      <div class="nation-badge">${n.federal_status || 'Status Unknown'}</div>
+    </div>`).join('');
+}
+
+function renderNetworks(profiles) {
+  const el = document.getElementById('networks-grid');
+  if (!profiles.length) { el.innerHTML = '<div class="empty-state">No tribal networks active yet.<br>Graton Rancheria pilot coming soon.</div>'; return; }
+  el.innerHTML = profiles.map(p => `
+    <div class="network-card">
+      <div class="net-name">${p.networks?.name || 'Unnamed Network'}</div>
+      <div class="net-meta">${p.tribal_nations?.name || ''} · ${p.tribal_nations?.region || ''}</div>
+      <div class="net-meta">${p.data_protocol === 'on_premise' ? '🔒 On-Premise' : p.data_protocol === 'hybrid' ? '⚡ Hybrid' : '☁️ Cloud'}</div>
+      ${p.is_sovereign ? '<div class="nation-badge" style="background:rgba(0,170,255,.1);border-color:rgba(0,170,255,.3);color:#00AAFF;">Sovereign Data</div>' : ''}
+    </div>`).join('');
+}
+
+ecoAuthGuard(async session => { await loadAll(); });
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>

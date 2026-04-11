@@ -287,6 +287,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var
 .npc-react-btn{font-size: 12px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:#3A5A54;background:none;cursor:pointer;transition:all .13s;}
 .npc-react-btn:hover,.npc-react-btn.active{background:rgba(0,170,255,.10);border-color:rgba(0,170,255,.25);color:#00AAFF;}
 .feed-empty{font-size:13px;color:#3A5A54;text-align:center;padding:28px 0;font-style:italic;}
+.npc-video{margin-top:8px;}
 
 /* ── AVATAR UPLOAD ── */
 .avatar-wrap{position:relative;flex-shrink:0;cursor:pointer;}
@@ -329,6 +330,17 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var
 .tagged-label{font-size:13px;color:#E8F4F0;flex:1;}
 .tagged-meta{font-size: 12px;color:#3A5A54;}
 .contrib-role-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size: 12px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;margin:3px;}
+
+@media(max-width:600px){
+  .page-tabs-wrap{padding:0 12px;}
+  .page-tab-btn{font-size:12px;padding:8px 12px;white-space:nowrap;}
+  .net-post-card{padding:14px;}
+  .npc-top{gap:10px;}
+  .npc-av{width:32px;height:32px;font-size:12px;flex-shrink:0;}
+  .prompt-bar{padding:12px;}
+  .stat-panel{grid-template-columns:1fr 1fr;}
+  .quest-card{padding:14px;}
+}
 </style>
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -398,6 +410,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var
             <button class="post-type-btn" onclick="selectPostType('milestone',this)">Milestone</button>
           </div>
           <button class="post-submit-btn" id="post-submit-btn" onclick="submitPost()">Post →</button>
+          <a href="video-upload.html" style="font-size:11px;color:var(--color-accent-b);text-decoration:none;font-weight:700;margin-left:10px;">🎬 Video</a>
         </div>
       </div>
       <div id="net-posts-feed"><div class="feed-empty">Loading network posts…</div></div>
@@ -1352,7 +1365,7 @@ function usePrompt(el) {
 
 async function loadNetworkPosts() {
   const { data } = await sb.from('network_posts')
-    .select('id,posted_by,posted_by_name,post_type,content,created_at')
+    .select('id,posted_by,posted_by_name,post_type,content,created_at,video_url,video_thumbnail')
     .eq('network_id','lightning-001').eq('is_deleted', false)
     .order('created_at',{ascending:false}).limit(20);
 
@@ -1370,6 +1383,7 @@ async function loadNetworkPosts() {
       </div>
       <span class="npc-type">${p.post_type || 'share'}</span>
       <div class="npc-content">${p.content}</div>
+      ${p.video_url ? `<div class="npc-video"><video controls preload="metadata" style="width:100%;border-radius:8px;margin-top:10px;max-height:320px;"><source src="${p.video_url}"><p style="color:rgba(255,255,255,.4);font-size:12px;">Video not supported in this browser.</p></video></div>` : ''}
       <div class="npc-reactions">
         <button class="npc-react-btn" onclick="reactPost('${p.id}','remember',this)">✓ I remember this</button>
         <button class="npc-react-btn" onclick="reactPost('${p.id}','tellmore',this)">Tell me more</button>

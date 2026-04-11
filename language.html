@@ -65,6 +65,13 @@ body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-se
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0D1825;border:1px solid rgba(0,170,255,.3);border-radius:8px;padding:10px 22px;font-size:13px;color:var(--white);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;}
 .toast.show{opacity:1;}
 .toast.green{border-color:rgba(0,204,68,.4);color:var(--green);}
+
+@media(max-width:600px){
+  .page-wrap,.inner,.content{padding-left:14px!important;padding-right:14px!important;}
+  .grid-2,.grid-3,.card-grid{grid-template-columns:1fr!important;}
+  h1,.page-title{font-size:24px!important;}
+  .stat-row,.stats-grid{grid-template-columns:1fr 1fr!important;}
+}
 </style>
 </head>
 <body>
@@ -267,7 +274,65 @@ function showToast(msg,type){
   setTimeout(()=>{t.className='toast';},2800);
 }
 </script>
+
+<!-- ── Language Learning Affiliate ── -->
+<div style="max-width:700px;margin:48px auto 0;padding:0 24px 60px;">
+  <div style="background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:28px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--color-accent-b),var(--color-accent-c));"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-c);margin-bottom:10px;">Continue Your Journey</div>
+    <div style="font-family:Arial Black,Arial,sans-serif;font-weight:900;font-size:18px;margin-bottom:8px;">Deepen your language skills</div>
+    <div style="font-size:13px;color:var(--color-text-dim);margin-bottom:20px;line-height:1.7;">Network mentorship keeps your heritage language alive. These tools help you go further — structured lessons, pronunciation practice, and vocabulary building — all at your own pace.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <a href="https://www.duolingo.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none;background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:16px;display:block;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--color-accent-b)'" onmouseout="this.style.borderColor='rgba(0,170,255,.2)'">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Duolingo</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">40+ languages · free tier · gamified daily practice</div>
+      </a>
+      <a href="https://www.italki.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none;background:rgba(0,204,68,.06);border:1px solid rgba(0,204,68,.2);border-radius:10px;padding:16px;display:block;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--color-accent-c)'" onmouseout="this.style.borderColor='rgba(0,204,68,.2)'">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">iTalki</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">1-on-1 tutors · community teachers · heritage focus</div>
+      </a>
+      <a href="https://www.pimsleur.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none;background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:16px;display:block;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--color-accent-b)'" onmouseout="this.style.borderColor='rgba(0,170,255,.2)'">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Pimsleur</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">Audio-first · South Asian languages · commuter-friendly</div>
+      </a>
+      <a href="https://www.ethnologue.com" target="_blank" rel="noopener noreferrer" style="text-decoration:none;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.15);border-radius:10px;padding:16px;display:block;transition:border-color .15s;" onmouseover="this.style.borderColor='rgba(255,200,0,.4)'" onmouseout="this.style.borderColor='rgba(255,200,0,.15)'">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Ethnologue</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">Language research · family trees · academic reference</div>
+      </a>
+    </div>
+  </div>
+</div>
+
 <script src="header.js"></script>
 <script src="theme-selector.js"></script>
+
+<!-- Language Learning Affiliate Section -->
+<div style="max-width:700px;margin:48px auto 0;padding:0 24px 60px;">
+  <div style="background:var(--color-bg2);border:1px solid var(--color-border);border-radius:14px;padding:28px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--color-accent-b),var(--color-accent-c));"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-c);margin-bottom:10px;">Continue Your Journey</div>
+    <div style="font-family:Arial Black,Arial,sans-serif;font-weight:900;font-size:18px;margin-bottom:8px;">Deepen your language skills</div>
+    <div style="font-size:13px;color:var(--color-text-dim);margin-bottom:20px;line-height:1.7;">Network mentorship keeps your heritage language alive. These tools help you go further.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <a href="https://www.duolingo.com" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:16px;display:block;">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Duolingo</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">40+ languages, free tier, gamified daily practice</div>
+      </a>
+      <a href="https://www.italki.com" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(0,204,68,.06);border:1px solid rgba(0,204,68,.2);border-radius:10px;padding:16px;display:block;">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">iTalki</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">1-on-1 tutors, community teachers, heritage focus</div>
+      </a>
+      <a href="https://www.pimsleur.com" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.2);border-radius:10px;padding:16px;display:block;">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Pimsleur</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">Audio-first, South Asian languages, commuter-friendly</div>
+      </a>
+      <a href="https://www.ethnologue.com" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.15);border-radius:10px;padding:16px;display:block;">
+        <div style="font-weight:700;font-size:14px;color:var(--color-text);margin-bottom:4px;">Ethnologue</div>
+        <div style="font-size:12px;color:var(--color-text-dim);">Language research, family trees, academic reference</div>
+      </a>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

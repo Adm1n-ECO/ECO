@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="void">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Org Admin — EternalCurrent</title>
+<link rel="stylesheet" href="theme.css">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="eco-client.js"></script>
+<style>
+  body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:Arial,Helvetica,sans-serif;}
+  .page-wrap{max-width:1000px;margin:0 auto;padding:80px 24px 60px;}
+  .page-title{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:32px;margin-bottom:6px;}
+  .page-sub{color:var(--color-text-dim);font-size:14px;margin-bottom:40px;}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-c);margin-bottom:14px;margin-top:36px;}
+  .org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+  .org-card{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:12px;padding:24px;position:relative;overflow:hidden;}
+  .org-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--color-accent-b),var(--color-accent-c));}
+  .org-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:18px;margin-bottom:4px;}
+  .org-type{font-size:12px;color:var(--color-accent-b);font-weight:700;margin-bottom:8px;text-transform:capitalize;}
+  .org-meta{font-size:13px;color:var(--color-text-dim);line-height:1.7;}
+  .status-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 10px;border-radius:10px;margin-top:10px;}
+  .status-active{background:rgba(0,204,68,.1);border:1px solid rgba(0,204,68,.3);color:#00CC44;}
+  .status-pilot{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:#00AAFF;}
+  .status-prospect{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+  .stat-box{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:10px;padding:16px;text-align:center;}
+  .stat-num{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:28px;color:var(--color-accent-b);}
+  .stat-lbl{font-size:11px;color:var(--color-text-dim);margin-top:2px;}
+  .activity-list{display:flex;flex-direction:column;gap:8px;}
+  .activity-row{background:var(--color-bg2);border:1px solid var(--color-border);border-radius:8px;padding:12px 16px;font-size:13px;display:flex;justify-content:space-between;align-items:center;}
+  .activity-action{color:var(--color-text);}
+  .activity-time{color:var(--color-text-dim);font-size:11px;}
+  .access-denied{text-align:center;padding:80px 20px;color:var(--color-text-dim);}
+  .access-denied h2{font-family:'Arial Black',Arial,sans-serif;font-size:22px;color:var(--color-text);margin-bottom:8px;}
+  .loading{color:var(--color-text-dim);font-size:13px;padding:20px 0;}
+  .empty-state{color:var(--color-text-dim);font-size:13px;padding:20px 0;text-align:center;}
+</style>
+</head>
+<body>
+<div id="eco-header"></div>
+<div class="page-wrap" id="main-content" style="display:none;">
+  <div class="page-title">Org Admin</div>
+  <div class="page-sub">Multi-network organisation management.</div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-box"><div class="stat-num" id="stat-orgs">—</div><div class="stat-lbl">Organisations</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-networks">—</div><div class="stat-lbl">Networks</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-members">—</div><div class="stat-lbl">Total Members</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-active">—</div><div class="stat-lbl">Active Orgs</div></div>
+  </div>
+
+  <div class="section-label">Organisations</div>
+  <div class="org-grid" id="org-grid"><div class="loading">Loading…</div></div>
+
+  <div class="section-label">Recent Activity</div>
+  <div class="activity-list" id="activity-list"><div class="loading">Loading…</div></div>
+</div>
+<div class="access-denied" id="access-denied" style="display:none;">
+  <h2>Access Restricted</h2>
+  <p>Org Admin is available to SystemAdmin and SuperUser only.</p>
+</div>
+
+<script>
+const sb = window.ecoSB;
+
+ecoAuthGuard(async session => {
+  const { data: me } = await sb.from('users')
+    .select('platform_role').eq('auth_id', session.user.id).maybeSingle();
+
+  if (!me || !['SystemAdmin','SuperUser'].includes(me.platform_role)) {
+    document.getElementById('access-denied').style.display = 'block';
+    return;
+  }
+  document.getElementById('main-content').style.display = 'block';
+  await loadAll();
+});
+
+async function loadAll() {
+  const [orgsRes, activityRes] = await Promise.all([
+    sb.from('org_subscriptions').select('*').order('created_at', { ascending: false }),
+    sb.from('org_activity_log').select('*').order('created_at', { ascending: false }).limit(20)
+  ]);
+
+  const orgs = orgsRes.data || [];
+
+  // Stats
+  document.getElementById('stat-orgs').textContent = orgs.length;
+  document.getElementById('stat-networks').textContent = orgs.reduce((a,o) => a + (o.network_ids?.length||0), 0);
+  document.getElementById('stat-members').textContent = orgs.reduce((a,o) => a + (o.member_count||0), 0);
+  document.getElementById('stat-active').textContent = orgs.filter(o => o.status === 'active').length;
+
+  renderOrgs(orgs);
+  renderActivity(activityRes.data || []);
+}
+
+function renderOrgs(orgs) {
+  const el = document.getElementById('org-grid');
+  if (!orgs.length) { el.innerHTML = '<div class="empty-state">No organisations yet.</div>'; return; }
+  el.innerHTML = orgs.map(o => `
+    <div class="org-card">
+      <div class="org-name">${o.org_name}</div>
+      <div class="org-type">${o.org_type || 'Organisation'}</div>
+      <div class="org-meta">
+        ${o.contact_name ? 'Contact: ' + o.contact_name + '<br>' : ''}
+        ${o.contact_email ? o.contact_email + '<br>' : ''}
+        ${o.network_ids?.length ? 'Networks: ' + o.network_ids.length : 'No networks linked'}
+        ${o.member_count ? '<br>Members: ' + o.member_count : ''}
+        ${o.price_monthly ? '<br>$' + o.price_monthly + '/mo' : ''}
+      </div>
+      <span class="status-pill status-${o.status||'prospect'}">${(o.status||'prospect').toUpperCase()}</span>
+    </div>`).join('');
+}
+
+function renderActivity(logs) {
+  const el = document.getElementById('activity-list');
+  if (!logs.length) { el.innerHTML = '<div class="empty-state">No activity yet.</div>'; return; }
+  el.innerHTML = logs.map(l => `
+    <div class="activity-row">
+      <span class="activity-action">${l.action}${l.target_type ? ' · ' + l.target_type : ''}</span>
+      <span class="activity-time">${new Date(l.created_at).toLocaleDateString()}</span>
+    </div>`).join('');
+}
+</script>
+<script src="header.js"></script>
+<script src="theme-selector.js"></script>
+</body>
+</html>
