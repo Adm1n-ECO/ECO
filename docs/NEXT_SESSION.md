@@ -18,13 +18,14 @@
 
 ```
 I'm Vikas Bakshi (STAR), founder of EternalCurrent.Online (ECO).
-INFRA: Supabase prbeyvmsyxuiggqwiham · 104 members · 941 relationships · Namecheap · Adm1n-ECO/ECO.git · git push --force
+INFRA: Supabase prbeyvmsyxuiggqwiham · 108 members · Namecheap · Adm1n-ECO/ECO.git · git push --force
+DEPLOY: extract changed files only from zip into Website\ then run deploy.bat — never git add -A — never full zip extract
 EDGE FUNCTIONS (all live): claude-proxy · stripe-create-checkout · stripe-webhook · quest-generator · weekly-digest · pulse-generator
 STRIPE (live): conductor price_1TKVWQ9AzGOao739NgU94gC2 · pro_conductor price_1TKVYU9AzGOao739sQbQxt6T · org_admin price_1TKVah9AzGOao739y5zja4UH
-ISAIAH: IB-STAR platform_role=SystemAdmin (DB set) · auth_id still null · awaiting claim
+ISAIAH: IB-STAR platform_role=SystemAdmin · auth_id null · awaiting claim
 BRAND: E=#00AAFF C=#00CC44 O=#FFF · Arial Black 900 · bg #080D14 · No forms ever
-PHASE 3 roadmap: TRIBE-01 (tribal expansion) · ORG-01 (org admin dashboard) — confirm with Vikas
-[Upload latest zip to continue]
+PHASE 3: start with TRIBE-01 or ORG-01 — confirm with Vikas
+[Upload latest ECO_Complete_Site.zip to continue]
 ```
 
 ---
