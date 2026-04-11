@@ -1,3 +1,4 @@
+// ECO v20260411-0224
 /**
  * ECO Header v3
  * Triangle is STATIC in headerHtml — always in DOM, never touched by auth.
