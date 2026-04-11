@@ -378,6 +378,15 @@ function renderPage(m, related, relMap) {
       <input class="me-inp" id="me-langs"    placeholder="Languages (comma separated)" value="${(Array.isArray(m.languages_spoken)?m.languages_spoken:m.languages_spoken?[m.languages_spoken]:[]).join(', ')}" style="width:100%;margin-bottom:8px;">
       <input class="me-inp" id="me-role"     placeholder="Family role (e.g. mother, son)" value="${m.family_role||''}" style="width:100%;margin-bottom:8px;">
       <textarea class="me-inp" id="me-bio" placeholder="Bio / story…" rows="3" style="width:100%;resize:vertical;">${m.bio||''}</textarea>
+      <div style="margin-top:12px;margin-bottom:4px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.10em;color:#3A5A54;text-transform:uppercase;margin-bottom:8px;">Profile photo</div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:rgba(0,170,255,.05);border:1px dashed rgba(0,170,255,.25);border-radius:8px;padding:10px 14px;">
+          <span style="font-size:18px;">📷</span>
+          <span style="font-size:12px;color:#5A8A80;" id="me-photo-label">Tap to upload photo</span>
+          <input type="file" id="me-photo-input" accept="image/*" style="display:none;" onchange="previewMemberPhoto(this)">
+        </label>
+        <canvas id="me-photo-canvas" style="display:none;"></canvas>
+      </div>
       <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
         <button onclick="saveMemberEdit('${m.user_id}')" style="background:#00AAFF;color:#080D14;border:none;border-radius:8px;padding:9px 22px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;cursor:pointer;" id="me-save-btn">Save →</button>
         <button onclick="document.getElementById('member-edit-panel').style.display='none'" style="background:none;border:none;color:#3A5A54;font-size:12px;cursor:pointer;">Cancel</button>
@@ -568,22 +577,18 @@ window.ecoSaveRel = async function() {
   if (btn) { btn.textContent = 'Saving…'; btn.classList.remove('ready'); }
   const culturalTagVal = document.getElementById('cultural-tag-input')?.value?.trim() || _culturalTag || null;
   try {
-    if (_myRel) {
-      const { error } = await sb.from('relationships')
-        .update({ relation_type: _selectedType, tie_strength: _tieStrength, cultural_tag: culturalTagVal })
-        .eq('subject_id', _myRel.subject_id).eq('target_id', _myRel.target_id).eq('source','manual');
-      if (error) throw error;
-      _myRel = { ..._myRel, relation_type: _selectedType, tie_strength: _tieStrength, cultural_tag: culturalTagVal };
-    } else {
-      const { data, error } = await sb.from('relationships').insert({
-        network_id: 'lightning-001',
-        subject_id: _me.user_id, target_id: TARGET_ID,
-        relation_type: _selectedType, tie_strength: _tieStrength || null,
-        cultural_tag: culturalTagVal, source: 'manual'
-      }).select().maybeSingle();
-      if (error) throw error;
-      _myRel = data;
-    }
+    // Upsert handles both new + existing (derived or manual) relationships
+    const { data, error } = await sb.from('relationships').upsert({
+      network_id: 'lightning-001',
+      subject_id: _me.user_id,
+      target_id: TARGET_ID,
+      relation_type: _selectedType,
+      tie_strength: _tieStrength || null,
+      cultural_tag: culturalTagVal,
+      source: 'manual'
+    }, { onConflict: 'subject_id,target_id' }).select().maybeSingle();
+    if (error) throw error;
+    _myRel = data || { subject_id: _me.user_id, target_id: TARGET_ID, relation_type: _selectedType, tie_strength: _tieStrength, cultural_tag: culturalTagVal, source: 'manual' };
     showToast('Connection saved', 'green');
     renderConnSlot();
   } catch(e) {
@@ -744,6 +749,32 @@ async function loadPets(userId){
 }
 
 // ── ADMIN / SELF PROFILE EDIT ─────────────────────────────────────────────
+let _memberPhotoFile = null;
+
+function previewMemberPhoto(input) {
+  if (!input.files[0]) return;
+  _memberPhotoFile = input.files[0];
+  document.getElementById('me-photo-label').textContent = _memberPhotoFile.name;
+}
+
+async function uploadMemberPhoto(userId) {
+  if (!_memberPhotoFile) return null;
+  // Resize to max 400px
+  const bmp = await createImageBitmap(_memberPhotoFile);
+  const maxDim = 400;
+  const scale = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+  const canvas = document.getElementById('me-photo-canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.82));
+  const path = `${userId}/avatar.jpg`;
+  const { error } = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (error) throw error;
+  const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path);
+  return publicUrl + '?t=' + Date.now();
+}
+
 async function saveMemberEdit(userId) {
   const btn = document.getElementById('me-save-btn');
   const err = document.getElementById('me-err');
@@ -761,20 +792,30 @@ async function saveMemberEdit(userId) {
   const langs    = langsRaw ? langsRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
   const role     = document.getElementById('me-role')?.value.trim() || null;
   const bio      = document.getElementById('me-bio')?.value.trim()  || null;
-
   const full_name = [first, last].filter(Boolean).join(' ') || null;
 
   const updates = {};
-  if (first)     updates.first_name         = first;
-  if (last)      updates.last_name          = last;
-  if (full_name) updates.full_name          = full_name;
-  if (birth)     updates.birth_mm_yyyy      = birth;
-  if (birthLoc)  updates.birth_location     = birthLoc;
-  if (loc)       updates.current_location   = loc;
-  if (origin)    updates.cultural_origin    = origin;
-  if (langs)     updates.languages_spoken   = langs;
-  if (role)      updates.family_role        = role;
-  if (bio !== null) updates.bio             = bio;
+  if (first)        updates.first_name       = first;
+  if (last)         updates.last_name        = last;
+  if (full_name)    updates.full_name        = full_name;
+  if (birth)        updates.birth_mm_yyyy    = birth;
+  if (birthLoc)     updates.birth_location   = birthLoc;
+  if (loc)          updates.current_location = loc;
+  if (origin)       updates.cultural_origin  = origin;
+  if (langs)        updates.languages_spoken = langs;
+  if (role)         updates.family_role      = role;
+  if (bio !== null) updates.bio              = bio;
+
+  try {
+    if (_memberPhotoFile) {
+      btn.textContent = 'Uploading photo…';
+      const url = await uploadMemberPhoto(userId);
+      if (url) updates.photo_id = url;
+    }
+  } catch(e) {
+    err.textContent = 'Photo upload failed: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Save →'; return;
+  }
 
   const { error } = await sb.from('users').update(updates).eq('user_id', userId);
   if (error) {
@@ -782,7 +823,6 @@ async function saveMemberEdit(userId) {
     btn.disabled = false; btn.textContent = 'Save →';
     return;
   }
-
   btn.textContent = 'Saved ✓';
   setTimeout(() => { window.location.reload(); }, 800);
 }
