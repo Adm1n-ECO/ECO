@@ -167,20 +167,13 @@ async function load(){
   ALL_MEMBERS=mR.data||[];
   ALL_RELS=rR.data||[];
 
-  // Load profile photos
-  const photoIds = ALL_MEMBERS.map(m=>m.photo_id).filter(Boolean);
-  if (photoIds.length) {
-    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
-    const photoMap = {};
-    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
-    ALL_MEMBERS.forEach(m => {
-      if (m.photo_id) m._photoUrl = photoMap[m.photo_id] || null;
-      if (m._photoUrl) {
-        const img = new Image(); img.src = m._photoUrl;
-        _imgCache[m.user_id] = img;
-      }
-    });
-  }
+  // photo_id is a direct URL — no join needed
+  ALL_MEMBERS.forEach(m => {
+    if (m.photo_id) {
+      const img = new Image(); img.src = m.photo_id;
+      _imgCache[m.user_id] = img;
+    }
+  });
 
   document.getElementById('p-stats').textContent=
     `${ALL_MEMBERS.length} members · ${ALL_RELS.length} connections`;

@@ -56,7 +56,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
 
 /* Info bar */
 .info-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;}
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;background:rgba(0,170,255,.05);border-top:1px solid rgba(0,170,255,.12);border-bottom:1px solid rgba(0,170,255,.12);margin-top:8px;}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.18);border-radius:10px;margin:12px 20px 0;}
 .filter-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(0,170,255,.55);align-self:center;margin-right:4px;}
 .filter-chip{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid rgba(0,170,255,.25);background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;font-family:Arial,sans-serif;}
 .filter-chip.active{background:rgba(0,170,255,.18);border-color:#00AAFF;color:#fff;}
@@ -231,21 +231,15 @@ async function load() {
 
   if (!members || !members.length) return;
 
-  // Load profile photos
-  const photoIds = members.map(m=>m.photo_id).filter(Boolean);
+  // photo_id is a direct URL — no join needed
   const riverImgCache = {};
-  if (photoIds.length) {
-    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
-    const photoMap = {};
-    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
-    members.forEach(m => {
-      if (m.photo_id && photoMap[m.photo_id]) {
-        m._photoUrl = photoMap[m.photo_id];
-        const img = new Image(); img.src = m._photoUrl;
-        riverImgCache[m.user_id] = img;
-      }
-    });
-  }
+  members.forEach(m => {
+    if (m.photo_id) {
+      m._photoUrl = m.photo_id;
+      const img = new Image(); img.src = m.photo_id;
+      riverImgCache[m.user_id] = img;
+    }
+  });
 
   // Parse year from "MM/YYYY" string
   const getYear = mmyyyy => {

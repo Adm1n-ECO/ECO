@@ -197,20 +197,14 @@ async function load() {
   const members = mRes.data || [];
   const rels    = rRes.data || [];
 
-  // Load profile photos
+  // photo_id is a direct URL — no join needed
   const treeImgCache = {};
-  const photoIds = members.map(m=>m.photo_id).filter(Boolean);
-  if (photoIds.length) {
-    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
-    const photoMap = {};
-    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
-    members.forEach(m => {
-      if (m.photo_id && photoMap[m.photo_id]) {
-        const img = new Image(); img.src = photoMap[m.photo_id];
-        treeImgCache[m.user_id] = img;
-      }
-    });
-  }
+  members.forEach(m => {
+    if (m.photo_id) {
+      const img = new Image(); img.src = m.photo_id;
+      treeImgCache[m.user_id] = img;
+    }
+  });
 
   // Build segment map from relationship types
   rels.forEach(r => {
@@ -305,16 +299,17 @@ function buildGraph() {
   const links = LINKS.map(l => ({...l, source: nodeMap[l.source] || l.source, target: nodeMap[l.target] || l.target}));
 
   simulation = d3.forceSimulation(nodes)
-    .force('link',    d3.forceLink(links).id(d => d.id).distance(80).strength(.5))
-    .force('charge',  d3.forceManyBody().strength(-200))
-    .force('collide', d3.forceCollide(22))
+    .force('link',    d3.forceLink(links).id(d => d.id).distance(140).strength(.3))
+    .force('charge',  d3.forceManyBody().strength(-600))
+    .force('collide', d3.forceCollide(40))
     .force('center',  d3.forceCenter(W/2, H/2))
     .alphaDecay(.025);
 
   const linkSel = svgG.append('g').selectAll('.link').data(links).enter()
-    .append('line').attr('class','link')
+    .append('path').attr('class','link')
     .attr('stroke', d => TYPE_COLORS[d.type] || TYPE_COLORS.default)
     .attr('stroke-width', 1.4)
+    .attr('fill','none')
     .attr('marker-end', d => 'url(#arr-'+(d.type in TYPE_COLORS ? d.type : 'default')+')')
     .on('mouseover', function(){ d3.select(this).classed('highlight', true); })
     .on('mouseout',  function(){ d3.select(this).classed('highlight', false); });
@@ -370,10 +365,22 @@ function buildGraph() {
     .text(d => ini(d.name));
 
   nodeSel.append('text').attr('class','node-label').attr('y', 28)
-    .text(d => d.name ? d.name.split(' ')[0] : '?');
+    .text(d => {
+      if (!d.name) return '?';
+      const parts = d.name.split(' ').filter(Boolean);
+      return parts.length > 1 ? parts[0] + ' ' + parts[parts.length-1][0] + '.' : parts[0];
+    });
 
   simulation.on('tick', () => {
-    linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    linkSel.attr('d', d => {
+      const sx=d.source.x, sy=d.source.y, tx2=d.target.x, ty2=d.target.y;
+      const mx=(sx+tx2)/2, my=(sy+ty2)/2;
+      // Perpendicular offset for curve — proportional to link length
+      const len=Math.sqrt((tx2-sx)**2+(ty2-sy)**2)||1;
+      const offset=Math.min(len*0.25, 60);
+      const nx=-(ty2-sy)/len*offset, ny=(tx2-sx)/len*offset;
+      return `M${sx},${sy} Q${mx+nx},${my+ny} ${tx2},${ty2}`;
+    });
     nodeSel.attr('transform', d => 'translate('+d.x+','+d.y+')');
   });
 
