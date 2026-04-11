@@ -50,6 +50,7 @@ body{background:#04060d;color:#e8eaf0;font-family:Arial,Helvetica,sans-serif;dis
     <button id="s-current"   class="sty-btn"        onclick="setStyle('current')">〰 Current</button>
     <button id="s-organic"   class="sty-btn"        onclick="setStyle('organic')">🌿 Organic</button>
     <button id="s-capital"   class="sty-btn"        onclick="toggleCapital()" style="--bc:#FFD700;">⬡ Capital Map</button>
+    <button id="s-photo" class="sty-btn" onclick="togglePhotoMode()" style="--bc:#AA88FF;">👤 Photos</button>
   </div>
 <div class="nav-r">
     <span id="style-lbl" style="font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;">Energetic & Colorful</span>
@@ -132,6 +133,7 @@ function getCol(role){ return (PALETTES[currentStyle]||PALETTES.energetic)[role]
 // ── Data ──────────────────────────────────────────────────────
 let ALL_MEMBERS=[], ALL_RELS=[], NODES=[], CENTER_ID=null;
 const _imgCache = {}; // user_id → HTMLImageElement
+let _showPhotos = true;
 let nebCanvas=null, starField=[];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -422,7 +424,14 @@ function drawSun(ctx,cx,cy,t){
 }
 
 // ── Node star ─────────────────────────────────────────────────
+function togglePhotoMode() {
+  _showPhotos = !_showPhotos;
+  const btn = document.getElementById('s-photo');
+  if (btn) btn.classList.toggle('active', _showPhotos);
+}
+
 function drawPhotoCircle(ctx,x,y,r,userId){
+  if(!_showPhotos) return;
   const img=_imgCache[userId];
   if(!img||!img.complete||img.naturalWidth===0) return;
   ctx.save();
@@ -464,7 +473,7 @@ function drawNode(ctx,x,y,label,col,tier,hov,sel,onRight,t,userId){
   ctx.fillStyle=sg;ctx.beginPath();ctx.arc(x,y,r*2.5,0,Math.PI*2);ctx.fill();
   // photo overlays glow dot
   if(userId) drawPhotoCircle(ctx,x,y,r*2.5,userId);
-  const fs=tier===1?14:tier===2?12:11;const pad=r*2.5+6;
+  const fs=tier===1?17:tier===2?15:13;const pad=r*2.5+8;
   ctx.save();ctx.font=`${sel?700:hov?600:500} ${sel?fs+2:fs}px Arial Black,Arial,sans-serif`;ctx.textBaseline='middle';
   ctx.shadowColor=col;ctx.shadowBlur=sel?20:hov?12:6;ctx.fillStyle=rgba('#ffffff',sel?1:hov?.96:.88);
   onRight?(ctx.textAlign='left',ctx.fillText(label,x+pad,y)):(ctx.textAlign='right',ctx.fillText(label,x-pad,y));

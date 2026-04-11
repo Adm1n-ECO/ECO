@@ -43,8 +43,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
 /* Node islands */
 .node-island{fill:rgba(0,170,255,.12);stroke:rgba(0,170,255,.60);stroke-width:1;}
 .node-island:hover{fill:rgba(0,170,255,.22);cursor:pointer;}
-.node-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;fill:#E8F4F0;text-anchor:middle;pointer-events:none;}
-.node-years{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#8ECEC8;text-anchor:middle;pointer-events:none;}
+.node-name{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:15px;fill:#E8F4F0;text-anchor:middle;pointer-events:none;}
+.node-years{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#8ECEC8;text-anchor:middle;pointer-events:none;}
 .gen-label{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size: 12px;fill:#7ABDB5;letter-spacing:.10em;text-transform:uppercase;}
 .confluence-ring{fill:none;stroke:rgba(0,204,68,.70);stroke-width:1.2;stroke-dasharray:3 2;}
 
@@ -141,6 +141,10 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
   </svg>
 
   <!-- Info bar (populated by JS) -->
+  <!-- Photo toggle -->
+  <div id="river-photo-toggle" style="display:none;padding:8px 20px 0;">
+    <button onclick="toggleRiverPhotos()" id="river-photo-btn" style="font-size:11px;font-weight:700;padding:4px 12px;border:1px solid rgba(170,136,255,.35);border-radius:20px;background:rgba(170,136,255,.1);color:#AA88FF;cursor:pointer;font-family:Arial,sans-serif;">👤 Photos</button>
+  </div>
   <!-- Filter bar (populated by JS) -->
   <div class="filter-bar" id="filter-bar" style="display:none;">
     <span class="filter-label">Filter</span>
@@ -174,9 +178,20 @@ function svgEl(tag, attrs) {
   return el;
 }
 
+let _riverShowPhotos = true;
+function toggleRiverPhotos() {
+  _riverShowPhotos = !_riverShowPhotos;
+  const btn = document.getElementById('river-photo-btn');
+  if (btn) btn.style.opacity = _riverShowPhotos ? '1' : '.4';
+  // Show/hide all photo avatars in the river SVG
+  document.querySelectorAll('[data-photo-node]').forEach(el => {
+    el.style.display = _riverShowPhotos ? '' : 'none';
+  });
+}
+
 function nodeIsland(cx, cy, name, years, color, onHover, onLeave, imgEl) {
   const g = svgEl('g', {class:'node-group', style:'cursor:pointer'});
-  const ell = svgEl('ellipse', {cx, cy, rx:62, ry:20, class:'node-island', style:`stroke:${color};`});
+  const ell = svgEl('ellipse', {cx, cy, rx:72, ry:22, class:'node-island', style:`stroke:${color};`});
   ell.addEventListener('mouseenter', onHover);
   ell.addEventListener('mouseleave', onLeave);
   const t1 = svgEl('text', {x:cx, y:cy-4, class:'node-name'}); t1.textContent = name;
@@ -201,6 +216,7 @@ function nodeIsland(cx, cy, name, years, color, onHover, onLeave, imgEl) {
       'clip-path': `url(#${clipId})`
     });
     const ring = svgEl('circle', {cx: cx-52, cy, r:13, fill:'none', stroke:'rgba(255,255,255,.45)', 'stroke-width':'1'});
+    imgSvg.setAttribute('data-photo-node','1'); ring.setAttribute('data-photo-node','1');
     g.append(imgSvg, ring);
   }
   return g;
@@ -358,6 +374,7 @@ async function load() {
   if (gens.some(g=>g.length) || origins.length) {
     document.getElementById('filter-bar').style.display = 'flex';
   }
+  document.getElementById('river-photo-toggle').style.display = 'block';
 }
 
 let tipTimeout;

@@ -68,8 +68,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
 .node-group{cursor:pointer;}
 .node-group.dim{opacity:.08;}
 .node-group.selected .node-ring{stroke-width:3px !important;}
-.node-label{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#C8D4D0;text-anchor:middle;}
-.node-sublabel{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#3A5A54;text-anchor:middle;}
+.node-label{font-family:'Arial Black',Arial,sans-serif;font-weight:700;font-size:15px;fill:#E8F4F0;text-anchor:middle;}
+.node-sublabel{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#5A8A80;text-anchor:middle;}
 .link{transition:opacity .15s;opacity:.55;}
 .link.dim{opacity:.04;}
 .link.highlight{stroke-width:3px !important;opacity:1 !important;}
@@ -146,6 +146,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
     <div class="zoom-controls">
       <button class="zc-btn" onclick="zoomIn()">+</button>
       <button class="zc-btn" onclick="zoomOut()">−</button>
+      <button class="zc-btn" id="photo-toggle-btn" onclick="togglePhotoMode()" title="Toggle photos/initials" style="font-size:11px;">👤</button>
+      <button class="zc-btn" onclick="fitView()" title="Fit all nodes" style="font-size:11px;">⊡</button>
       <button class="zc-btn" onclick="fitView()" title="Fit">⊞</button>
     </div>
 
@@ -329,15 +331,18 @@ function buildGraph() {
     .on('mouseleave', ()   => { hideTip(); });
 
   // ClipPath defs for photo avatars
-  const photoDefs = svgG.append('defs');
+  // Move defs to root SVG so clipPaths work in all browsers
+  const svgRoot = d3.select('#tree-svg');
+  svgRoot.select('defs.photo-defs').remove();
+  const photoDefs = svgRoot.insert('defs',':first-child').attr('class','photo-defs');
   nodes.forEach(d => {
     if (!d._img) return;
     photoDefs.append('clipPath').attr('id','tclip-'+d.id.replace(/[^a-z0-9]/gi,'_'))
-      .append('circle').attr('r',12);
+      .append('circle').attr('cx',0).attr('cy',0).attr('r',16);
   });
 
   nodeSel.append('circle').attr('class','node-ring')
-    .attr('r', 14)
+    .attr('r', 20)
     .attr('fill',   d => d.color + '20')
     .attr('stroke', d => d.color)
     .attr('stroke-width', 1.6);
@@ -346,25 +351,25 @@ function buildGraph() {
   nodeSel.filter(d => !!d._img)
     .append('image')
     .attr('href', d => d._img.src)
-    .attr('x', -12).attr('y', -12)
-    .attr('width', 24).attr('height', 24)
+    .attr('x', -16).attr('y', -16)
+    .attr('width', 32).attr('height', 32)
     .attr('preserveAspectRatio','xMidYMid slice')
     .attr('clip-path', d => 'url(#tclip-'+d.id.replace(/[^a-z0-9]/gi,'_')+')');
 
   // Ring over photo
   nodeSel.filter(d => !!d._img)
-    .append('circle').attr('r',12)
+    .append('circle').attr('r',16)
     .attr('fill','none')
-    .attr('stroke','rgba(255,255,255,.50)')
-    .attr('stroke-width','1.2');
+    .attr('stroke','rgba(255,255,255,.55)')
+    .attr('stroke-width','1.5');
 
   // Initials for nodes without photo
   nodeSel.filter(d => !d._img)
     .append('text').attr('text-anchor','middle').attr('dominant-baseline','central')
-    .attr('font-size','9px').attr('font-weight','700').attr('fill',d=>d.color)
+    .attr('font-size','11px').attr('font-weight','700').attr('fill',d=>d.color)
     .text(d => ini(d.name));
 
-  nodeSel.append('text').attr('class','node-label').attr('y', 24)
+  nodeSel.append('text').attr('class','node-label').attr('y', 28)
     .text(d => d.name ? d.name.split(' ')[0] : '?');
 
   simulation.on('tick', () => {
@@ -434,12 +439,32 @@ function closePanel() {
   if (svgG) { svgG.selectAll('.node-group').classed('dim', false); svgG.selectAll('.link').classed('dim', false); updateVisibility(); }
 }
 
+// ── PHOTO TOGGLE ───────────────────────────────────────────────
+let _showPhotos = true;
+function togglePhotoMode() {
+  _showPhotos = !_showPhotos;
+  document.getElementById('photo-toggle-btn').style.opacity = _showPhotos ? '1' : '.4';
+  // Show/hide photo images and rings, show/hide initials text
+  document.querySelectorAll('.node-group image').forEach(el => { el.style.display = _showPhotos ? '' : 'none'; });
+  document.querySelectorAll('.node-group circle:not(.node-ring)').forEach(el => { el.style.display = _showPhotos ? '' : 'none'; });
+  // Toggle initials visibility
+  if (svgG) buildGraph();
+}
+
 // ── ZOOM ─────────────────────────────────────────────────────
 function zoomIn()  { d3.select('#tree-svg').transition().duration(200).call(svgZoom.scaleBy, 1.3); }
 function zoomOut() { d3.select('#tree-svg').transition().duration(200).call(svgZoom.scaleBy, .77); }
 function fitView() {
+  if (!NODES.length) return;
   const canvas = document.getElementById('treeCanvas');
-  d3.select('#tree-svg').transition().duration(400).call(svgZoom.transform, d3.zoomIdentity.translate(canvas.offsetWidth/2, canvas.offsetHeight/2).scale(.8));
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  const xs = NODES.map(n=>n.x).filter(Boolean), ys = NODES.map(n=>n.y).filter(Boolean);
+  if (!xs.length) return;
+  const x0=Math.min(...xs)-40, x1=Math.max(...xs)+40, y0=Math.min(...ys)-40, y1=Math.max(...ys)+40;
+  const scale = Math.min(.95, Math.min(W/(x1-x0), H/(y1-y0)));
+  const tx = W/2 - scale*(x0+x1)/2, ty = H/2 - scale*(y0+y1)/2;
+  d3.select('#tree-svg').transition().duration(500)
+    .call(svgZoom.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
 }
 
 window.addEventListener('resize', buildGraph);
