@@ -195,3 +195,11 @@ Files changed this session — copy only these from the zip:
 - **Admin email update**: Two-step — update `users.email` via anon client first, then call `update-auth-email` edge function with service role. Always check `auth_id` exists before calling edge function.
 - **update-auth-email edge function**: Requires `SUPABASE_SERVICE_ROLE_KEY` secret. Verify caller is SystemAdmin/SuperUser before allowing update. Returns `{ok:true}` on success.
 - **Python replace for admin.html**: File contains multi-byte unicode (✓, …). Use Python `open().read().replace()` — str_replace tool fails on these files.
+
+## SESSION 11 — REPO RESTRUCTURE
+
+- **sql/ folder**: All SQL migrations now live in `sql/` with numeric prefix (001_, 002_…). Never in docs/ again.
+- **supabase/functions/ numbered**: All edge functions now `001_claude-proxy`, `002_stripe-create-checkout` etc. Easy to find on GitHub — no scrolling chat.
+- **4 functions have placeholder index.ts**: claude-proxy, stripe-create-checkout, stripe-webhook, quest-generator were deployed before source control. Retrieve from Supabase Dashboard and replace placeholder.
+- **deploy.bat stages both**: `sql\*.sql` and `supabaseunctions\*\*.ts` — both land on GitHub automatically every deploy.
+- **GitHub is the file store**: No more copy/paste from chat. After deploy, go to GitHub to find any SQL or edge function file.
