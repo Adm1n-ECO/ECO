@@ -214,7 +214,7 @@ const REL_LABELS = {
 // ── LOAD ALL DATA ────────────────────────────────────────────────────────────
 async function loadAll(session) {
   const { data: me } = await sb.from('users')
-    .select('user_id,full_name,platform_role').eq('auth_id', session.user.id).maybeSingle();
+    .select('user_id,full_name,platform_role,household_id').eq('auth_id', session.user.id).maybeSingle();
   _me = me;
 
   const { data: m, error } = await sb.from('users')
@@ -339,10 +339,11 @@ function fmt(val, fb='—') {
 
 function renderPage(m, related, relMap) {
   document.title = `${m.full_name||'Member'} · ECO`;
-  const isPassed = m.status === 'Passed';
-  const isSelf   = _me && _me.user_id === TARGET_ID;
-  const isAdmin  = _me && (_me.platform_role === 'SystemAdmin' || _me.platform_role === 'SuperUser');
-  const canEdit  = isSelf || isAdmin;
+  const isPassed      = m.status === 'Passed';
+  const isSelf        = _me && _me.user_id === TARGET_ID;
+  const isAdmin       = _me && (_me.platform_role === 'SystemAdmin' || _me.platform_role === 'SuperUser');
+  const sameHousehold = _me && _me.household_id && m.household_id && _me.household_id === m.household_id;
+  const canEdit       = isSelf || sameHousehold || isAdmin;
   const langs    = Array.isArray(m.languages_spoken) ? m.languages_spoken.join(', ') : (m.languages_spoken||null);
   const bdate    = m.birth_mm_yyyy ? (() => {
     const [mm,yy] = String(m.birth_mm_yyyy).split('/');
@@ -365,7 +366,7 @@ function renderPage(m, related, relMap) {
 
   const adminEditPanel = canEdit ? `
     <div id="member-edit-panel" style="display:none;background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.18);border-radius:14px;padding:20px 22px;margin-bottom:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;margin-bottom:14px;">Edit ${isSelf?'your':'this'} profile</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;margin-bottom:14px;">Edit ${isSelf ? 'your' : sameHousehold ? 'household member' : 'this'} profile</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <input class="me-inp" id="me-first"    placeholder="First name"      value="${m.first_name||''}">
         <input class="me-inp" id="me-last"     placeholder="Last name"       value="${m.last_name||''}">
