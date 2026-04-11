@@ -68,8 +68,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
 .node-group{cursor:pointer;}
 .node-group.dim{opacity:.08;}
 .node-group.selected .node-ring{stroke-width:3px !important;}
-.node-label{font-family:'Arial Black',Arial,sans-serif;font-weight:700;font-size:15px;fill:#E8F4F0;text-anchor:middle;}
-.node-sublabel{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#5A8A80;text-anchor:middle;}
+.node-label{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#C8D4D0;text-anchor:middle;}
+.node-sublabel{font-family:Arial,Helvetica,sans-serif;font-size: 12px;fill:#3A5A54;text-anchor:middle;}
 .link{transition:opacity .15s;opacity:.55;}
 .link.dim{opacity:.04;}
 .link.highlight{stroke-width:3px !important;opacity:1 !important;}
@@ -146,8 +146,6 @@ body{font-family:Arial,Helvetica,sans-serif;background:#080D14;color:#E8F4F0;-we
     <div class="zoom-controls">
       <button class="zc-btn" onclick="zoomIn()">+</button>
       <button class="zc-btn" onclick="zoomOut()">−</button>
-      <button class="zc-btn" id="photo-toggle-btn" onclick="togglePhotoMode()" title="Toggle photos/initials" style="font-size:11px;">👤</button>
-      <button class="zc-btn" onclick="fitView()" title="Fit all nodes" style="font-size:11px;">⊡</button>
       <button class="zc-btn" onclick="fitView()" title="Fit">⊞</button>
     </div>
 
@@ -197,14 +195,20 @@ async function load() {
   const members = mRes.data || [];
   const rels    = rRes.data || [];
 
-  // photo_id is a direct URL — no join needed
+  // Load profile photos
   const treeImgCache = {};
-  members.forEach(m => {
-    if (m.photo_id) {
-      const img = new Image(); img.src = m.photo_id;
-      treeImgCache[m.user_id] = img;
-    }
-  });
+  const photoIds = members.map(m=>m.photo_id).filter(Boolean);
+  if (photoIds.length) {
+    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
+    const photoMap = {};
+    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
+    members.forEach(m => {
+      if (m.photo_id && photoMap[m.photo_id]) {
+        const img = new Image(); img.src = photoMap[m.photo_id];
+        treeImgCache[m.user_id] = img;
+      }
+    });
+  }
 
   // Build segment map from relationship types
   rels.forEach(r => {
@@ -299,17 +303,16 @@ function buildGraph() {
   const links = LINKS.map(l => ({...l, source: nodeMap[l.source] || l.source, target: nodeMap[l.target] || l.target}));
 
   simulation = d3.forceSimulation(nodes)
-    .force('link',    d3.forceLink(links).id(d => d.id).distance(180).strength(.2))
-    .force('charge',  d3.forceManyBody().strength(-900))
-    .force('collide', d3.forceCollide(55))
+    .force('link',    d3.forceLink(links).id(d => d.id).distance(80).strength(.5))
+    .force('charge',  d3.forceManyBody().strength(-200))
+    .force('collide', d3.forceCollide(22))
     .force('center',  d3.forceCenter(W/2, H/2))
     .alphaDecay(.025);
 
   const linkSel = svgG.append('g').selectAll('.link').data(links).enter()
-    .append('path').attr('class','link')
+    .append('line').attr('class','link')
     .attr('stroke', d => TYPE_COLORS[d.type] || TYPE_COLORS.default)
     .attr('stroke-width', 1.4)
-    .attr('fill','none')
     .attr('marker-end', d => 'url(#arr-'+(d.type in TYPE_COLORS ? d.type : 'default')+')')
     .on('mouseover', function(){ d3.select(this).classed('highlight', true); })
     .on('mouseout',  function(){ d3.select(this).classed('highlight', false); });
@@ -326,18 +329,15 @@ function buildGraph() {
     .on('mouseleave', ()   => { hideTip(); });
 
   // ClipPath defs for photo avatars
-  // Move defs to root SVG so clipPaths work in all browsers
-  const svgRoot = d3.select('#tree-svg');
-  svgRoot.select('defs.photo-defs').remove();
-  const photoDefs = svgRoot.insert('defs',':first-child').attr('class','photo-defs');
+  const photoDefs = svgG.append('defs');
   nodes.forEach(d => {
     if (!d._img) return;
     photoDefs.append('clipPath').attr('id','tclip-'+d.id.replace(/[^a-z0-9]/gi,'_'))
-      .append('circle').attr('cx',0).attr('cy',0).attr('r',16);
+      .append('circle').attr('r',12);
   });
 
   nodeSel.append('circle').attr('class','node-ring')
-    .attr('r', 20)
+    .attr('r', 14)
     .attr('fill',   d => d.color + '20')
     .attr('stroke', d => d.color)
     .attr('stroke-width', 1.6);
@@ -346,37 +346,29 @@ function buildGraph() {
   nodeSel.filter(d => !!d._img)
     .append('image')
     .attr('href', d => d._img.src)
-    .attr('x', -16).attr('y', -16)
-    .attr('width', 32).attr('height', 32)
+    .attr('x', -12).attr('y', -12)
+    .attr('width', 24).attr('height', 24)
     .attr('preserveAspectRatio','xMidYMid slice')
     .attr('clip-path', d => 'url(#tclip-'+d.id.replace(/[^a-z0-9]/gi,'_')+')');
 
   // Ring over photo
   nodeSel.filter(d => !!d._img)
-    .append('circle').attr('r',16)
+    .append('circle').attr('r',12)
     .attr('fill','none')
-    .attr('stroke','rgba(255,255,255,.55)')
-    .attr('stroke-width','1.5');
+    .attr('stroke','rgba(255,255,255,.50)')
+    .attr('stroke-width','1.2');
 
   // Initials for nodes without photo
   nodeSel.filter(d => !d._img)
     .append('text').attr('text-anchor','middle').attr('dominant-baseline','central')
-    .attr('font-size','11px').attr('font-weight','700').attr('fill',d=>d.color)
+    .attr('font-size','9px').attr('font-weight','700').attr('fill',d=>d.color)
     .text(d => ini(d.name));
 
-  nodeSel.append('text').attr('class','node-label').attr('y', 28)
+  nodeSel.append('text').attr('class','node-label').attr('y', 24)
     .text(d => d.name ? d.name.split(' ')[0] : '?');
 
   simulation.on('tick', () => {
-    linkSel.attr('d', d => {
-      const sx=d.source.x, sy=d.source.y, tx2=d.target.x, ty2=d.target.y;
-      const mx=(sx+tx2)/2, my=(sy+ty2)/2;
-      // Perpendicular offset for curve — proportional to link length
-      const len=Math.sqrt((tx2-sx)**2+(ty2-sy)**2)||1;
-      const offset=Math.min(len*0.25, 60);
-      const nx=-(ty2-sy)/len*offset, ny=(tx2-sx)/len*offset;
-      return `M${sx},${sy} Q${mx+nx},${my+ny} ${tx2},${ty2}`;
-    });
+    linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
     nodeSel.attr('transform', d => 'translate('+d.x+','+d.y+')');
   });
 
@@ -442,32 +434,12 @@ function closePanel() {
   if (svgG) { svgG.selectAll('.node-group').classed('dim', false); svgG.selectAll('.link').classed('dim', false); updateVisibility(); }
 }
 
-// ── PHOTO TOGGLE ───────────────────────────────────────────────
-let _showPhotos = true;
-function togglePhotoMode() {
-  _showPhotos = !_showPhotos;
-  document.getElementById('photo-toggle-btn').style.opacity = _showPhotos ? '1' : '.4';
-  // Show/hide photo images and rings, show/hide initials text
-  document.querySelectorAll('.node-group image').forEach(el => { el.style.display = _showPhotos ? '' : 'none'; });
-  document.querySelectorAll('.node-group circle:not(.node-ring)').forEach(el => { el.style.display = _showPhotos ? '' : 'none'; });
-  // Toggle initials visibility
-  if (svgG) buildGraph();
-}
-
 // ── ZOOM ─────────────────────────────────────────────────────
 function zoomIn()  { d3.select('#tree-svg').transition().duration(200).call(svgZoom.scaleBy, 1.3); }
 function zoomOut() { d3.select('#tree-svg').transition().duration(200).call(svgZoom.scaleBy, .77); }
 function fitView() {
-  if (!NODES.length) return;
   const canvas = document.getElementById('treeCanvas');
-  const W = canvas.offsetWidth, H = canvas.offsetHeight;
-  const xs = NODES.map(n=>n.x).filter(Boolean), ys = NODES.map(n=>n.y).filter(Boolean);
-  if (!xs.length) return;
-  const x0=Math.min(...xs)-40, x1=Math.max(...xs)+40, y0=Math.min(...ys)-40, y1=Math.max(...ys)+40;
-  const scale = Math.min(.95, Math.min(W/(x1-x0), H/(y1-y0)));
-  const tx = W/2 - scale*(x0+x1)/2, ty = H/2 - scale*(y0+y1)/2;
-  d3.select('#tree-svg').transition().duration(500)
-    .call(svgZoom.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
+  d3.select('#tree-svg').transition().duration(400).call(svgZoom.transform, d3.zoomIdentity.translate(canvas.offsetWidth/2, canvas.offsetHeight/2).scale(.8));
 }
 
 window.addEventListener('resize', buildGraph);

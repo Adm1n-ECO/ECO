@@ -50,7 +50,6 @@ body{background:#04060d;color:#e8eaf0;font-family:Arial,Helvetica,sans-serif;dis
     <button id="s-current"   class="sty-btn"        onclick="setStyle('current')">〰 Current</button>
     <button id="s-organic"   class="sty-btn"        onclick="setStyle('organic')">🌿 Organic</button>
     <button id="s-capital"   class="sty-btn"        onclick="toggleCapital()" style="--bc:#FFD700;">⬡ Capital Map</button>
-    <button id="s-photo" class="sty-btn" onclick="togglePhotoMode()" style="--bc:#AA88FF;">👤 Photos</button>
   </div>
 <div class="nav-r">
     <span id="style-lbl" style="font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#3A5A54;">Energetic & Colorful</span>
@@ -133,7 +132,6 @@ function getCol(role){ return (PALETTES[currentStyle]||PALETTES.energetic)[role]
 // ── Data ──────────────────────────────────────────────────────
 let ALL_MEMBERS=[], ALL_RELS=[], NODES=[], CENTER_ID=null;
 const _imgCache = {}; // user_id → HTMLImageElement
-let _showPhotos = true;
 let nebCanvas=null, starField=[];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -167,13 +165,20 @@ async function load(){
   ALL_MEMBERS=mR.data||[];
   ALL_RELS=rR.data||[];
 
-  // photo_id is a direct URL — no join needed
-  ALL_MEMBERS.forEach(m => {
-    if (m.photo_id) {
-      const img = new Image(); img.src = m.photo_id;
-      _imgCache[m.user_id] = img;
-    }
-  });
+  // Load profile photos
+  const photoIds = ALL_MEMBERS.map(m=>m.photo_id).filter(Boolean);
+  if (photoIds.length) {
+    const { data: photos } = await sb.from('photos').select('id,public_url').in('id', photoIds);
+    const photoMap = {};
+    (photos||[]).forEach(p => { photoMap[p.id] = p.public_url; });
+    ALL_MEMBERS.forEach(m => {
+      if (m.photo_id) m._photoUrl = photoMap[m.photo_id] || null;
+      if (m._photoUrl) {
+        const img = new Image(); img.src = m._photoUrl;
+        _imgCache[m.user_id] = img;
+      }
+    });
+  }
 
   document.getElementById('p-stats').textContent=
     `${ALL_MEMBERS.length} members · ${ALL_RELS.length} connections`;
@@ -188,7 +193,7 @@ async function load(){
     CENTER_ID=Object.entries(deg).sort((a,b)=>b[1]-a[1])[0]?.[0]||ALL_MEMBERS[0]?.user_id;
   }
 
-  try{buildNodes(CENTER_ID);}catch(e){console.error('buildNodes:',e);}
+  buildNodes(CENTER_ID);
   document.getElementById('loading').style.display='none';
   resizeCanvas();
   startLoop();
@@ -417,14 +422,7 @@ function drawSun(ctx,cx,cy,t){
 }
 
 // ── Node star ─────────────────────────────────────────────────
-function togglePhotoMode() {
-  _showPhotos = !_showPhotos;
-  const btn = document.getElementById('s-photo');
-  if (btn) btn.classList.toggle('active', _showPhotos);
-}
-
 function drawPhotoCircle(ctx,x,y,r,userId){
-  if(!_showPhotos) return;
   const img=_imgCache[userId];
   if(!img||!img.complete||img.naturalWidth===0) return;
   ctx.save();
@@ -466,7 +464,7 @@ function drawNode(ctx,x,y,label,col,tier,hov,sel,onRight,t,userId){
   ctx.fillStyle=sg;ctx.beginPath();ctx.arc(x,y,r*2.5,0,Math.PI*2);ctx.fill();
   // photo overlays glow dot
   if(userId) drawPhotoCircle(ctx,x,y,r*2.5,userId);
-  const fs=tier===1?17:tier===2?15:13;const pad=r*2.5+8;
+  const fs=tier===1?14:tier===2?12:11;const pad=r*2.5+6;
   ctx.save();ctx.font=`${sel?700:hov?600:500} ${sel?fs+2:fs}px Arial Black,Arial,sans-serif`;ctx.textBaseline='middle';
   ctx.shadowColor=col;ctx.shadowBlur=sel?20:hov?12:6;ctx.fillStyle=rgba('#ffffff',sel?1:hov?.96:.88);
   onRight?(ctx.textAlign='left',ctx.fillText(label,x+pad,y)):(ctx.textAlign='right',ctx.fillText(label,x-pad,y));
@@ -524,7 +522,6 @@ function resizeCanvas(){
 
 function startLoop(){
   if(running) return;running=true;
-  const _ld=document.getElementById('loading');if(_ld)_ld.style.display='none';
   (function loop(){requestAnimationFrame(loop);if(!gCtx||!gPos) return;animT+=.016;gCtx.clearRect(0,0,canvas.width,canvas.height);drawBg(gCtx,canvas.width,canvas.height,animT);renderScene(gCtx,gPos,selId,hovId,canvas.width,canvas.height,animT);})();
 }
 

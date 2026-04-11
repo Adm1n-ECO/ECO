@@ -186,3 +186,12 @@ git push --force origin main
 Files changed this session — copy only these from the zip:
 [explicit list]
 ```
+
+## SESSION 11 (2026-04-10)
+
+- **header.js INNER map**: Always add new pages here — omitting them causes the back-nav label to be blank. Pages added: household.html, join.html, pet.html, sovereign.html.
+- **member.html auth_id fetch**: Must include `auth_id` in the users select to detect unclaimed profiles. Used to conditionally show Invite button.
+- **Invite button pattern**: Show only when `!isSelf && !m.auth_id`. Link to `join.html?ref=${_me.user_id}`. Green pill style matches brand.
+- **Admin email update**: Two-step — update `users.email` via anon client first, then call `update-auth-email` edge function with service role. Always check `auth_id` exists before calling edge function.
+- **update-auth-email edge function**: Requires `SUPABASE_SERVICE_ROLE_KEY` secret. Verify caller is SystemAdmin/SuperUser before allowing update. Returns `{ok:true}` on success.
+- **Python replace for admin.html**: File contains multi-byte unicode (✓, …). Use Python `open().read().replace()` — str_replace tool fails on these files.

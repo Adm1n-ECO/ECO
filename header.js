@@ -1,4 +1,3 @@
-// ECO v20260411-0224
 /**
  * ECO Header v3
  * Triangle is STATIC in headerHtml — always in DOM, never touched by auth.
@@ -32,6 +31,8 @@
       'admin.html':'Admin','member.html':'Member',
       'ai-portal.html':'AI Portal','eco_academic_review.html':'Academic Review',
       'map-pins.html':'Map Pins','network-map.html':'Network Map','photos.html':'Photos',
+      'household.html':'My Household','join.html':'Invite to Network',
+      'pet.html':'Pet Profile','sovereign.html':'Sovereign',
     };
     if (INNER[path])
       return [{label:INNER[path],href:path,active:true}];
@@ -267,17 +268,13 @@
     fillTriMenu(PUBLIC_NAV, 'Navigate');
   }
 
-  function setAuthSignedIn(name, isSuperUser, photoUrl) {
+  function setAuthSignedIn(name, isSuperUser) {
     const auth = document.getElementById('_eco_auth');
     if (!auth) return;
     const ini = name.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
-    // Avatar inner — photo if available, else initials
-    const avInner = photoUrl
-      ? `<img src="${photoUrl}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;display:block;" alt="${ini}">`
-      : ini;
     auth.innerHTML = [
       '<div class="eco-hdr-avatar" id="_eco_av" title="' + name + '">',
-      avInner,
+      ini,
       '  <div class="eco-hdr-user-menu" id="_eco_um">',
       '    <span class="um-name">' + name + '</span><hr>',
       '    <a href="user.html">My Network</a>',
@@ -301,29 +298,29 @@
 
     fillTriMenuSignedIn(appNav(isSuperUser));
 
+    const closeAll = () => {
+      document.getElementById('_eco_tri_menu')?.classList.remove('open');
+      document.getElementById('_eco_um')?.classList.remove('open');
+    };
     document.getElementById('_eco_av')?.addEventListener('click', e => {
       e.stopPropagation();
       const m = document.getElementById('_eco_um');
       const was = m?.classList.contains('open');
-      document.getElementById('_eco_tri_menu')?.classList.remove('open');
-      if (was) { m.classList.remove('open'); } else { m.classList.add('open'); }
-    });
-    document.addEventListener('click', () => {
-      document.getElementById('_eco_um')?.classList.remove('open');
-      document.getElementById('_eco_tri_menu')?.classList.remove('open');
+      closeAll(); if (!was) m?.classList.add('open');
     });
     document.getElementById('_eco_so')?.addEventListener('click', async () => {
       await window.ecoSB?.auth.signOut();
       window.location.href = 'home.html';
     });
     document.getElementById('_eco_elder')?.addEventListener('click', () => {
-      document.getElementById('_eco_um')?.classList.remove('open');
+      closeAll();
       toggleElderMode();
     });
     document.getElementById('_eco_chpw')?.addEventListener('click', () => {
-      document.getElementById('_eco_um')?.classList.remove('open');
+      closeAll();
       showPasswordModal();
     });
+    document.addEventListener('click', closeAll);
   }
 
   // ── Elder Mode ────────────────────────────────────────────────────────────
@@ -498,12 +495,12 @@
     try {
       if (session?.user) {
         const { data: p } = await client.from('users')
-          .select('user_id,full_name,platform_role,elder_mode,photo_id').eq('auth_id', session.user.id).maybeSingle();
+          .select('user_id,full_name,platform_role,elder_mode').eq('auth_id', session.user.id).maybeSingle();
         const name = (p?.full_name) || (session.user.email || '').split('@')[0] || 'You';
         if (p?.user_id) window._ecoUserId = p.user_id;
         // Restore elder mode from DB preference
         if (p?.elder_mode) applyElderMode(true);
-        setAuthSignedIn(name, p?.platform_role === 'SuperUser' || p?.platform_role === 'SystemAdmin', p?.photo_id || null);
+        setAuthSignedIn(name, p?.platform_role === 'SuperUser' || p?.platform_role === 'SystemAdmin');
       } else {
         setAuthSignedOut();
       }

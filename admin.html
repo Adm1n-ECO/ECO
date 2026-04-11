@@ -2475,9 +2475,20 @@ async function updateMemberEmail(){
   const newEmail = document.getElementById('email-update-value').value.trim();
   if(!_emailUpdateUserId){ msg.style.color='#ff6b6b'; msg.textContent='Select a member first.'; return; }
   if(!newEmail){ msg.style.color='#ff6b6b'; msg.textContent='Enter a new email.'; return; }
-  const {error} = await sb.from('users').update({email:newEmail}).eq('user_id',_emailUpdateUserId);
-  if(!error){ msg.style.color='#00CC44'; msg.textContent='✓ Email updated in profile. Auth email requires Supabase dashboard to change.'; }
-  else { msg.style.color='#ff6b6b'; msg.textContent=error.message; }
+  msg.style.color='rgba(255,255,255,.4)'; msg.textContent='Updating…';
+  const {error:dbErr} = await sb.from('users').update({email:newEmail}).eq('user_id',_emailUpdateUserId);
+  if(dbErr){ msg.style.color='#ff6b6b'; msg.textContent=dbErr.message; return; }
+  const {data:u} = await sb.from('users').select('auth_id').eq('user_id',_emailUpdateUserId).maybeSingle();
+  if(!u?.auth_id){ msg.style.color='#00CC44'; msg.textContent='✓ Profile email updated. (No auth account linked yet.)'; return; }
+  const session = (await sb.auth.getSession()).data.session;
+  const res = await fetch('https://prbeyvmsyxuiggqwiham.supabase.co/functions/v1/update-auth-email',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({auth_id:u.auth_id,new_email:newEmail})
+  });
+  const json = await res.json();
+  if(json.ok){ msg.style.color='#00CC44'; msg.textContent='✓ Profile + auth email both updated.'; }
+  else { msg.style.color='#ff6b6b'; msg.textContent='Profile updated. Auth error: '+json.error; }
 }
 
 </script>

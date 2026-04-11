@@ -1,6 +1,6 @@
 # ECO Next Session Brief
 ## EternalCurrent.Online
-**Last Updated:** April 10, 2026 — Session 10
+**Last Updated:** April 10, 2026 — Session 11
 
 ---
 
@@ -10,7 +10,7 @@
 - **Phase 2:** ✅ Complete & Live
 - **Stripe:** ✅ Live
 - **Weekly Digest:** ✅ Live
-- **Session 10:** ✅ Photo avatars (3 pages), theme selector swatches, wedding claim page, Isaiah → SystemAdmin
+- **Session 11:** ✅ Photo avatars (3 pages), theme selector swatches, wedding claim page, Isaiah → SystemAdmin
 
 ---
 
@@ -18,46 +18,28 @@
 
 ```
 I'm Vikas Bakshi (STAR), founder of EternalCurrent.Online (ECO).
-INFRA: Supabase prbeyvmsyxuiggqwiham · 108 members · Namecheap · Adm1n-ECO/ECO.git · git push --force
-DEPLOY: extract changed files only from zip into Website\ then run deploy.bat — never git add -A — never full zip extract
+INFRA: Supabase prbeyvmsyxuiggqwiham · 108 members · 941 relationships · Namecheap · Adm1n-ECO/ECO.git · git push --force
 EDGE FUNCTIONS (all live): claude-proxy · stripe-create-checkout · stripe-webhook · quest-generator · weekly-digest · pulse-generator
 STRIPE (live): conductor price_1TKVWQ9AzGOao739NgU94gC2 · pro_conductor price_1TKVYU9AzGOao739sQbQxt6T · org_admin price_1TKVah9AzGOao739y5zja4UH
-ISAIAH: IB-STAR platform_role=SystemAdmin · auth_id null · awaiting claim
+ISAIAH: IB-STAR platform_role=SystemAdmin (DB set) · auth_id still null · awaiting claim
 BRAND: E=#00AAFF C=#00CC44 O=#FFF · Arial Black 900 · bg #080D14 · No forms ever
-PHASE 3: start with TRIBE-01 or ORG-01 — confirm with Vikas
-[Upload latest ECO_Complete_Site.zip to continue]
+PHASE 3 roadmap: TRIBE-01 (tribal expansion) · ORG-01 (org admin dashboard) — confirm with Vikas
+[Upload latest zip to continue]
 ```
 
 ---
 
-## ⚠️ PERMANENT RULE — ZIP AND DEPLOY — READ AND FOLLOW EVERY SESSION
+## ⚠️ DEPLOYMENT RULE — READ BEFORE EVERY GIT PUSH
 
-**Claude must follow this at the end of EVERY session, no exceptions:**
+**Do NOT extract the full zip into Website\**
+The container has no images/ or textures/ — full extract will delete them from git.
 
-1. The zip export contains ONLY the files changed this session — never the full site.
-2. Claude MUST end every session with an explicit list:
-   ```
-   FILES CHANGED THIS SESSION — copy only these from zip:
-   - filename.html  (new / updated)
-   - filename.js    (new / updated)
-   ```
-3. Vikas copies ONLY those listed files into Website\ — no other files are touched.
-4. Run `deploy.bat` to push — never `git add -A`.
+**Correct workflow every session:**
+1. At session end Claude lists: `Files changed — copy only these from zip: [list]`
+2. Copy ONLY those files into Website\
+3. Run `deploy.bat` (not `git add -A`)
 
-**Why:** The Claude container has no images/, textures/, or binary assets.
-Extracting a full zip or running `git add -A` will delete those files from git.
-
-**deploy.bat** is in the repo root — it only stages *.html *.js *.css docs\*.md
-It will never stage or delete images/, textures/, or any binary files.
-
-**Recovery if deletion happens:**
-```
-git checkout HEAD~1 -- images/
-git checkout HEAD~1 -- textures/
-git add images/ textures/
-git commit --amend --no-edit
-git push --force origin main
-```
+**deploy.bat** is in repo root — only stages html/js/css/docs, never binary assets.
 
 ---
 

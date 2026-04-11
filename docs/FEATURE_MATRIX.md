@@ -44,6 +44,7 @@
 | REV-01–02 | Stripe billing | Tiers schema · checkout + webhook Edge Functions |
 | MKT-01 | Waitlist AI flow | 5-step Claude conversation on enter.html |
 | ADMIN-01 | Admin panel | 14 modules · all data panels · whiteboard |
+| ADMIN-02 | Auth email update | update-auth-email edge function · service role · admin.html wired |
 
 ---
 
