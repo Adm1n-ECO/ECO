@@ -82,10 +82,10 @@
 
 | ID | Feature | Priority | Notes |
 |---|---|---|---|
-| TRIBE-01 | Tribal network expansion | High | California · Graton Rancheria · Oklahoma · multi-state |
-| ORG-01 | Org Admin dashboard | High | Multi-network · org_subscriptions table ready |
+| TRIBE-01 | Tribal network expansion | High | sql/003 ready · tribal_nations, tribal_network_profiles, user_network_memberships · Graton Rancheria seeded |
+| ORG-01 | Org Admin dashboard | High | sql/004 ready · org_user_access, org_activity_log, admin_user_id added to org_subscriptions |
 | GEDCOM-01 | GEDCOM export | Medium | Standard family tree interoperability |
 | VEND-01 | Vendor marketplace | Medium | Language learning affiliate · Phase 3 revenue |
 | OFF-01 | Offline-first mode | Medium | Service worker · IndexedDB · tribal/remote use |
 | SOV-01 | On-premise mini-server | Low | Tribal sovereignty · no cloud dependency |
-| VIDEO-01 | Video in posts | Low | allow_video flag already in schema |
+| VIDEO-01 | Video in posts | Low | sql/005 ready · allow_video enabled · video_url + video_thumbnail added to network_posts |
