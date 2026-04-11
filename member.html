@@ -55,6 +55,9 @@ body{background:var(--color-bg);color:var(--color-text);}
     .hero-bio{font-size:14px;color:var(--color-text-mid,var(--color-text-dim));line-height:1.6;}
     .nudge{font-size:12px;color:rgba(0,170,255,0.5);font-style:italic;padding:4px 0;}
     .passed-note{margin-top:12px;font-size:12px;color:var(--color-text-dim);font-style:italic;}
+    .me-inp{width:100%;background:var(--bg);border:1px solid rgba(0,170,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;margin-bottom:8px;box-sizing:border-box;}
+    .me-inp:focus{border-color:rgba(0,170,255,.5);}
+    textarea.me-inp{resize:vertical;min-height:72px;}
 
     /* SECTIONS */
     .section{margin-bottom:20px;}
@@ -211,7 +214,7 @@ const REL_LABELS = {
 // ── LOAD ALL DATA ────────────────────────────────────────────────────────────
 async function loadAll(session) {
   const { data: me } = await sb.from('users')
-    .select('user_id,full_name').eq('auth_id', session.user.id).maybeSingle();
+    .select('user_id,full_name,platform_role').eq('auth_id', session.user.id).maybeSingle();
   _me = me;
 
   const { data: m, error } = await sb.from('users')
@@ -338,6 +341,8 @@ function renderPage(m, related, relMap) {
   document.title = `${m.full_name||'Member'} · ECO`;
   const isPassed = m.status === 'Passed';
   const isSelf   = _me && _me.user_id === TARGET_ID;
+  const isAdmin  = _me && (_me.platform_role === 'SystemAdmin' || _me.platform_role === 'SuperUser');
+  const canEdit  = isSelf || isAdmin;
   const langs    = Array.isArray(m.languages_spoken) ? m.languages_spoken.join(', ') : (m.languages_spoken||null);
   const bdate    = m.birth_mm_yyyy ? (() => {
     const [mm,yy] = String(m.birth_mm_yyyy).split('/');
@@ -358,6 +363,27 @@ function renderPage(m, related, relMap) {
     ? `<img src="${m.photo_id}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--blue);">`
     : `<div class="avatar-ring">${ini(m.full_name)}</div>`;
 
+  const adminEditPanel = canEdit ? `
+    <div id="member-edit-panel" style="display:none;background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.18);border-radius:14px;padding:20px 22px;margin-bottom:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;margin-bottom:14px;">Edit ${isSelf?'your':'this'} profile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input class="me-inp" id="me-first"    placeholder="First name"      value="${m.first_name||''}">
+        <input class="me-inp" id="me-last"     placeholder="Last name"       value="${m.last_name||''}">
+        <input class="me-inp" id="me-birth"    placeholder="Birth MM/YYYY"   value="${m.birth_mm_yyyy||''}">
+        <input class="me-inp" id="me-birth-loc" placeholder="Birth location" value="${m.birth_location||''}">
+        <input class="me-inp" id="me-location" placeholder="Current location" value="${m.current_location||''}">
+        <input class="me-inp" id="me-origin"   placeholder="Cultural origin" value="${m.cultural_origin||''}">
+      </div>
+      <input class="me-inp" id="me-langs"    placeholder="Languages (comma separated)" value="${(Array.isArray(m.languages_spoken)?m.languages_spoken:m.languages_spoken?[m.languages_spoken]:[]).join(', ')}" style="width:100%;margin-bottom:8px;">
+      <input class="me-inp" id="me-role"     placeholder="Family role (e.g. mother, son)" value="${m.family_role||''}" style="width:100%;margin-bottom:8px;">
+      <textarea class="me-inp" id="me-bio" placeholder="Bio / story…" rows="3" style="width:100%;resize:vertical;">${m.bio||''}</textarea>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+        <button onclick="saveMemberEdit('${m.user_id}')" style="background:#00AAFF;color:#080D14;border:none;border-radius:8px;padding:9px 22px;font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;cursor:pointer;" id="me-save-btn">Save →</button>
+        <button onclick="document.getElementById('member-edit-panel').style.display='none'" style="background:none;border:none;color:#3A5A54;font-size:12px;cursor:pointer;">Cancel</button>
+        <div id="me-err" style="font-size:11px;color:#ff6b6b;margin-left:auto;"></div>
+      </div>
+    </div>` : '';
+
   document.getElementById('shell').innerHTML = `
     <div class="hero-card">
       ${avatarEl}
@@ -372,7 +398,10 @@ function renderPage(m, related, relMap) {
         ${m.bio?`<div class="hero-bio">${m.bio}</div>`:`<div class="nudge">No bio yet — their story is waiting to be told.</div>`}
         ${isPassed?`<div class="passed-note">Their current lives on in everyone they touched.</div>`:''}
       </div>
+      ${canEdit ? `<button onclick="document.getElementById('member-edit-panel').style.display='block';this.style.display='none'" style="font-size:11px;color:rgba(0,170,255,.6);cursor:pointer;border:1px solid rgba(0,170,255,.2);background:none;border-radius:6px;padding:5px 12px;white-space:nowrap;align-self:flex-start;flex-shrink:0;">✏ Edit</button>` : ''}
     </div>
+
+    ${adminEditPanel}
 
     ${!isSelf && !isPassed ? `<div id="conn-slot"></div>` : ''}
 
@@ -711,6 +740,50 @@ async function loadPets(userId){
     </div>
     ${cards}
   </div>`;
+}
+
+// ── ADMIN / SELF PROFILE EDIT ─────────────────────────────────────────────
+async function saveMemberEdit(userId) {
+  const btn = document.getElementById('me-save-btn');
+  const err = document.getElementById('me-err');
+  if (!btn || !err) return;
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const first    = document.getElementById('me-first')?.value.trim() || null;
+  const last     = document.getElementById('me-last')?.value.trim()  || null;
+  const birth    = document.getElementById('me-birth')?.value.trim() || null;
+  const birthLoc = document.getElementById('me-birth-loc')?.value.trim() || null;
+  const loc      = document.getElementById('me-location')?.value.trim() || null;
+  const origin   = document.getElementById('me-origin')?.value.trim() || null;
+  const langsRaw = document.getElementById('me-langs')?.value.trim() || '';
+  const langs    = langsRaw ? langsRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
+  const role     = document.getElementById('me-role')?.value.trim() || null;
+  const bio      = document.getElementById('me-bio')?.value.trim()  || null;
+
+  const full_name = [first, last].filter(Boolean).join(' ') || null;
+
+  const updates = {};
+  if (first)     updates.first_name         = first;
+  if (last)      updates.last_name          = last;
+  if (full_name) updates.full_name          = full_name;
+  if (birth)     updates.birth_mm_yyyy      = birth;
+  if (birthLoc)  updates.birth_location     = birthLoc;
+  if (loc)       updates.current_location   = loc;
+  if (origin)    updates.cultural_origin    = origin;
+  if (langs)     updates.languages_spoken   = langs;
+  if (role)      updates.family_role        = role;
+  if (bio !== null) updates.bio             = bio;
+
+  const { error } = await sb.from('users').update(updates).eq('user_id', userId);
+  if (error) {
+    err.textContent = error.message;
+    btn.disabled = false; btn.textContent = 'Save →';
+    return;
+  }
+
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { window.location.reload(); }, 800);
 }
 </script>
 <script src="header.js"></script>
