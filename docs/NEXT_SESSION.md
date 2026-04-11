@@ -29,17 +29,34 @@ PHASE 3 roadmap: TRIBE-01 (tribal expansion) · ORG-01 (org admin dashboard) —
 
 ---
 
-## ⚠️ DEPLOYMENT RULE — READ BEFORE EVERY GIT PUSH
+## ⚠️ PERMANENT RULE — ZIP AND DEPLOY — READ AND FOLLOW EVERY SESSION
 
-**Do NOT extract the full zip into Website\**
-The container has no images/ or textures/ — full extract will delete them from git.
+**Claude must follow this at the end of EVERY session, no exceptions:**
 
-**Correct workflow every session:**
-1. At session end Claude lists: `Files changed — copy only these from zip: [list]`
-2. Copy ONLY those files into Website\
-3. Run `deploy.bat` (not `git add -A`)
+1. The zip export contains ONLY the files changed this session — never the full site.
+2. Claude MUST end every session with an explicit list:
+   ```
+   FILES CHANGED THIS SESSION — copy only these from zip:
+   - filename.html  (new / updated)
+   - filename.js    (new / updated)
+   ```
+3. Vikas copies ONLY those listed files into Website\ — no other files are touched.
+4. Run `deploy.bat` to push — never `git add -A`.
 
-**deploy.bat** is in repo root — only stages html/js/css/docs, never binary assets.
+**Why:** The Claude container has no images/, textures/, or binary assets.
+Extracting a full zip or running `git add -A` will delete those files from git.
+
+**deploy.bat** is in the repo root — it only stages *.html *.js *.css docs\*.md
+It will never stage or delete images/, textures/, or any binary files.
+
+**Recovery if deletion happens:**
+```
+git checkout HEAD~1 -- images/
+git checkout HEAD~1 -- textures/
+git add images/ textures/
+git commit --amend --no-edit
+git push --force origin main
+```
 
 ---
 

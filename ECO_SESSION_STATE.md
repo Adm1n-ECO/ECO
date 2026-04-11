@@ -3,6 +3,19 @@
 
 ---
 
+## ⚠️ PERMANENT ZIP + DEPLOY RULE
+
+Claude follows this every session without exception:
+- Export zip contains ONLY files changed this session — never the full site
+- End of session always includes an explicit: "FILES CHANGED THIS SESSION" list
+- Vikas copies only those files into Website\ — nothing else is touched
+- Use deploy.bat, never git add -A
+- deploy.bat only stages: *.html *.js *.css docs\*.md ECO_SESSION_STATE.md
+- images/ textures/ and all binary files are NEVER in the zip, NEVER staged
+
+
+---
+
 ## INFRASTRUCTURE
 
 | Item | Value |
