@@ -215,7 +215,7 @@ async function loadAll(session) {
   _me = me;
 
   const { data: m, error } = await sb.from('users')
-    .select('user_id,full_name,status,family_role,birth_mm_yyyy,birth_location,current_location,cultural_origin,languages_spoken,household_id,visible_to,created_at').eq('user_id', TARGET_ID).maybeSingle();
+    .select('user_id,full_name,status,family_role,birth_mm_yyyy,birth_location,current_location,cultural_origin,languages_spoken,household_id,visible_to,created_at,photo_id,bio').eq('user_id', TARGET_ID).maybeSingle();
   if (error || !m) {
     document.getElementById('loading-msg').innerHTML =
       '<div class="big">👤</div>Member not found. <a href="user.html" style="color:var(--blue);">Go back.</a>';
@@ -354,9 +354,13 @@ function renderPage(m, related, relMap) {
     </div>`
   ).join('');
 
+  const avatarEl = m.photo_id
+    ? `<img src="${m.photo_id}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--blue);">`
+    : `<div class="avatar-ring">${ini(m.full_name)}</div>`;
+
   document.getElementById('shell').innerHTML = `
     <div class="hero-card">
-      <div class="avatar-ring">${ini(m.full_name)}</div>
+      ${avatarEl}
       <div class="hero-info">
         <div class="hero-name">${m.full_name||'Unknown'}</div>
         <div class="hero-role">${m.family_role||m.platform_role||'Network member'}</div>
@@ -675,29 +679,36 @@ const PET_EMOJI_M = { Dog:'🐕', Cat:'🐈', Bird:'🦜', Fish:'🐟', Rabbit:'
 async function loadPets(userId){
   const slot = document.getElementById('pets-section');
   if(!slot) return;
-  // Find pets where owner_id = userId OR co_owner_ids contains userId
   const {data:pets} = await window.ecoSB.from('pets')
-    .select('pet_id,name,type,breed,status,photo_id,passed_mm_yyyy,bio')
+    .select('pet_id,name,type,breed,status,photo_id,passed_mm_yyyy,bio,birth_mm_yyyy')
     .or(`owner_id.eq.${userId},co_owner_ids.cs.{"${userId}"}`);
-  if(!pets?.length) return; // no pets — show nothing
+  if(!pets?.length) return;
+  const isSelf = _me && _me.user_id === userId;
   const cards = pets.map(p => {
     const emoji = PET_EMOJI_M[p.type]||'🐾';
     const passed = p.status==='Passed'||p.status==='passed';
     const img = p.photo_id
-      ? `<img src="${p.photo_id}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
-      : `<div style="width:44px;height:44px;border-radius:50%;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${emoji}</div>`;
-    return `<a href="pet.html?id=${p.pet_id}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);text-decoration:none;">
+      ? `<img src="${p.photo_id}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(0,170,255,.25);">`
+      : `<div style="width:52px;height:52px;border-radius:50%;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${emoji}</div>`;
+    const editLink = isSelf
+      ? `<a href="pet.html?id=${p.pet_id}" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 9px;flex-shrink:0;">Edit →</a>`
+      : `<a href="pet.html?id=${p.pet_id}" style="font-size:11px;color:rgba(0,170,255,.5);text-decoration:none;font-weight:700;flex-shrink:0;">View →</a>`;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);">
       ${img}
-      <div style="flex:1;">
+      <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;color:#E8F4F0;">${p.name}${passed?' 🌈':''}</div>
-        <div style="font-size:11px;color:#3A5A54;">${emoji} ${p.type||'Pet'}${p.breed?' · '+p.breed:''}</div>
+        <div style="font-size:11px;color:#3A5A54;margin-top:2px;">${emoji} ${p.type||'Pet'}${p.breed?' · '+p.breed:''}${p.birth_mm_yyyy?' · b.'+p.birth_mm_yyyy:''}</div>
+        ${p.bio?`<div style="font-size:12px;color:#7ABDB5;margin-top:4px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.bio}</div>`:''}
       </div>
-      <div style="font-size:11px;color:rgba(0,170,255,.5);">View →</div>
-    </a>`;
+      ${editLink}
+    </div>`;
   }).join('');
 
   slot.innerHTML = `<div style="background:#0D1820;border:1px solid rgba(0,170,255,.10);border-radius:14px;padding:20px 22px;margin-bottom:20px;">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;margin-bottom:4px;">Fur family (${pets.length})</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#3A5A54;text-transform:uppercase;">Fur family (${pets.length})</div>
+      ${isSelf?`<a href="pet.html" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 9px;">+ Add pet</a>`:''}
+    </div>
     ${cards}
   </div>`;
 }

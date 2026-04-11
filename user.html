@@ -1450,6 +1450,15 @@ async function loadProfile() {
     sb.from('contribution_nominations').select('role,status,validation_count').eq('nominated_user_id', uid),
   ]);
 
+  // Fetch pets + household members separately (after profile.household_id is known)
+  const { data: myPets } = await sb.from('pets').select('pet_id,name,type,breed,status,photo_id,passed_mm_yyyy').eq('owner_id', uid).order('created_at',{ascending:true});
+
+  // Household members (for profile links)
+  const hid = profile?.household_id;
+  const { data: householdMembers } = hid
+    ? await sb.from('users').select('user_id,full_name,family_role,birth_mm_yyyy,photo_id').eq('household_id', hid).neq('user_id', uid)
+    : { data: [] };
+
   // Get names for relationship targets
   const otherIds = (rels||[]).map(r => r.subject_id === uid ? r.target_id : r.subject_id);
   const uniqueIds = [...new Set(otherIds)].slice(0,80);
@@ -1522,6 +1531,43 @@ async function loadProfile() {
 
   // Pins
   const CAT_EMOJI = {general:'📍',ancestral_village:'🏡',migration_route:'🛤',sacred_site:'🌙',cultural_landmark:'🏛',heritage_site:'⬡',burial_ground:'☽'};
+
+  // ── Pets section HTML ──────────────────────────────────────
+  const PET_EM = {dog:'🐕',cat:'🐈',bird:'🐦',fish:'🐠',rabbit:'🐇',hamster:'🐹',reptile:'🦎',horse:'🐴',other:'🐾'};
+  const petsHtml = (myPets||[]).length ? (myPets||[]).map(p => {
+    const em = PET_EM[p.type?.toLowerCase()]||'🐾';
+    const passed = p.status==='Passed'||p.status==='passed';
+    const img = p.photo_id
+      ? `<img src="${p.photo_id}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div style="width:40px;height:40px;border-radius:50%;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${em}</div>`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      ${img}
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#E8F4F0;">${p.name}${passed?' 🌈':''}</div>
+        <div style="font-size:11px;color:#3A5A54;">${em} ${p.type||'Pet'}${p.breed?' · '+p.breed:''}</div>
+      </div>
+      <a href="pet.html?id=${p.pet_id}" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 10px;margin-right:6px;">Edit →</a>
+    </div>`;
+  }).join('')
+  : '<div style="font-size:13px;color:rgba(255,255,255,.2);font-style:italic;">No pets yet — <a href=\"pet.html\" style=\"color:#00AAFF;\">add one</a>.</div>';
+
+  // ── Household members HTML ─────────────────────────────────
+  const householdHtml = (householdMembers||[]).length ? (householdMembers||[]).map(m => {
+    const ini2 = (m.full_name||'?').trim().split(/\s+/).map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const av = m.photo_id
+      ? `<img src="${m.photo_id}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div style="width:40px;height:40px;border-radius:50%;background:rgba(0,204,68,.12);border:1px solid rgba(0,204,68,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#00CC44;flex-shrink:0;">${ini2}</div>`;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      ${av}
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#E8F4F0;">${m.full_name||'Unknown'}</div>
+        <div style="font-size:11px;color:#3A5A54;">${m.family_role||'Household member'}${m.birth_mm_yyyy?' · b.'+m.birth_mm_yyyy:''}</div>
+      </div>
+      <a href="member.html?id=${m.user_id}" style="font-size:11px;color:#00AAFF;text-decoration:none;font-weight:700;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 10px;margin-right:6px;">Edit profile →</a>
+    </div>`;
+  }).join('')
+  : '<div style="font-size:13px;color:rgba(255,255,255,.2);font-style:italic;">No other household members linked yet.</div>';
+
   const pinsHtml = (pins||[]).length ? (pins||[]).map(p => `
     <div class="tagged-item">
       <div class="tagged-icon">${CAT_EMOJI[p.pin_category||'general']||'📍'}</div>
@@ -1631,7 +1677,20 @@ async function loadProfile() {
       <div class="profile-section-title">Photos you're tagged in (${(photoTags||[]).length})</div>
       ${photoTagsHtml}
     </div>
-  `;
+
+    ${(myPets||[]).length || true ? `<div class="profile-section">
+      <div class="profile-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Your pets (${(myPets||[]).length})</span>
+        <a href="pet.html" style="font-size:11px;font-weight:700;color:#00AAFF;text-decoration:none;border:1px solid rgba(0,170,255,.2);border-radius:6px;padding:3px 10px;">+ Add pet</a>
+      </div>
+      ${petsHtml}
+    </div>` : ''}
+
+    ${hid ? `<div class="profile-section">
+      <div class="profile-section-title">Your household</div>
+      ${householdHtml}
+    </div>` : ''}
+  \`;
 
   // Wire avatar file input AFTER innerHTML (inline onchange stripped by browser security)
   const avatarInput = document.getElementById('avatar-file-input');
