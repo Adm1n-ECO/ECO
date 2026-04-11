@@ -105,6 +105,9 @@ async function load(){
   const rc=MEMBERS.filter(m=>m._side==='right').length;
   document.getElementById('split-info').textContent=`Direct ${lc} · Extended ${rc}`;
   document.getElementById('loading').style.display='none';
+  const _vw=window.innerWidth,_vh=window.innerHeight-50;
+  scale=Math.min(_vw/3400,_vh/2900)*0.92;
+  tx=_vw/2-CX*scale;ty=_vh/2-CY*scale;updateT();
   setTheme('organic');
 }
 
@@ -120,7 +123,7 @@ function setTheme(t){
   else if(t==='ripple')renderRipple();
   else if(t==='circuit')renderCircuit();
   else renderCosmos();
-  setTimeout(resetView,800);
+  setTimeout(resetView,300);
 }
 
 // ══ ORGANIC ═══════════════════════════════════════════════════
@@ -176,7 +179,7 @@ function renderOrganic(){
     .force('charge',d3.forceManyBody().strength(-70))
     .force('collide',d3.forceCollide(d=>d.r*.55))
     .force('center',d3.forceCenter(CX,CY))
-    .alphaDecay(.02)
+    .alphaDecay(.04)
     .on('tick',()=>{
       edgeG.innerHTML='';
       links.forEach(l=>{

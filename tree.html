@@ -299,9 +299,9 @@ function buildGraph() {
   const links = LINKS.map(l => ({...l, source: nodeMap[l.source] || l.source, target: nodeMap[l.target] || l.target}));
 
   simulation = d3.forceSimulation(nodes)
-    .force('link',    d3.forceLink(links).id(d => d.id).distance(140).strength(.3))
-    .force('charge',  d3.forceManyBody().strength(-600))
-    .force('collide', d3.forceCollide(40))
+    .force('link',    d3.forceLink(links).id(d => d.id).distance(180).strength(.2))
+    .force('charge',  d3.forceManyBody().strength(-900))
+    .force('collide', d3.forceCollide(55))
     .force('center',  d3.forceCenter(W/2, H/2))
     .alphaDecay(.025);
 
@@ -365,11 +365,7 @@ function buildGraph() {
     .text(d => ini(d.name));
 
   nodeSel.append('text').attr('class','node-label').attr('y', 28)
-    .text(d => {
-      if (!d.name) return '?';
-      const parts = d.name.split(' ').filter(Boolean);
-      return parts.length > 1 ? parts[0] + ' ' + parts[parts.length-1][0] + '.' : parts[0];
-    });
+    .text(d => d.name ? d.name.split(' ')[0] : '?');
 
   simulation.on('tick', () => {
     linkSel.attr('d', d => {

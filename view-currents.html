@@ -188,7 +188,7 @@ async function load(){
     CENTER_ID=Object.entries(deg).sort((a,b)=>b[1]-a[1])[0]?.[0]||ALL_MEMBERS[0]?.user_id;
   }
 
-  buildNodes(CENTER_ID);
+  try{buildNodes(CENTER_ID);}catch(e){console.error('buildNodes:',e);}
   document.getElementById('loading').style.display='none';
   resizeCanvas();
   startLoop();
@@ -524,6 +524,7 @@ function resizeCanvas(){
 
 function startLoop(){
   if(running) return;running=true;
+  const _ld=document.getElementById('loading');if(_ld)_ld.style.display='none';
   (function loop(){requestAnimationFrame(loop);if(!gCtx||!gPos) return;animT+=.016;gCtx.clearRect(0,0,canvas.width,canvas.height);drawBg(gCtx,canvas.width,canvas.height,animT);renderScene(gCtx,gPos,selId,hovId,canvas.width,canvas.height,animT);})();
 }
 
