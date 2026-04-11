@@ -46,6 +46,7 @@ body{background:var(--bg);color:var(--white);font-family:Arial,Helvetica,sans-se
 .field-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--white);outline:none;font-family:Arial,sans-serif;transition:border-color .15s;}
 .field-input:focus{border-color:rgba(0,170,255,.4);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.field-row{grid-template-columns:1fr;}}
 
 /* MEMBER CARDS */
 .member-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}

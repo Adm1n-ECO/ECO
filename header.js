@@ -176,6 +176,22 @@
     .eco-hdr-user-menu hr { border:none;border-top:1px solid rgba(255,255,255,0.07);margin:4px 0; }
     .eco-hdr-so { color:rgba(255,80,80,0.85) !important; }
     .eco-hdr-so:hover { color:#ff5050 !important;background:rgba(255,60,60,0.08) !important; }
+
+    /* ── Mobile ≤640px ─────────────────────────────────────────────────── */
+    @media(max-width:640px){
+      #eco-header-bar{padding:0 14px;gap:0;}
+      .eco-hdr-logo{margin-right:10px;}
+      .eco-hdr-logo img{height:36px;}
+      .eco-hdr-wm{font-size:20px;}
+      .eco-hdr-sub{font-size:7px;}
+      .eco-hdr-links{display:none;}
+      .eco-hdr-right{gap:8px;}
+      .eco-hdr-signin{padding:5px 12px;font-size:12px;}
+    }
+    /* ── Mobile ≤400px ─────────────────────────────────────────────────── */
+    @media(max-width:400px){
+      .eco-hdr-wm{font-size:18px;}
+    }
   `;
 
   const styleEl = document.createElement('style');

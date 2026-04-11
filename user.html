@@ -231,7 +231,8 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var
 .digest-toggle:hover{filter:brightness(1.1);}
 
 /* ── PAGE-LEVEL TABS (Campfire / Stats / Prefs) ── */
-.page-tab-bar{display:flex;gap:0;border-bottom:1px solid rgba(0,170,255,.10);margin-bottom:28px;}
+.page-tab-bar{display:flex;gap:0;border-bottom:1px solid rgba(0,170,255,.10);margin-bottom:28px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.page-tab-bar::-webkit-scrollbar{display:none;}
 .page-tab-btn{font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:14px 22px;cursor:pointer;border:none;background:none;color:#3A5A54;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;}
 .page-tab-btn:hover{color:#7AADA0;}
 .page-tab-btn.active{color:#00AAFF;border-bottom-color:#00AAFF;}
@@ -333,7 +334,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--color-bg);color:var
 
 @media(max-width:600px){
   .page-tabs-wrap{padding:0 12px;}
-  .page-tab-btn{font-size:12px;padding:8px 12px;white-space:nowrap;}
+  .page-tab-btn{font-size:12px;padding:8px 10px;white-space:nowrap;flex-shrink:0;}
   .net-post-card{padding:14px;}
   .npc-top{gap:10px;}
   .npc-av{width:32px;height:32px;font-size:12px;flex-shrink:0;}
