@@ -156,3 +156,33 @@ No `<form>` tags, no submit buttons, no labeled input fields — ever. Auth is t
 - **theme-selector.js str_replace**: File uses escaped quote strings inside JS string concatenation. Python replace is more reliable than str_replace for these patterns.
 - **Users query photo join**: `users.photo_id → photos.id → photos.public_url`. Always fetch photos in a single `in('id', photoIds)` batch, not per-member. Always guard: `if (photoIds.length)` before the join to avoid empty `.in()` errors.
 - **Filter chips on visual-river**: `data-uid` attribute on each SVG `<g>` node is the bridge between JS filter state and DOM opacity. Set during `positionRow()`.
+
+---
+
+## CRITICAL DEPLOYMENT RULE (added 2026-04-10)
+
+**NEVER extract the full zip into the Website\ folder.**
+
+The Claude container does not have `images/`, `textures/`, or any binary assets. Extracting the full zip will delete those folders from git.
+
+**Correct deploy workflow:**
+1. Claude lists changed files at end of session
+2. Vikas copies ONLY those files from the zip into Website\
+3. Run `deploy.bat` (not `git add -A`)
+
+**deploy.bat** is in the repo root — it only stages `*.html *.js *.css docs\*.md ECO_SESSION_STATE.md`. It will never touch images/ or textures/.
+
+**If accidental deletion happens:**
+```
+git checkout HEAD~1 -- images/
+git checkout HEAD~1 -- textures/
+git add images/ textures/
+git commit --amend --no-edit
+git push --force origin main
+```
+
+**Claude must always end every session with:**
+```
+Files changed this session — copy only these from the zip:
+[explicit list]
+```

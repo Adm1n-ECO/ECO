@@ -29,6 +29,20 @@ PHASE 3 roadmap: TRIBE-01 (tribal expansion) · ORG-01 (org admin dashboard) —
 
 ---
 
+## ⚠️ DEPLOYMENT RULE — READ BEFORE EVERY GIT PUSH
+
+**Do NOT extract the full zip into Website\**
+The container has no images/ or textures/ — full extract will delete them from git.
+
+**Correct workflow every session:**
+1. At session end Claude lists: `Files changed — copy only these from zip: [list]`
+2. Copy ONLY those files into Website\
+3. Run `deploy.bat` (not `git add -A`)
+
+**deploy.bat** is in repo root — only stages html/js/css/docs, never binary assets.
+
+---
+
 ## ACTIVE PAGES (26)
 
 index · home · network · enter · manifesto · eco_academic_review · milestone
